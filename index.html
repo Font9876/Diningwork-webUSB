@@ -1,9 +1,71 @@
-<!doctype html>
-<html>
-  <head><meta charset="utf-8"><title>Darthfader</title></head>
-  <body>
-    <button id="connect">Connect</button>
-    <pre id="log"></pre>
-    <script src="main.js"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Darth Fader - Settings Editor</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #1a1a1a; color: #e0e0e0; max-width: 600px; margin: 2rem auto; padding: 2rem; border-radius: 8px; border: 1px solid #444; }
+        h1 { color: #feda4a; } /* Star Wars yellow */
+        .control-group { margin-bottom: 1.5rem; }
+        label { display: block; font-weight: bold; margin-bottom: 0.5rem; color: #ccc; }
+        select, button { width: 100%; padding: 0.75rem; border-radius: 5px; border: 1px solid #555; font-size: 1rem; background-color: #333; color: #fff; box-sizing: border-box; }
+        button { background-color: #feda4a; color: #000; font-weight: bold; border: none; cursor: pointer; transition: background-color 0.2s; margin-top: 1rem; }
+        button:hover:not(:disabled) { background-color: #fff; }
+        button:disabled { background-color: #555; color: #888; cursor: not-allowed; }
+        #status { margin-top: 1.5rem; padding: 1rem; border-radius: 5px; background-color: #2a2a2a; text-align: center; font-weight: bold; min-height: 1.5em; white-space: pre-wrap; }
+        .status-connected { color: #4CAF50; }
+        .status-disconnected { color: #f44336; }
+        .status-info { color: #2196F3; }
+    </style>
+</head>
+<body>
+
+    <h1>Darth Fader Settings</h1>
+    <p>Connect your device and configure its settings directly from the browser.</p>
+
+    <button id="connect-btn">Connect to Device</button>
+    
+    <div id="settings-form" style="display: none;">
+        <div class="control-group">
+            <label for="esb-channel">2.4GHz ESB Channel</label>
+            <select id="esb-channel">
+                <option value="0">Channel 5</option>
+                <option value="1">Channel 10</option>
+                <option value="2">Channel 15</option>
+                <option value="3">Channel 20</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="cc-layer">CC Layer</label>
+            <select id="cc-layer">
+                <option value="0">Layer 1</option>
+                <option value="1">Layer 2</option>
+                <option value="2">Layer 3</option>
+                <option value="3">Layer 4</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="midi-channel">MIDI Channel</label>
+            <select id="midi-channel">
+                </select>
+        </div>
+
+        <div class="control-group">
+            <label for="button-mode">Button Mode</label>
+            <select id="button-mode">
+                <option value="0">Momentary</option>
+                <option value="1">Toggle</option>
+            </select>
+        </div>
+
+        <button id="save-btn">Save Settings to Device</button>
+    </div>
+
+    <div id="status" class="status-disconnected">Disconnected</div>
+
+    <script src="script.js"></script>
+</body>
 </html>
