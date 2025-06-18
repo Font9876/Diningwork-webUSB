@@ -9,6 +9,8 @@ const midiChannelSelect = document.getElementById('midi-channel');
 
 // This variable will hold the connected device object
 let device = null;
+// This will hold the numbers for the WebUSB interface and endpoint
+let webUsbInterface = { interfaceNumber: -1, endpointNumber: -1 };
 
 // --- Command Protocol Definition (must match Arduino code) ---
 const CMD_SET_ESB_CHANNEL = 0x01;
@@ -18,10 +20,9 @@ const CMD_SET_BUTTON_MODE = 0x04;
 const CMD_SAVE_TO_FLASH = 0xAA;
 
 // --- UI Setup ---
-// Populate MIDI Channel dropdown
 for (let i = 1; i <= 16; i++) {
     const option = document.createElement('option');
-    option.value = i - 1; // Send value 0-15
+    option.value = i - 1;
     option.textContent = `Channel ${i}`;
     midiChannelSelect.appendChild(option);
 }
@@ -30,9 +31,7 @@ for (let i = 1; i <= 16; i++) {
 connectBtn.addEventListener('click', async () => {
     log.textContent = 'Awaiting device selection...\n';
     try {
-        // Using your proven connection code that shows the prompt
         device = await navigator.usb.requestDevice({ filters: [] });
-        
         await device.open();
         log.textContent = `Device Opened: ${device.productName}\n`;
         
@@ -40,28 +39,62 @@ connectBtn.addEventListener('click', async () => {
             await device.selectConfiguration(1);
         }
 
-        // --- IMPORTANT PART FOR COMPOSITE DEVICES ---
-        // Your device is both MIDI and WebUSB. This means it has multiple "interfaces".
-        // Interface 0 is very likely the MIDI one. The WebUSB interface is probably on a higher number.
-        // We will try Interface 2, as it's a common choice.
-        // If it fails here, try changing this to 1, 3, or another number.
-        const interfaceNumber = 2;
-        await device.claimInterface(interfaceNumber);
-        log.textContent += `Successfully claimed interface ${interfaceNumber}.\nReady to save settings.`;
+        // --- NEW: Smart Interface Finding Logic ---
+        log.textContent += 'Searching for the correct WebUSB interface...\n';
+        let foundInterface = false;
+
+        // Loop through all available interfaces on the device
+        for (const config of device.configurations) {
+            for (const iface of config.interfaces) {
+                log.textContent += `> Checking Interface #${iface.interfaceNumber}...\n`;
+                // Try to claim this interface. If it's the protected MIDI one, it will throw an error.
+                try {
+                    await device.claimInterface(iface.interfaceNumber);
+                    
+                    // If we get here, we've successfully claimed an interface!
+                    // Now, find its OUT endpoint for sending data.
+                    const endpoint = iface.alternate.endpoints.find(e => e.direction === 'out');
+                    if (!endpoint) {
+                        // This interface has no OUT endpoint, so it's not the one we want. Unclaim it.
+                        log.textContent += `  - Interface #${iface.interfaceNumber} has no OUT endpoint. Unclaiming and continuing...\n`;
+                        await device.releaseInterface(iface.interfaceNumber);
+                        continue;
+                    }
+
+                    // We found it! Store the numbers and stop searching.
+                    webUsbInterface.interfaceNumber = iface.interfaceNumber;
+                    webUsbInterface.endpointNumber = endpoint.endpointNumber;
+                    
+                    log.textContent += `> SUCCESS! Claimed non-protected WebUSB interface #${webUsbInterface.interfaceNumber} with OUT endpoint #${webUsbInterface.endpointNumber}.\n`;
+                    foundInterface = true;
+                    break; // Exit the inner loop
+                    
+                } catch (err) {
+                    // This error is EXPECTED for the MIDI interface.
+                    log.textContent += `  - Could not claim Interface #${iface.interfaceNumber} (likely the protected MIDI interface). Skipping.\n`;
+                }
+            }
+            if (foundInterface) break; // Exit the outer loop
+        }
+
+        if (!foundInterface) {
+            throw new Error("Could not find and claim a valid WebUSB interface. Please check the device firmware.");
+        }
         
         // Show the settings form and hide the connect button
+        log.textContent += 'Ready to save settings.';
         settingsForm.style.display = 'block';
         connectBtn.style.display = 'none';
 
     } catch (err) {
-        log.textContent += `Error: ${err.toString()}`;
+        log.textContent += `\nError: ${err.toString()}`;
     }
 });
 
 // --- Save Settings Logic ---
 saveBtn.addEventListener('click', async () => {
-    if (!device) {
-        log.textContent = 'Error: No device connected.';
+    if (!device || webUsbInterface.interfaceNumber === -1) {
+        log.textContent = 'Error: No device or valid interface found.';
         return;
     }
 
@@ -72,19 +105,14 @@ saveBtn.addEventListener('click', async () => {
         const midiChannel = parseInt(document.getElementById('midi-channel').value);
         const buttonMode = parseInt(document.getElementById('button-mode').value);
 
-        // --- IMPORTANT PART FOR DATA TRANSFER ---
-        // Like the interface, the "endpoint" for sending data must match the WebUSB interface.
-        // Endpoint 2 is a common choice for a secondary OUT endpoint.
-        // If saving fails, this number might also need to be changed (e.g., to 1, 3, etc.)
-        const endpointNumber = 2;
+        // Use the endpoint number we found during connection
+        const endpointNumber = webUsbInterface.endpointNumber;
 
-        // Send each setting as a separate 2-byte command packet
+        // Send all the command packets
         await device.transferOut(endpointNumber, new Uint8Array([CMD_SET_ESB_CHANNEL, esbChannel]));
         await device.transferOut(endpointNumber, new Uint8Array([CMD_SET_CC_LAYER, ccLayer]));
         await device.transferOut(endpointNumber, new Uint8Array([CMD_SET_MIDI_CHANNEL, midiChannel]));
         await device.transferOut(endpointNumber, new Uint8Array([CMD_SET_BUTTON_MODE, buttonMode]));
-        
-        // Send the final command to save everything to flash (this should blink the LED)
         await device.transferOut(endpointNumber, new Uint8Array([CMD_SAVE_TO_FLASH, 0x00]));
 
         log.textContent = 'Settings saved successfully! The LED on the device should have flashed.';
