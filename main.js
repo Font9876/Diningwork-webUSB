@@ -1,3 +1,12 @@
+// SANITY CHECK VERSION - This script will attempt to connect to ANY USB device.
+//
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! IMPORTANT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// For this to work, you MUST enable an experimental flag in your browser.
+// 1. Go to chrome://flags/#enable-experimental-web-platform-features
+// 2. Set the flag to "Enabled"
+// 3. Restart your browser.
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 document.addEventListener('DOMContentLoaded', () => {
     const connectBtn = document.getElementById('connect-btn');
     const saveBtn = document.getElementById('save-btn');
@@ -14,14 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const CMD_SET_BUTTON_MODE = 0x04;
     const CMD_SAVE_TO_FLASH = 0xAA;
 
-    // --- USB Device Filters (using the IDs you provided) ---
-    const deviceFilters = [
-        { vendorId: 0x000A, productId: 0x000A },
-        { vendorId: 0x001A, productId: 0x000A },
-        { vendorId: 0x002A, productId: 0x000A },
-        { vendorId: 0x003A, productId: 0x000A },
-    ];
-
     // Populate MIDI Channel dropdown
     for (let i = 1; i <= 16; i++) {
         const option = document.createElement('option');
@@ -30,7 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
         midiChannelSelect.appendChild(option);
     }
     
-    // Check for WebUSB support
     if (!('usb' in navigator)) {
         updateStatus('WebUSB is not supported by this browser.', true);
         connectBtn.disabled = true;
@@ -39,14 +39,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const connect = async () => {
         try {
-            device = await navigator.usb.requestDevice({ filters: deviceFilters });
+            // MODIFICATION: Using an empty filter array to show all devices.
+            // This REQUIRES the experimental browser flag to be enabled.
+            device = await navigator.usb.requestDevice({ filters: [] });
+
             await device.open();
             if (device.configuration === null) {
                 await device.selectConfiguration(1);
             }
-            // The interface number must match the firmware.
-            // TinyUSB WebUSB defaults to the first available interface.
-            await device.claimInterface(0); 
+            // You may need to change the interface number if your composite
+            // device enumerates WebUSB on a different interface.
+            // Common values are 0, 1, or 2.
+            await device.claimInterface(1); 
             
             updateStatus(`Connected to ${device.productName}`, false);
             connectBtn.style.display = 'none';
@@ -71,14 +75,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const midiChannel = parseInt(document.getElementById('midi-channel').value);
             const buttonMode = parseInt(document.getElementById('button-mode').value);
 
-            // Send each setting as a 2-byte command packet
-            await device.transferOut(1, new Uint8Array([CMD_SET_ESB_CHANNEL, esbChannel]));
-            await device.transferOut(1, new Uint8Array([CMD_SET_CC_LAYER, ccLayer]));
-            await device.transferOut(1, new Uint8Array([CMD_SET_MIDI_CHANNEL, midiChannel]));
-            await device.transferOut(1, new Uint8Array([CMD_SET_BUTTON_MODE, buttonMode]));
+            // The endpoint number (e.g., 2) must match the OUT endpoint of the
+            // WebUSB interface on your composite device.
+            const endpointNumber = 2;
+
+            await device.transferOut(endpointNumber, new Uint8Array([CMD_SET_ESB_CHANNEL, esbChannel]));
+            await device.transferOut(endpointNumber, new Uint8Array([CMD_SET_CC_LAYER, ccLayer]));
+            await device.transferOut(endpointNumber, new Uint8Array([CMD_SET_MIDI_CHANNEL, midiChannel]));
+            await device.transferOut(endpointNumber, new Uint8Array([CMD_SET_BUTTON_MODE, buttonMode]));
             
-            // Send the final command to save everything to flash
-            await device.transferOut(1, new Uint8Array([CMD_SAVE_TO_FLASH, 0x00])); // Value is ignored
+            await device.transferOut(endpointNumber, new Uint8Array([CMD_SAVE_TO_FLASH, 0x00]));
 
             updateStatus('Settings saved successfully!', false, 'status-connected');
 
@@ -102,7 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
     connectBtn.addEventListener('click', connect);
     saveBtn.addEventListener('click', saveSettings);
     
-    // Listen for the device being unplugged
     navigator.usb.addEventListener('disconnect', (event) => {
         if (device && event.device.serialNumber === device.serialNumber) {
             disconnect();
