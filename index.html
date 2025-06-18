@@ -1,27 +1,66 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-    <title>WebUSB Connection Test</title>
+    <meta charset="utf-8">
+    <title>Darthfader Settings</title>
     <style>
-        body { font-family: sans-serif; background: #222; color: #eee; }
-        button { font-size: 1.2rem; padding: 10px 20px; }
-        #log { margin-top: 20px; background: #333; padding: 10px; border-radius: 5px; white-space: pre-wrap; font-family: monospace; }
-        .error { color: red; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #1a1a1a; color: #e0e0e0; max-width: 600px; margin: 2rem auto; padding: 2rem; border-radius: 8px; border: 1px solid #444; }
+        button { font-size: 1rem; padding: 0.75rem; border-radius: 5px; border: 1px solid #555; background-color: #333; color: #fff; cursor: pointer; transition: background-color 0.2s; }
+        button:hover { background-color: #444; }
+        #save-btn { background-color: #feda4a; color: #000; font-weight: bold; }
+        #save-btn:hover { background-color: #fff; }
+        #settings-form { display: none; margin-top: 1.5rem; }
+        .control-group { margin-bottom: 1.5rem; }
+        label { display: block; font-weight: bold; margin-bottom: 0.5rem; color: #ccc; }
+        select { width: 100%; padding: 0.75rem; border-radius: 5px; border: 1px solid #555; font-size: 1rem; background-color: #333; color: #fff; box-sizing: border-box; }
+        pre { margin-top: 1.5rem; padding: 1rem; border-radius: 5px; background-color: #2a2a2a; white-space: pre-wrap; font-family: monospace; }
+        .warning-box { background-color: #4d0a0a; border: 1px solid #f44336; padding: 1rem; margin-bottom: 2rem; border-radius: 5px; }
     </style>
 </head>
 <body>
-    <h1>WebUSB Connection Test</h1>
-    <p>This version uses the connection logic from your working script.</p>
-
-    <div class="warning-box" style="background-color: #4d0a0a; border: 1px solid #f44336; padding: 1rem; margin-bottom: 2rem; border-radius: 5px;">
-        <h3 style="margin-top:0;">IMPORTANT: Browser Flag Required</h3>
-        <p>For the "Connect" button to work, you MUST enable the experimental flag in your browser.</p>
-        <p>Go to <code>chrome://flags/#enable-experimental-web-platform-features</code>, set it to "Enabled", and restart your browser.</p>
+    <div class="warning-box">
+        <h3 style="margin-top:0; color:#feda4a;">IMPORTANT: Browser Flag Required</h3>
+        <p>For the "Connect" button to work, you MUST enable an experimental flag in your browser.</p>
+        <p>Go to <code>chrome://flags/#enable-experimental-web-platform-features</code>, set it to "Enabled", and <b>restart your browser</b>.</p>
     </div>
 
-    <button id="connect">Connect and Test Send</button>
-    <div id="log">Status: Disconnected</div>
+    <button id="connect">Connect to Device</button>
 
-    <script src="script.js"></script>
+    <div id="settings-form">
+        <div class="control-group">
+            <label for="esb-channel">2.4GHz ESB Channel</label>
+            <select id="esb-channel">
+                <option value="0">Channel 5</option>
+                <option value="1">Channel 10</option>
+                <option value="2">Channel 15</option>
+                <option value="3">Channel 20</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label for="cc-layer">CC Layer</label>
+            <select id="cc-layer">
+                <option value="0">Layer 1</option>
+                <option value="1">Layer 2</option>
+                <option value="2">Layer 3</option>
+                <option value="3">Layer 4</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label for="midi-channel">MIDI Channel</label>
+            <select id="midi-channel"></select>
+        </div>
+        <div class="control-group">
+            <label for="button-mode">Button Mode</label>
+            <select id="button-mode">
+                <option value="0">Momentary</option>
+                <option value="1">Toggle</option>
+            </select>
+        </div>
+        <button id="save-btn">Save Settings to Device</button>
+    </div>
+
+    <pre id="log">Status: Disconnected</pre>
+
+    <script src="main.js"></script>
 </body>
 </html>
