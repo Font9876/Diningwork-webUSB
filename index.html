@@ -84,7 +84,7 @@
         const textEncoder = new TextEncoder();
 
         // --- WebUSB Device Filters ---
-        const filters = [ { vendorId: 0x000a } ]; // Adafruit Vendor ID
+        const filters = [ { vendorId: 0x000a } ]; // UPDATED Vendor ID
 
         // --- Event Listeners ---
         connectButton.addEventListener('click', handleConnectClick);
@@ -114,7 +114,7 @@
             try {
                 log('Requesting device...');
                 device = await navigator.usb.requestDevice({ filters });
-                inspectButton.classList.remove('hidden'); // Show inspect button once we have a device object
+                inspectButton.classList.remove('hidden');
 
                 log('Opening device...');
                 await device.open();
@@ -123,9 +123,9 @@
 
                 await device.selectConfiguration(1);
 
-                // This is the most likely point of failure. The interface number for CDC-ACM
-                // serial can vary. Common values are 0, 1, or 2.
-                const interfaceNumber = 0; 
+                // UPDATED based on your "Inspect Device" output.
+                // Your device uses Interface #1 for serial data (Class 0xa).
+                const interfaceNumber = 1; 
                 await device.claimInterface(interfaceNumber);
                 log(`Interface ${interfaceNumber} claimed.`);
 
@@ -149,7 +149,9 @@
         async function disconnect() {
             if (!device) return;
             try {
-                log('Closing device...');
+                // Before closing, it's good practice to release the interface
+                await device.releaseInterface(1); // Use the same interface number
+                log('Interface released.');
                 await device.close();
                 log('Device closed.');
             } catch (error) {
@@ -161,9 +163,6 @@
             }
         }
         
-        /**
-         * @brief Logs detailed information about the selected USB device's configuration.
-         */
         function inspectDevice() {
             if (!device) {
                 log('ERROR: No device selected. Please click "Connect" first.');
@@ -203,9 +202,9 @@
                 return;
             }
             try {
-                // The OUT endpoint number corresponds to the claimed interface.
-                // For interface 0, this is often 2.
-                const endpointNumber = 2;
+                // UPDATED based on your "Inspect Device" output.
+                // The OUT endpoint for Interface #1 is Endpoint #1.
+                const endpointNumber = 1;
                 const data = textEncoder.encode(command);
                 await device.transferOut(endpointNumber, data);
             } catch (error) {
@@ -215,9 +214,9 @@
         }
 
         async function readLoop() {
-            // The IN endpoint number corresponds to the claimed interface.
-            // For interface 0, this is often 1.
-            const endpointNumber = 1;
+            // UPDATED based on your "Inspect Device" output.
+            // The IN endpoint for Interface #1 is Endpoint #2.
+            const endpointNumber = 2;
             try {
                 while (isConnected) {
                     const result = await device.transferIn(endpointNumber, 64);
@@ -250,7 +249,7 @@
 
         function updateUIForDisconnection() {
             isConnected = false;
-            device = null; // Clear device object on disconnect
+            device = null;
             statusDisplay.textContent = 'Status: Disconnected';
             statusDisplay.classList.remove('text-green-400');
             statusDisplay.classList.add('text-red-400');
