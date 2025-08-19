@@ -3,140 +3,321 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebHID Test</title>
+    <title>Dining Work MIDI Controller Configurator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Basic styling for readability */
         body {
             font-family: 'Inter', sans-serif;
-            margin: 20px;
-            background-color: #f4f7f6;
-            color: #333;
+            background-color: #f0f4f8;
+            color: #2d3748;
             display: flex;
             flex-direction: column;
             align-items: center;
+            padding: 2rem;
+            min-height: 100vh;
         }
         h1 {
-            color: #2c3e50;
-            margin-bottom: 20px;
+            color: #2c5282;
+            margin-bottom: 1.5rem;
+            font-size: 2.5rem;
+            font-weight: 600;
         }
-        button, input[type="number"] {
-            padding: 10px 15px;
-            margin: 8px 5px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 16px;
-            cursor: pointer;
+        h2 {
+            color: #4a5568;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        button, input[type="number"], input[type="text"], select, input[type="checkbox"] {
+            padding: 0.75rem 1.25rem;
+            margin: 0.5rem 0.25rem;
+            border-radius: 0.5rem;
+            border: 1px solid #cbd5e0;
+            font-size: 1rem;
             transition: all 0.2s ease-in-out;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            -webkit-appearance: none; /* Remove default browser styling for inputs */
+            -moz-appearance: none;
+            appearance: none;
         }
         button {
-            background-color: #3498db;
+            background-color: #3182ce;
             color: white;
-            border-color: #2980b9;
+            border-color: #2b6cb0;
+            font-weight: 600;
+            cursor: pointer;
         }
         button:hover:not(:disabled) {
-            background-color: #2980b9;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            background-color: #2b6cb0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         button:disabled {
-            background-color: #cccccc;
+            background-color: #e2e8f0;
+            color: #a0aec0;
             cursor: not-allowed;
             box-shadow: none;
         }
-        input[type="number"] {
-            width: 80px;
-            text-align: center;
+        input[type="number"], input[type="text"], select {
+            background-color: #edf2f7;
+            width: 100%;
+            max-width: 200px;
+        }
+        input[type="checkbox"] {
+            width: auto;
+            height: auto;
+            transform: scale(1.2);
+            margin-right: 0.5rem;
         }
         fieldset {
-            border: 1px solid #c0d9ed;
-            padding: 20px;
-            margin-top: 25px;
-            border-radius: 10px;
+            border: 1px solid #a0aec0;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            border-radius: 0.75rem;
             background-color: #ffffff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 500px;
+            max-width: 800px;
         }
         legend {
             font-weight: bold;
-            color: #34495e;
-            padding: 0 10px;
-            font-size: 1.1em;
+            color: #2d3748;
+            padding: 0 0.75rem;
+            font-size: 1.25rem;
+            background-color: #ffffff;
+            border-radius: 0.375rem;
+        }
+        .form-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        .form-group label {
+            flex: 1;
+            min-width: 150px;
+            margin-right: 1rem;
+            font-weight: 500;
+            color: #4a5568;
+        }
+        .form-group input, .form-group select {
+            flex: 2;
+            min-width: 100px;
+        }
+        .connection-status {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .connection-status.connected {
+            color: #2f855a; /* Green-700 */
+        }
+        .connection-status.disconnected {
+            color: #e53e3e; /* Red-600 */
         }
         #log {
-            border: 1px solid #e0e0e0;
-            padding: 15px;
+            background-color: #1a202c; /* Gray-900 */
+            color: #e2e8f0; /* Gray-200 */
+            border: 1px solid #4a5568;
+            padding: 1rem;
             min-height: 150px;
             max-height: 300px;
             overflow-y: auto;
-            margin-top: 10px;
-            background-color: #fdfdfd;
-            border-radius: 5px;
+            margin-top: 1.5rem;
+            border-radius: 0.5rem;
             font-family: monospace;
-            white-space: pre-wrap; /* Preserve whitespace and wrap text */
-            word-wrap: break-word; /* Break long words */
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            width: 100%;
+            max-width: 800px;
         }
         #log p {
-            margin: 5px 0;
-            line-height: 1.4;
-            color: #555;
+            margin: 0.25rem 0;
+            line-height: 1.5;
         }
-        .connection-status {
-            margin-bottom: 15px;
-            font-size: 1.1em;
-            color: #7f8c8d;
-        }
-        .connection-status.connected {
-            color: #27ae60;
-            font-weight: bold;
-        }
-        .connection-status.disconnected {
-            color: #e74c3c;
-            font-weight: bold;
+        .log-info { color: #a0aec0; } /* Gray-400 */
+        .log-success { color: #68d391; } /* Green-300 */
+        .log-error { color: #fc8181; } /* Red-300 */
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            body {
+                padding: 1rem;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+            button, input, select {
+                width: 100%;
+                margin: 0.5rem 0;
+            }
+            .form-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .form-group label {
+                margin-bottom: 0.25rem;
+                margin-right: 0;
+            }
+            fieldset {
+                padding: 1rem;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>WebHID Device Tester</h1>
-    <p>Upload the Arduino sketch to your board and connect it via USB.</p>
+    <h1>Dining Work MIDI Controller Configurator</h1>
+    <p class="text-gray-600 mb-4">Upload the firmware to your board and connect it via USB.</p>
 
     <div class="connection-status" id="connectionStatus">Disconnected</div>
 
-    <button id="connectButton">Connect to Device</button>
-    <button id="disconnectButton" disabled>Disconnect</button>
+    <div class="flex flex-wrap justify-center gap-2 mb-8">
+        <button id="connectButton" class="px-6 py-3 rounded-lg shadow-md hover:shadow-lg">Connect to Device</button>
+        <button id="disconnectButton" disabled class="px-6 py-3 rounded-lg shadow-md hover:shadow-lg">Disconnect</button>
+    </div>
 
-    <fieldset id="controlPanel" disabled>
-        <legend>Device Control</legend>
-        <label for="sendByte">Send Byte (0-245):</label>
-        <input type="number" id="sendByte" min="0" max="255" value="1">
-        <button id="sendButton">Send Custom Byte</button>
-        <button id="toggleLedButton">Toggle LED (Sends 0 or 1)</button>
+    <fieldset id="globalSettingsPanel" disabled class="mb-8">
+        <legend>Global Settings</legend>
+        <div class="form-group">
+            <label for="esbChannel">ESB Channel:</label>
+            <select id="esbChannel">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="activeBank">Active Bank (0-11):</label>
+            <input type="number" id="activeBank" min="0" max="11" value="0">
+        </div>
+        <div class="form-group">
+            <label for="brightness">Brightness (0-255):</label>
+            <input type="number" id="brightness" min="0" max="255" value="200">
+        </div>
+        <div class="form-group">
+            <label for="autoCalEnabled">Auto Calibration Enabled:</label>
+            <input type="checkbox" id="autoCalEnabled">
+        </div>
+        <div class="form-group">
+            <label for="autoCalMaxValue">Auto Cal Max Value:</label>
+            <input type="number" id="autoCalMaxValue" min="0" max="16383" value="15000">
+        </div>
     </fieldset>
 
-    <fieldset>
+    <fieldset id="bankSettingsPanel" disabled class="mb-8">
+        <legend>Bank Settings (Current Bank: <span id="currentBankDisplay">0</span>)</legend>
+        <div class="form-group">
+            <label for="bankSelect">Select Bank to Edit:</label>
+            <select id="bankSelect">
+                <!-- Options will be populated by JS -->
+            </select>
+            <button id="loadBankButton" class="ml-2 px-4 py-2 text-sm">Load Selected Bank</button>
+        </div>
+        <div class="form-group">
+            <label for="midiChannel">MIDI Channel (1-16):</label>
+            <input type="number" id="midiChannel" min="1" max="16" value="1">
+        </div>
+        <div class="form-group">
+            <label for="buttonMode">Button Mode:</label>
+            <select id="buttonMode">
+                <option value="0">Momentary</option>
+                <option value="1">Toggle</option>
+            </select>
+        </div>
+
+        <h3 class="text-lg font-semibold mt-4 mb-2 text-gray-700">Assignable CCs (0-127)</h3>
+        <div id="assignableCCsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- CC inputs will be generated by JS -->
+        </div>
+
+        <h3 class="text-lg font-semibold mt-4 mb-2 text-gray-700">Pot Labels (4 chars)</h3>
+        <div id="potLabelsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Pot label inputs will be generated by JS -->
+        </div>
+
+        <h3 class="text-lg font-semibold mt-4 mb-2 text-gray-700">Button Labels (4 chars)</h3>
+        <div id="buttonLabelsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Button label inputs will be generated by JS -->
+        </div>
+
+        <h3 class="text-lg font-semibold mt-4 mb-2 text-gray-700">Pot Calibration (Raw ADC Values)</h3>
+        <div id="potCalContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Pot cal inputs will be generated by JS -->
+        </div>
+    </fieldset>
+
+    <div class="flex flex-wrap justify-center gap-2 mb-8">
+        <button id="readSettingsButton" disabled class="px-6 py-3 rounded-lg shadow-md hover:shadow-lg">Read All Settings</button>
+        <button id="saveSettingsButton" disabled class="px-6 py-3 rounded-lg shadow-md hover:shadow-lg">Save All Settings</button>
+    </div>
+
+    <fieldset class="w-full max-w-2xl">
         <legend>Device Log</legend>
         <div id="log"></div>
     </fieldset>
 
     <script>
+        // Constants matching Arduino sketch
+        const REPORT_ID_LED_CONTROL = 0x01;
+        const REPORT_ID_GLOBAL_SETTINGS = 0x02;
+        const REPORT_ID_BANK_SETTINGS = 0x03;
+
+        // Device VID/PID
+        const VENDOR_ID = 0x000A;
+        const PRODUCT_ID = 0x000A;
+
+        // Struct sizes (must match Arduino __attribute__((packed)) sizes)
+        const SIZEOF_GLOBAL_SETTINGS = 6; // 1+1+1+1+2
+        const SIZEOF_BANK_SETTINGS = 106; // 1+1+12+40+20+16+16
+        const NUM_BANKS = 12;
+        const NUM_ANALOG_POTS = 8;
+        const NUM_DIGITAL_MIDI_BUTTONS = 4;
+        const TOTAL_ASSIGNABLE_INPUTS = NUM_ANALOG_POTS + NUM_DIGITAL_MIDI_BUTTONS;
+        const POT_LABEL_LENGTH = 4; // Max chars for label
+
+        // UI Elements
         const connectButton = document.getElementById('connectButton');
         const disconnectButton = document.getElementById('disconnectButton');
-        const sendByteInput = document.getElementById('sendByte');
-        const sendButton = document.getElementById('sendButton');
-        const toggleLedButton = document.getElementById('toggleLedButton');
-        const controlPanel = document.getElementById('controlPanel');
+        const globalSettingsPanel = document.getElementById('globalSettingsPanel');
+        const bankSettingsPanel = document.getElementById('bankSettingsPanel');
+        const readSettingsButton = document.getElementById('readSettingsButton');
+        const saveSettingsButton = document.getElementById('saveSettingsButton');
         const logDiv = document.getElementById('log');
         const connectionStatusSpan = document.getElementById('connectionStatus');
 
+        // Global Settings Inputs
+        const esbChannelInput = document.getElementById('esbChannel');
+        const activeBankInput = document.getElementById('activeBank');
+        const brightnessInput = document.getElementById('brightness');
+        const autoCalEnabledInput = document.getElementById('autoCalEnabled');
+        const autoCalMaxValueInput = document.getElementById('autoCalMaxValue');
+
+        // Bank Settings Inputs
+        const bankSelect = document.getElementById('bankSelect');
+        const loadBankButton = document.getElementById('loadBankButton');
+        const currentBankDisplay = document.getElementById('currentBankDisplay');
+        const midiChannelInput = document.getElementById('midiChannel');
+        const buttonModeInput = document.getElementById('buttonMode');
+        const assignableCCsContainer = document.getElementById('assignableCCsContainer');
+        const potLabelsContainer = document.getElementById('potLabelsContainer');
+        const buttonLabelsContainer = document.getElementById('buttonLabelsContainer');
+        const potCalContainer = document.getElementById('potCalContainer');
+
         let device; // Global variable to hold the connected HID device instance
-        let currentLedState = 0; // Tracks the state we intend to send for the LED
+        let currentLoadedBank = 0; // Tracks which bank's settings are currently displayed/edited
+
+        // --- Helper Functions ---
 
         // Function to append messages to the log display
         function log(message, type = 'info') {
             const p = document.createElement('p');
             p.textContent = message;
-            if (type === 'error') p.style.color = '#e74c3c';
-            else if (type === 'success') p.style.color = '#27ae60';
+            p.className = `log-${type}`;
             logDiv.appendChild(p);
             logDiv.scrollTop = logDiv.scrollHeight; // Auto-scroll to the bottom
         }
@@ -145,7 +326,10 @@
         function updateUI(isConnected) {
             connectButton.disabled = isConnected;
             disconnectButton.disabled = !isConnected;
-            controlPanel.disabled = !isConnected;
+            globalSettingsPanel.disabled = !isConnected;
+            bankSettingsPanel.disabled = !isConnected;
+            readSettingsButton.disabled = !isConnected;
+            saveSettingsButton.disabled = !isConnected;
             if (isConnected) {
                 connectionStatusSpan.textContent = 'Connected';
                 connectionStatusSpan.className = 'connection-status connected';
@@ -155,47 +339,271 @@
             }
         }
 
-        // --- Event Listener for Connect Button ---
+        // Function to populate bank select dropdown
+        function populateBankSelect() {
+            bankSelect.innerHTML = ''; // Clear existing options
+            for (let i = 0; i < NUM_BANKS; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `Bank ${i + 1}`;
+                bankSelect.appendChild(option);
+            }
+            bankSelect.value = currentLoadedBank; // Set to currently loaded bank
+            currentBankDisplay.textContent = currentLoadedBank + 1;
+        }
+
+        // Function to generate dynamic input fields for CCs, Labels, and Calibration
+        function generateDynamicInputs() {
+            // Clear containers
+            assignableCCsContainer.innerHTML = '';
+            potLabelsContainer.innerHTML = '';
+            buttonLabelsContainer.innerHTML = '';
+            potCalContainer.innerHTML = '';
+
+            // Assignable CCs
+            for (let i = 0; i < NUM_ANALOG_POTS; i++) {
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                div.innerHTML = `
+                    <label for="ccPot${i}">Pot ${i + 1} CC:</label>
+                    <input type="number" id="ccPot${i}" min="0" max="127" value="0">
+                `;
+                assignableCCsContainer.appendChild(div);
+            }
+            for (let i = 0; i < NUM_DIGITAL_MIDI_BUTTONS; i++) {
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                div.innerHTML = `
+                    <label for="ccButton${i}">Button ${i + 1} CC:</label>
+                    <input type="number" id="ccButton${i}" min="0" max="127" value="0">
+                `;
+                assignableCCsContainer.appendChild(div);
+            }
+
+            // Pot Labels
+            for (let i = 0; i < NUM_ANALOG_POTS; i++) {
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                div.innerHTML = `
+                    <label for="potLabel${i}">Pot ${i + 1} Label:</label>
+                    <input type="text" id="potLabel${i}" maxlength="${POT_LABEL_LENGTH}" value="">
+                `;
+                potLabelsContainer.appendChild(div);
+            }
+
+            // Button Labels
+            for (let i = 0; i < NUM_DIGITAL_MIDI_BUTTONS; i++) {
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                div.innerHTML = `
+                    <label for="buttonLabel${i}">Button ${i + 1} Label:</label>
+                    <input type="text" id="buttonLabel${i}" maxlength="${POT_LABEL_LENGTH}" value="">
+                `;
+                buttonLabelsContainer.appendChild(div);
+            }
+
+            // Pot Calibration
+            for (let i = 0; i < NUM_ANALOG_POTS; i++) {
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                div.innerHTML = `
+                    <label for="potMin${i}">Pot ${i + 1} Min:</label>
+                    <input type="number" id="potMin${i}" min="0" max="16383" value="0">
+                    <label for="potMax${i}" class="ml-4">Max:</label>
+                    <input type="number" id="potMax${i}" min="0" max="16383" value="16383">
+                `;
+                potCalContainer.appendChild(div);
+            }
+        }
+
+        // --- Data Serialization/Deserialization ---
+
+        // Reads GlobalSettings from a DataView (received from device)
+        function deserializeGlobalSettings(dataView) {
+            let offset = 0;
+            const settings = {};
+            settings.esbChannel = dataView.getUint8(offset++);
+            settings.activeBank = dataView.getUint8(offset++);
+            settings.brightness = dataView.getUint8(offset++);
+            settings.autoCalEnabled = dataView.getUint8(offset++) === 1; // bool as 1 byte
+            settings.autoCalMaxValue = dataView.getInt16(offset, true); // little-endian
+            return settings;
+        }
+
+        // Writes GlobalSettings to a Uint8Array (to send to device)
+        function serializeGlobalSettings(settings) {
+            const buffer = new ArrayBuffer(SIZEOF_GLOBAL_SETTINGS);
+            const dataView = new DataView(buffer);
+            let offset = 0;
+            dataView.setUint8(offset++, settings.esbChannel);
+            dataView.setUint8(offset++, settings.activeBank);
+            dataView.setUint8(offset++, settings.brightness);
+            dataView.setUint8(offset++, settings.autoCalEnabled ? 1 : 0);
+            dataView.setInt16(offset, settings.autoCalMaxValue, true); // little-endian
+            return new Uint8Array(buffer);
+        }
+
+        // Reads BankSettings from a DataView (received from device)
+        function deserializeBankSettings(dataView) {
+            let offset = 0;
+            const settings = {};
+            settings.midiChannel = dataView.getUint8(offset++);
+            settings.buttonMode = dataView.getUint8(offset++);
+
+            settings.assignableCCs = [];
+            for (let i = 0; i < TOTAL_ASSIGNABLE_INPUTS; i++) {
+                settings.assignableCCs.push(dataView.getUint8(offset++));
+            }
+
+            settings.potLabels = [];
+            for (let i = 0; i < NUM_ANALOG_POTS; i++) {
+                let label = '';
+                for (let j = 0; j < POT_LABEL_LENGTH; j++) {
+                    label += String.fromCharCode(dataView.getUint8(offset++));
+                }
+                offset++; // Skip null terminator
+                settings.potLabels.push(label.trim()); // Trim whitespace
+            }
+
+            settings.buttonLabels = [];
+            for (let i = 0; i < NUM_DIGITAL_MIDI_BUTTONS; i++) {
+                let label = '';
+                for (let j = 0; j < POT_LABEL_LENGTH; j++) {
+                    label += String.fromCharCode(dataView.getUint8(offset++));
+                }
+                offset++; // Skip null terminator
+                settings.buttonLabels.push(label.trim()); // Trim whitespace
+            }
+
+            settings.potMinRaw = [];
+            for (let i = 0; i < NUM_ANALOG_POTS; i++) {
+                settings.potMinRaw.push(dataView.getInt16(offset, true)); // little-endian
+                offset += 2;
+            }
+
+            settings.potMaxRaw = [];
+            for (let i = 0; i < NUM_ANALOG_POTS; i++) {
+                settings.potMaxRaw.push(dataView.getInt16(offset, true)); // little-endian
+                offset += 2;
+            }
+            return settings;
+        }
+
+        // Writes BankSettings to a Uint8Array (to send to device)
+        function serializeBankSettings(settings) {
+            const buffer = new ArrayBuffer(SIZEOF_BANK_SETTINGS);
+            const dataView = new DataView(buffer);
+            let offset = 0;
+
+            dataView.setUint8(offset++, settings.midiChannel);
+            dataView.setUint8(offset++, settings.buttonMode);
+
+            for (let i = 0; i < TOTAL_ASSIGNABLE_INPUTS; i++) {
+                dataView.setUint8(offset++, settings.assignableCCs[i]);
+            }
+
+            for (let i = 0; i < NUM_ANALOG_POTS; i++) {
+                const label = settings.potLabels[i].padEnd(POT_LABEL_LENGTH, ' ').substring(0, POT_LABEL_LENGTH);
+                for (let j = 0; j < POT_LABEL_LENGTH; j++) {
+                    dataView.setUint8(offset++, label.charCodeAt(j));
+                }
+                dataView.setUint8(offset++, 0); // Null terminator
+            }
+
+            for (let i = 0; i < NUM_DIGITAL_MIDI_BUTTONS; i++) {
+                const label = settings.buttonLabels[i].padEnd(POT_LABEL_LENGTH, ' ').substring(0, POT_LABEL_LENGTH);
+                for (let j = 0; j < POT_LABEL_LENGTH; j++) {
+                    dataView.setUint8(offset++, label.charCodeAt(j));
+                }
+                dataView.setUint8(offset++, 0); // Null terminator
+            }
+
+            for (let i = 0; i < NUM_ANALOG_POTS; i++) {
+                dataView.setInt16(offset, settings.potMinRaw[i], true); // little-endian
+                offset += 2;
+            }
+
+            for (let i = 0; i < NUM_ANALOG_POTS; i++) {
+                dataView.setInt16(offset, settings.potMaxRaw[i], true); // little-endian
+                offset += 2;
+            }
+            return new Uint8Array(buffer);
+        }
+
+        // --- UI Population ---
+
+        function populateGlobalSettingsUI(settings) {
+            esbChannelInput.value = settings.esbChannel;
+            activeBankInput.value = settings.activeBank;
+            brightnessInput.value = settings.brightness;
+            autoCalEnabledInput.checked = settings.autoCalEnabled;
+            autoCalMaxValueInput.value = settings.autoCalMaxValue;
+        }
+
+        function populateBankSettingsUI(settings) {
+            midiChannelInput.value = settings.midiChannel;
+            buttonModeInput.value = settings.buttonMode;
+
+            for (let i = 0; i < NUM_ANALOG_POTS; i++) {
+                document.getElementById(`ccPot${i}`).value = settings.assignableCCs[i];
+            }
+            for (let i = 0; i < NUM_DIGITAL_MIDI_BUTTONS; i++) {
+                document.getElementById(`ccButton${i}`).value = settings.assignableCCs[NUM_ANALOG_POTS + i];
+            }
+
+            for (let i = 0; i < NUM_ANALOG_POTS; i++) {
+                document.getElementById(`potLabel${i}`).value = settings.potLabels[i];
+            }
+            for (let i = 0; i < NUM_DIGITAL_MIDI_BUTTONS; i++) {
+                document.getElementById(`buttonLabel${i}`).value = settings.buttonLabels[i];
+            }
+
+            for (let i = 0; i < NUM_ANALOG_POTS; i++) {
+                document.getElementById(`potMin${i}`).value = settings.potMinRaw[i];
+                document.getElementById(`potMax${i}`).value = settings.potMaxRaw[i];
+            }
+        }
+
+        // --- Event Handlers ---
+
         connectButton.addEventListener('click', async () => {
             if (!navigator.hid) {
-                log('WebHID is not supported in this browser.', 'error');
+                log('WebHID is not supported in this browser. Please use a Chromium-based browser.', 'error');
                 return;
             }
 
             try {
-                // Request access to a HID device.
-                // By providing an empty filters array, the browser will
-                // present a chooser dialog with ALL available (non-protected) HID devices.
-                // This makes it easier to find your device for testing.
+                // Request access to the specific Dining Work device
                 const devices = await navigator.hid.requestDevice({
-                    filters: [] // This empty array is required by the WebHID API
+                    filters: [{ vendorId: VENDOR_ID, productId: PRODUCT_ID }]
                 });
 
                 if (devices.length > 0) {
-                    device = devices[0]; // Get the first selected device
-                    await device.open(); // Open the connection to the device
+                    device = devices[0];
+                    await device.open();
                     log(`Connected to: ${device.productName} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)})`, 'success');
                     updateUI(true);
 
-                    // Set up listener for incoming reports from the device (Input Reports)
                     device.oninputreport = (event) => {
-                        const { reportId, data } = event; // Destructure the event object
-                        // Our Arduino sketch uses REPORT_ID_CUSTOM (0x01) and sends 1 byte
-                        if (reportId === 0x01 && data.byteLength >= 1) {
-                            const receivedValue = data.getUint8(0); // Get the first byte of data
-                            log(`Received Report ID ${reportId}: Value = ${receivedValue}`);
+                        // This callback is primarily for input reports (like LED state triggered by 's' in serial)
+                        const { reportId, data } = event;
+                        if (reportId === REPORT_ID_LED_CONTROL && data.byteLength >= 1) {
+                            log(`Received LED state: ${data.getUint8(0)}`);
                         }
+                        // Feature reports are typically read via getFeatureReport(), not oninputreport
                     };
 
-                    // Set up listener for device disconnection
                     device.ondisconnect = (event) => {
                         log(`Device disconnected: ${event.device.productName}`, 'info');
                         updateUI(false);
-                        device = null; // Clear the device reference
+                        device = null;
                     };
 
+                    // After connecting, automatically read settings
+                    await readAllSettings();
+
                 } else {
-                    log('No device selected by the user or no matching device found.', 'info');
+                    log('No "Dining Work" device selected or found. Ensure it\'s connected and the firmware is uploaded.', 'info');
                 }
             } catch (error) {
                 log(`Error connecting to HID device: ${error.message}`, 'error');
@@ -203,11 +611,10 @@
             }
         });
 
-        // --- Event Listener for Disconnect Button ---
         disconnectButton.addEventListener('click', async () => {
             if (device) {
                 try {
-                    await device.close(); // Close the connection
+                    await device.close();
                     log('Device disconnected successfully.', 'success');
                     updateUI(false);
                     device = null;
@@ -218,54 +625,210 @@
             }
         });
 
-        // --- Event Listener for Send Custom Byte Button ---
-        sendButton.addEventListener('click', async () => {
-            if (device && device.opened) { // Check if a device is connected and open
-                try {
-                    const byteToSend = parseInt(sendByteInput.value);
-                    if (isNaN(byteToSend) || byteToSend < 0 || byteToSend > 255) {
-                        log('Please enter a number between 0 and 255 to send.', 'error');
-                        return;
+        loadBankButton.addEventListener('click', async () => {
+            const newBankIndex = parseInt(bankSelect.value);
+            if (isNaN(newBankIndex) || newBankIndex < 0 || newBankIndex >= NUM_BANKS) {
+                log('Invalid bank selected.', 'error');
+                return;
+            }
+
+            // First, update the active bank on the device
+            const currentGlobalSettings = await readGlobalSettings();
+            if (currentGlobalSettings) {
+                currentGlobalSettings.activeBank = newBankIndex;
+                const success = await saveGlobalSettingsToDevice(currentGlobalSettings);
+                if (success) {
+                    log(`Set active bank on device to: ${newBankIndex + 1}`, 'info');
+                    currentLoadedBank = newBankIndex; // Update local state
+                    currentBankDisplay.textContent = currentLoadedBank + 1;
+                    // Then, read the settings for this new active bank
+                    const bankSettings = await readBankSettings(); // Reads active bank
+                    if (bankSettings) {
+                        populateBankSettingsUI(bankSettings);
                     }
-
-                    // Create a Uint8Array (a byte array) for the report data.
-                    // The content directly corresponds to the data payload defined in your Arduino sketch's
-                    // HID Report Descriptor for the Output Report.
-                    const reportData = new Uint8Array([byteToSend]);
-
-                    // Send an Output Report to the device.
-                    // The first argument is the Report ID (0x01 as defined in Arduino).
-                    // The second argument is the data payload.
-                    await device.sendReport(0x01, reportData);
-                    log(`Sent custom byte: ${byteToSend}`);
-                } catch (error) {
-                    log(`Error sending report: ${error.message}`, 'error');
-                    console.error('WebHID send report error:', error);
+                } else {
+                    log('Failed to update active bank on device.', 'error');
                 }
-            } else {
-                log('No device connected. Please connect first.', 'info');
             }
         });
 
-        // --- Event Listener for Toggle LED Button ---
-        toggleLedButton.addEventListener('click', async () => {
-            if (device && device.opened) {
-                try {
-                    currentLedState = 1 - currentLedState; // Toggle between 0 and 1
-                    const reportData = new Uint8Array([currentLedState]);
-                    await device.sendReport(0x01, reportData);
-                    log(`Toggled LED: Sending ${currentLedState} to Arduino.`);
-                } catch (error) {
-                    log(`Error toggling LED: ${error.message}`, 'error');
-                    console.error('WebHID toggle LED error:', error);
-                }
-            } else {
-                log('No device connected. Please connect first.', 'info');
-            }
-        });
+        readSettingsButton.addEventListener('click', readAllSettings);
+        saveSettingsButton.addEventListener('click', saveAllSettings);
 
-        // Initial UI state when the page loads
-        updateUI(false);
+        // --- Read/Write Operations ---
+
+        async function readGlobalSettings() {
+            if (!device || !device.opened) {
+                log('Device not connected.', 'error');
+                return null;
+            }
+            try {
+                // Request Feature Report for Global Settings
+                const report = await device.getFeatureReport(REPORT_ID_GLOBAL_SETTINGS);
+                if (report && report.byteLength >= SIZEOF_GLOBAL_SETTINGS) {
+                    const dataView = new DataView(report.buffer);
+                    const settings = deserializeGlobalSettings(dataView);
+                    log('Global Settings read successfully.', 'success');
+                    return settings;
+                } else {
+                    log('Failed to read Global Settings or report too short.', 'error');
+                    return null;
+                }
+            } catch (error) {
+                log(`Error reading Global Settings: ${error.message}`, 'error');
+                console.error('Read Global Settings error:', error);
+                return null;
+            }
+        }
+
+        async function readBankSettings() {
+            // This function reads the settings for the *currently active bank* on the device.
+            // The active bank is controlled by globalSettings.activeBank.
+            if (!device || !device.opened) {
+                log('Device not connected.', 'error');
+                return null;
+            }
+            try {
+                const report = await device.getFeatureReport(REPORT_ID_BANK_SETTINGS);
+                if (report && report.byteLength >= 1 + SIZEOF_BANK_SETTINGS) {
+                    const dataView = new DataView(report.buffer);
+                    const receivedBankIndex = dataView.getUint8(0); // First byte is the bank index from device
+                    const bankSettingsDataView = new DataView(report.buffer, 1); // Data starts after bank index
+                    const settings = deserializeBankSettings(bankSettingsDataView);
+
+                    // Update the UI's bank selector to reflect the bank that was actually read from the device
+                    currentLoadedBank = receivedBankIndex;
+                    bankSelect.value = receivedBankIndex;
+                    currentBankDisplay.textContent = receivedBankIndex + 1;
+
+                    log(`Bank ${receivedBankIndex + 1} Settings read successfully.`, 'success');
+                    return settings;
+                } else {
+                    log('Failed to read Bank Settings or report too short.', 'error');
+                    return null;
+                }
+            } catch (error) {
+                log(`Error reading Bank Settings: ${error.message}`, 'error');
+                console.error('Read Bank Settings error:', error);
+                return null;
+            }
+        }
+
+        async function readAllSettings() {
+            log('Attempting to read all settings from device...', 'info');
+            const globalSettings = await readGlobalSettings();
+            if (globalSettings) {
+                populateGlobalSettingsUI(globalSettings);
+                // After reading global settings, the device's active bank is known/set.
+                // Now read the bank settings for that active bank.
+                const bankSettings = await readBankSettings();
+                if (bankSettings) {
+                    populateBankSettingsUI(bankSettings);
+                }
+            }
+        }
+
+        async function saveGlobalSettingsToDevice(settings) {
+            if (!device || !device.opened) {
+                log('Device not connected.', 'error');
+                return false;
+            }
+            try {
+                const serializedData = serializeGlobalSettings(settings);
+                // Send Feature Report for Global Settings
+                await device.sendFeatureReport(REPORT_ID_GLOBAL_SETTINGS, serializedData);
+                log('Global Settings sent to device.', 'success');
+                return true;
+            } catch (error) {
+                log(`Error saving Global Settings: ${error.message}`, 'error');
+                console.error('Save Global Settings error:', error);
+                return false;
+            }
+        }
+
+        async function saveBankSettingsToDevice(bankIndex, settings) {
+            if (!device || !device.opened) {
+                log('Device not connected.', 'error');
+                return false;
+            }
+            try {
+                const serializedData = serializeBankSettings(settings);
+                // Create a new buffer with bank index + serialized bank data
+                const fullReport = new Uint8Array(1 + serializedData.byteLength);
+                fullReport[0] = bankIndex; // First byte is the bank index
+                fullReport.set(serializedData, 1); // Copy serialized data starting from second byte
+
+                // Send Feature Report for Bank Settings
+                await device.sendFeatureReport(REPORT_ID_BANK_SETTINGS, fullReport);
+                log(`Bank ${bankIndex + 1} Settings sent to device.`, 'success');
+                return true;
+            } catch (error) {
+                log(`Error saving Bank Settings: ${error.message}`, 'error');
+                console.error('Save Bank Settings error:', error);
+                return false;
+            }
+        }
+
+        async function saveAllSettings() {
+            log('Attempting to save all settings to device...', 'info');
+
+            // 1. Get Global Settings from UI
+            const globalSettings = {
+                esbChannel: parseInt(esbChannelInput.value),
+                activeBank: parseInt(activeBankInput.value),
+                brightness: parseInt(brightnessInput.value),
+                autoCalEnabled: autoCalEnabledInput.checked,
+                autoCalMaxValue: parseInt(autoCalMaxValueInput.value)
+            };
+
+            // 2. Get Bank Settings from UI (for the currently loaded bank)
+            const bankSettings = {
+                midiChannel: parseInt(midiChannelInput.value),
+                buttonMode: parseInt(buttonModeInput.value),
+                assignableCCs: [],
+                potLabels: [],
+                buttonLabels: [],
+                potMinRaw: [],
+                potMaxRaw: []
+            };
+
+            for (let i = 0; i < NUM_ANALOG_POTS; i++) {
+                bankSettings.assignableCCs.push(parseInt(document.getElementById(`ccPot${i}`).value));
+            }
+            for (let i = 0; i < NUM_DIGITAL_MIDI_BUTTONS; i++) {
+                bankSettings.assignableCCs.push(parseInt(document.getElementById(`ccButton${i}`).value));
+            }
+
+            for (let i = 0; i < NUM_ANALOG_POTS; i++) {
+                bankSettings.potLabels.push(document.getElementById(`potLabel${i}`).value);
+            }
+            for (let i = 0; i < NUM_DIGITAL_MIDI_BUTTONS; i++) {
+                bankSettings.buttonLabels.push(document.getElementById(`buttonLabel${i}`).value);
+            }
+
+            for (let i = 0; i < NUM_ANALOG_POTS; i++) {
+                bankSettings.potMinRaw.push(parseInt(document.getElementById(`potMin${i}`).value));
+                bankSettings.potMaxRaw.push(parseInt(document.getElementById(`potMax${i}`).value));
+            }
+
+            // 3. Send to device
+            // Note: We save global settings first, as changing activeBank here will affect
+            // which bank is loaded by the device's internal logic.
+            const globalSuccess = await saveGlobalSettingsToDevice(globalSettings);
+            // Then save the bank settings for the currently loaded bank.
+            const bankSuccess = await saveBankSettingsToDevice(currentLoadedBank, bankSettings);
+
+            if (globalSuccess && bankSuccess) {
+                log('All settings saved successfully to device!', 'success');
+            } else {
+                log('Failed to save all settings. Check log for details.', 'error');
+            }
+        }
+
+        // --- Initial Setup ---
+        populateBankSelect();
+        generateDynamicInputs();
+        updateUI(false); // Set initial UI state
     </script>
 </body>
 </html>
