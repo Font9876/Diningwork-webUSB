@@ -229,7 +229,7 @@
             try {
                 log('Requesting device...');
                 const devices = await navigator.hid.requestDevice({
-                    filters: [{ vendorId: 0x000A, productId: 0x000A }] // Adafruit VID, Custom PID
+                    filters: [{ vendorId: 0x000a, productId: 0x000a }] // Adafruit VID, Custom PID
                 });
 
                 if (!devices.length) {
