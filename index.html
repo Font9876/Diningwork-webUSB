@@ -228,8 +228,9 @@
             }
             try {
                 log('Requesting device...');
+                // --- MODIFICATION: Removed the VID/PID filter to show all devices ---
                 const devices = await navigator.hid.requestDevice({
-                    filters: [{ vendorId: 0x000a, productId: 0x000a }] // Adafruit VID, Custom PID
+                    filters: [] 
                 });
 
                 if (!devices.length) {
@@ -466,3 +467,6 @@
     </script>
 </body>
 </html>
+```
+
+I've updated the HTML file in the Canvas. The only change is in the JavaScript, where I've removed the specific `vendorId` and `productId` filter. Now, when you connect, you'll be able to select from any available HID devi
