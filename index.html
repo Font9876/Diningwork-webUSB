@@ -1,66 +1,284 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Darthfader Settings</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebHID Test</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #1a1a1a; color: #e0e0e0; max-width: 600px; margin: 2rem auto; padding: 2rem; border-radius: 8px; border: 1px solid #444; }
-        button { font-size: 1rem; padding: 0.75rem; border-radius: 5px; border: 1px solid #555; background-color: #333; color: #fff; cursor: pointer; transition: background-color 0.2s; }
-        button:hover { background-color: #444; }
-        #save-btn { background-color: #feda4a; color: #000; font-weight: bold; }
-        #save-btn:hover { background-color: #fff; }
-        #settings-form { display: none; margin-top: 1.5rem; }
-        .control-group { margin-bottom: 1.5rem; }
-        label { display: block; font-weight: bold; margin-bottom: 0.5rem; color: #ccc; }
-        select { width: 100%; padding: 0.75rem; border-radius: 5px; border: 1px solid #555; font-size: 1rem; background-color: #333; color: #fff; box-sizing: border-box; }
-        pre { margin-top: 1.5rem; padding: 1rem; border-radius: 5px; background-color: #2a2a2a; white-space: pre-wrap; font-family: monospace; }
-        .warning-box { background-color: #4d0a0a; border: 1px solid #f44336; padding: 1rem; margin-bottom: 2rem; border-radius: 5px; }
+        /* Basic styling for readability */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        button, input[type="number"] {
+            padding: 10px 15px;
+            margin: 8px 5px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border-color: #2980b9;
+        }
+        button:hover:not(:disabled) {
+            background-color: #2980b9;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        input[type="number"] {
+            width: 80px;
+            text-align: center;
+        }
+        fieldset {
+            border: 1px solid #c0d9ed;
+            padding: 20px;
+            margin-top: 25px;
+            border-radius: 10px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 500px;
+        }
+        legend {
+            font-weight: bold;
+            color: #34495e;
+            padding: 0 10px;
+            font-size: 1.1em;
+        }
+        #log {
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            min-height: 150px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+            background-color: #fdfdfd;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap; /* Preserve whitespace and wrap text */
+            word-wrap: break-word; /* Break long words */
+        }
+        #log p {
+            margin: 5px 0;
+            line-height: 1.4;
+            color: #555;
+        }
+        .connection-status {
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            color: #7f8c8d;
+        }
+        .connection-status.connected {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .connection-status.disconnected {
+            color: #e74c3c;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <div class="warning-box">
-        <h3 style="margin-top:0; color:#ffffff;">IMPORTANT: Browser Flag Required</h3>
-        <p>For the "Connect" button to work, you MUST enable an experimental flag in your browser.</p>
-        <p>Go to <code>chrome://flags/#enable-experimental-web-platform-features</code>, set it to "Enabled", and <b>restart your browser</b>.</p>
-    </div>
+    <h1>WebHID Device Tester</h1>
+    <p>Upload the Arduino sketch to your board and connect it via USB.</p>
 
-    <button id="connect">Connect to Device</button>
+    <div class="connection-status" id="connectionStatus">Disconnected</div>
 
-    <div id="settings-form">
-        <div class="control-group">
-            <label for="esb-channel">2.4GHz ESB Channel</label>
-            <select id="esb-channel">
-                <option value="0">Channel 5</option>
-                <option value="1">Channel 10</option>
-                <option value="2">Channel 15</option>
-                <option value="3">Channel 20</option>
-            </select>
-        </div>
-        <div class="control-group">
-            <label for="cc-layer">CC Layer</label>
-            <select id="cc-layer">
-                <option value="0">Layer 1</option>
-                <option value="1">Layer 2</option>
-                <option value="2">Layer 3</option>
-                <option value="3">Layer 4</option>
-            </select>
-        </div>
-        <div class="control-group">
-            <label for="midi-channel">MIDI Channel</label>
-            <select id="midi-channel"></select>
-        </div>
-        <div class="control-group">
-            <label for="button-mode">Button Mode</label>
-            <select id="button-mode">
-                <option value="0">Momentary</option>
-                <option value="1">Toggle</option>
-            </select>
-        </div>
-        <button id="save-btn">Save Settings to Device</button>
-    </div>
+    <button id="connectButton">Connect to Device</button>
+    <button id="disconnectButton" disabled>Disconnect</button>
 
-    <pre id="log">Status: Disconnected</pre>
+    <fieldset id="controlPanel" disabled>
+        <legend>Device Control</legend>
+        <label for="sendByte">Send Byte (0-255):</label>
+        <input type="number" id="sendByte" min="0" max="255" value="1">
+        <button id="sendButton">Send Custom Byte</button>
+        <button id="toggleLedButton">Toggle LED (Sends 0 or 1)</button>
+    </fieldset>
 
-    <script src="main.js"></script>
+    <fieldset>
+        <legend>Device Log</legend>
+        <div id="log"></div>
+    </fieldset>
+
+    <script>
+        const connectButton = document.getElementById('connectButton');
+        const disconnectButton = document.getElementById('disconnectButton');
+        const sendByteInput = document.getElementById('sendByte');
+        const sendButton = document.getElementById('sendButton');
+        const toggleLedButton = document.getElementById('toggleLedButton');
+        const controlPanel = document.getElementById('controlPanel');
+        const logDiv = document.getElementById('log');
+        const connectionStatusSpan = document.getElementById('connectionStatus');
+
+        let device; // Global variable to hold the connected HID device instance
+        let currentLedState = 0; // Tracks the state we intend to send for the LED
+
+        // Function to append messages to the log display
+        function log(message, type = 'info') {
+            const p = document.createElement('p');
+            p.textContent = message;
+            if (type === 'error') p.style.color = '#e74c3c';
+            else if (type === 'success') p.style.color = '#27ae60';
+            logDiv.appendChild(p);
+            logDiv.scrollTop = logDiv.scrollHeight; // Auto-scroll to the bottom
+        }
+
+        // Function to update UI state (button and panel enablement)
+        function updateUI(isConnected) {
+            connectButton.disabled = isConnected;
+            disconnectButton.disabled = !isConnected;
+            controlPanel.disabled = !isConnected;
+            if (isConnected) {
+                connectionStatusSpan.textContent = 'Connected';
+                connectionStatusSpan.className = 'connection-status connected';
+            } else {
+                connectionStatusSpan.textContent = 'Disconnected';
+                connectionStatusSpan.className = 'connection-status disconnected';
+            }
+        }
+
+        // --- Event Listener for Connect Button ---
+        connectButton.addEventListener('click', async () => {
+            if (!navigator.hid) {
+                log('WebHID is not supported in this browser.', 'error');
+                return;
+            }
+
+            try {
+                // Request access to a HID device.
+                // The filters specify which devices the user can select from.
+                // You MUST adjust vendorId and productId to match your Arduino board's
+                // specific USB Vendor ID and Product ID.
+                //
+                // How to find your board's VID/PID:
+                // 1. In Arduino IDE, go to Tools > Port. The connected board might show its VID/PID.
+                // 2. On Windows: Device Manager > Ports (COM & LPT) > Your Arduino Board > Properties > Details tab > Hardware Ids.
+                // 3. On macOS: System Information > Hardware > USB. Find your device.
+                // 4. On Linux: `lsusb` command in terminal.
+                //
+                // Common Adafruit VID: 0x239A. PID will vary (e.g., 0x8025 for some generic HID on Adafruit boards).
+                // If you don't provide a productId, the user will see all devices from the vendorId
+                const devices = await navigator.hid.requestDevice({
+                    filters: [{
+                        vendorId: 0x239A, // Example: Adafruit Industries VID
+                        // productId: 0x8025 // Example: A common PID for Adafruit boards (comment out or replace if unsure)
+                        // If you don't provide a productId, the user will see all devices from the vendorId
+                    }]
+                });
+
+                if (devices.length > 0) {
+                    device = devices[0]; // Get the first selected device
+                    await device.open(); // Open the connection to the device
+                    log(`Connected to: ${device.productName} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)})`, 'success');
+                    updateUI(true);
+
+                    // Set up listener for incoming reports from the device (Input Reports)
+                    device.oninputreport = (event) => {
+                        const { reportId, data } = event; // Destructure the event object
+                        // Our Arduino sketch uses REPORT_ID_CUSTOM (0x01) and sends 1 byte
+                        if (reportId === 0x01 && data.byteLength >= 1) {
+                            const receivedValue = data.getUint8(0); // Get the first byte of data
+                            log(`Received Report ID ${reportId}: Value = ${receivedValue}`);
+                        }
+                    };
+
+                    // Set up listener for device disconnection
+                    device.ondisconnect = (event) => {
+                        log(`Device disconnected: ${event.device.productName}`, 'info');
+                        updateUI(false);
+                        device = null; // Clear the device reference
+                    };
+
+                } else {
+                    log('No device selected by the user or no matching device found.', 'info');
+                }
+            } catch (error) {
+                log(`Error connecting to HID device: ${error.message}`, 'error');
+                console.error('WebHID connection error:', error);
+            }
+        });
+
+        // --- Event Listener for Disconnect Button ---
+        disconnectButton.addEventListener('click', async () => {
+            if (device) {
+                try {
+                    await device.close(); // Close the connection
+                    log('Device disconnected successfully.', 'success');
+                    updateUI(false);
+                    device = null;
+                } catch (error) {
+                    log(`Error disconnecting: ${error.message}`, 'error');
+                    console.error('WebHID disconnection error:', error);
+                }
+            }
+        });
+
+        // --- Event Listener for Send Custom Byte Button ---
+        sendButton.addEventListener('click', async () => {
+            if (device && device.opened) { // Check if a device is connected and open
+                try {
+                    const byteToSend = parseInt(sendByteInput.value);
+                    if (isNaN(byteToSend) || byteToSend < 0 || byteToSend > 255) {
+                        log('Please enter a number between 0 and 255 to send.', 'error');
+                        return;
+                    }
+
+                    // Create a Uint8Array (a byte array) for the report data.
+                    // The content directly corresponds to the data payload defined in your Arduino sketch's
+                    // HID Report Descriptor for the Output Report.
+                    const reportData = new Uint8Array([byteToSend]);
+
+                    // Send an Output Report to the device.
+                    // The first argument is the Report ID (0x01 as defined in Arduino).
+                    // The second argument is the data payload.
+                    await device.sendReport(0x01, reportData);
+                    log(`Sent custom byte: ${byteToSend}`);
+                } catch (error) {
+                    log(`Error sending report: ${error.message}`, 'error');
+                    console.error('WebHID send report error:', error);
+                }
+            } else {
+                log('No device connected. Please connect first.', 'info');
+            }
+        });
+
+        // --- Event Listener for Toggle LED Button ---
+        toggleLedButton.addEventListener('click', async () => {
+            if (device && device.opened) {
+                try {
+                    currentLedState = 1 - currentLedState; // Toggle between 0 and 1
+                    const reportData = new Uint8Array([currentLedState]);
+                    await device.sendReport(0x01, reportData);
+                    log(`Toggled LED: Sending ${currentLedState} to Arduino.`);
+                } catch (error) {
+                    log(`Error toggling LED: ${error.message}`, 'error');
+                    console.error('WebHID toggle LED error:', error);
+                }
+            } else {
+                log('No device connected. Please connect first.', 'info');
+            }
+        });
+
+        // Initial UI state when the page loads
+        updateUI(false);
+    </script>
 </body>
 </html>
