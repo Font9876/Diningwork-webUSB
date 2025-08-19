@@ -164,13 +164,11 @@
 
             try {
                 // Request access to a HID device.
-                // By providing an empty filters array or omitting it, the browser will
+                // By providing an empty filters array, the browser will
                 // present a chooser dialog with ALL available (non-protected) HID devices.
                 // This makes it easier to find your device for testing.
                 const devices = await navigator.hid.requestDevice({
-                    // No filters specified, so all non-protected HID devices will be listed.
-                    // This is useful for initial testing to find your device.
-                    // For a production app, you'd typically use specific vendorId/productId filters.
+                    filters: [] // This empty array is required by the WebHID API
                 });
 
                 if (devices.length > 0) {
