@@ -3,467 +3,269 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NRF52840 WebHID Configurator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>WebHID Test</title>
     <style>
-        /* Custom styles for better aesthetics */
+        /* Basic styling for readability */
         body {
             font-family: 'Inter', sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .btn {
-            @apply inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2;
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
         }
-        .btn-blue {
-            @apply bg-blue-600 hover:bg-blue-700 focus:ring-blue-500;
+        button, input[type="number"] {
+            padding: 10px 15px;
+            margin: 8px 5px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .btn-red {
-            @apply bg-red-600 hover:bg-red-700 focus:ring-red-500;
+        button {
+            background-color: #3498db;
+            color: white;
+            border-color: #2980b9;
         }
-        .btn-green {
-            @apply bg-green-600 hover:bg-green-700 focus:ring-green-500;
+        button:hover:not(:disabled) {
+            background-color: #2980b9;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
-        .btn:disabled {
-            @apply bg-gray-400 cursor-not-allowed;
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            box-shadow: none;
         }
-        .form-input {
-            @apply block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm;
+        input[type="number"] {
+            width: 80px;
+            text-align: center;
         }
-        .form-select {
-            @apply block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md;
+        fieldset {
+            border: 1px solid #c0d9ed;
+            padding: 20px;
+            margin-top: 25px;
+            border-radius: 10px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 500px;
         }
-        .card {
-            @apply bg-white shadow-lg rounded-xl p-6;
+        legend {
+            font-weight: bold;
+            color: #34495e;
+            padding: 0 10px;
+            font-size: 1.1em;
         }
-        .card-title {
-            @apply text-xl font-semibold text-gray-800 mb-4;
+        #log {
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            min-height: 150px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+            background-color: #fdfdfd;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap; /* Preserve whitespace and wrap text */
+            word-wrap: break-word; /* Break long words */
+        }
+        #log p {
+            margin: 5px 0;
+            line-height: 1.4;
+            color: #555;
+        }
+        .connection-status {
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            color: #7f8c8d;
+        }
+        .connection-status.connected {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .connection-status.disconnected {
+            color: #e74c3c;
+            font-weight: bold;
         }
     </style>
-    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body>
+    <h1>WebHID Device Tester</h1>
+    <p>Upload the Arduino sketch to your board and connect it via USB.</p>
 
-    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-900">NRF52840 Configurator</h1>
-            <p class="text-md text-gray-600 mt-2">Edit your device settings in real-time using WebHID.</p>
-        </header>
+    <div class="connection-status" id="connectionStatus">Disconnected</div>
 
-        <!-- Connection Card -->
-        <div class="card mb-6">
-            <div class="flex flex-col sm:flex-row items-center justify-between">
-                <div class="flex items-center mb-4 sm:mb-0">
-                    <div id="connectionStatus" class="w-4 h-4 rounded-full bg-red-500 mr-3"></div>
-                    <span id="connectionText" class="font-medium">Disconnected</span>
-                </div>
-                <div>
-                    <button id="connectButton" class="btn btn-blue w-full sm:w-auto">Connect to Device</button>
-                    <button id="disconnectButton" class="btn btn-red hidden w-full sm:w-auto mt-2 sm:mt-0 sm:ml-2">Disconnect</button>
-                </div>
-            </div>
-        </div>
+    <button id="connectButton">Connect to Device</button>
+    <button id="disconnectButton" disabled>Disconnect</button>
 
-        <!-- Main Control Panel (disabled by default) -->
-        <fieldset id="controlPanel" disabled class="space-y-6">
+    <fieldset id="controlPanel" disabled>
+        <legend>Device Control</legend>
+        <label for="sendByte">Send Byte (0-255):</label>
+        <input type="number" id="sendByte" min="0" max="255" value="1">
+        <button id="sendButton">Send Custom Byte</button>
+        <button id="toggleLedButton">Toggle LED (Sends 0 or 1)</button>
+    </fieldset>
 
-            <!-- Bank Selection Card -->
-            <div class="card">
-                <div class="flex flex-col sm:flex-row items-center justify-between">
-                    <label for="bankSelect" class="block text-lg font-medium text-gray-700 mb-2 sm:mb-0">Select Bank:</label>
-                    <div class="flex items-center space-x-3 w-full sm:w-auto">
-                        <select id="bankSelect" class="form-select w-full sm:w-48">
-                            <!-- Options will be populated by JS -->
-                        </select>
-                        <button id="loadBankButton" class="btn btn-blue">Load Data</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Global Settings Card -->
-            <div class="card">
-                <h2 class="card-title">Global Settings</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="esbChannel" class="block text-sm font-medium text-gray-700">ESB Channel</label>
-                        <select id="esbChannel" class="form-select mt-1">
-                            <option value="5">5</option>
-                            <option value="10">10</option>
-                            <option value="15">15</option>
-                            <option value="20">20</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="brightness" class="block text-sm font-medium text-gray-700">Brightness (3-255)</label>
-                        <input type="number" id="brightness" class="form-input mt-1" min="3" max="255">
-                    </div>
-                     <div>
-                        <label for="autoCalEnabled" class="block text-sm font-medium text-gray-700">Auto Calibration</label>
-                        <select id="autoCalEnabled" class="form-select mt-1">
-                            <option value="1">Enabled</option>
-                            <option value="0">Disabled</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="autoCalMaxValue" class="block text-sm font-medium text-gray-700">Auto Cal Max Value</label>
-                        <input type="number" id="autoCalMaxValue" class="form-input mt-1" min="0" max="16383">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Bank Specific Settings Card -->
-            <div id="bankSettingsCard" class="card hidden">
-                <h2 class="card-title" id="bankSettingsTitle">Bank Specific Settings</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="midiChannel" class="block text-sm font-medium text-gray-700">MIDI Channel (1-16)</label>
-                        <input type="number" id="midiChannel" class="form-input mt-1" min="1" max="16">
-                    </div>
-                    <div>
-                        <label for="buttonMode" class="block text-sm font-medium text-gray-700">Button Mode</label>
-                        <select id="buttonMode" class="form-select mt-1">
-                            <option value="0">Momentary</option>
-                            <option value="1">Toggle</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Potentiometer Settings -->
-                <div class="mt-8">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Potentiometers (P1-P8)</h3>
-                    <div id="potSettingsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <!-- Potentiometer fields will be generated by JS -->
-                    </div>
-                </div>
-
-                 <!-- Button Settings -->
-                <div class="mt-8">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Buttons (B1-B4)</h3>
-                    <div id="buttonSettingsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <!-- Button fields will be generated by JS -->
-                    </div>
-                </div>
-                
-                <!-- Save Button -->
-                <div class="mt-8 text-right">
-                    <button id="saveButton" class="btn btn-green">Save Settings to Device</button>
-                </div>
-            </div>
-
-        </fieldset>
-
-        <!-- Log Area -->
-        <div class="card mt-6">
-            <h2 class="card-title">Log</h2>
-            <div id="log" class="h-40 bg-gray-800 text-white font-mono text-sm p-4 rounded-lg overflow-y-auto">
-                <p>&gt; Waiting for connection...</p>
-            </div>
-        </div>
-
-    </div>
+    <fieldset>
+        <legend>Device Log</legend>
+        <div id="log"></div>
+    </fieldset>
 
     <script>
-        // --- DOM Elements ---
         const connectButton = document.getElementById('connectButton');
         const disconnectButton = document.getElementById('disconnectButton');
-        const connectionStatus = document.getElementById('connectionStatus');
-        const connectionText = document.getElementById('connectionText');
+        const sendByteInput = document.getElementById('sendByte');
+        const sendButton = document.getElementById('sendButton');
+        const toggleLedButton = document.getElementById('toggleLedButton');
         const controlPanel = document.getElementById('controlPanel');
-        const bankSelect = document.getElementById('bankSelect');
-        const loadBankButton = document.getElementById('loadBankButton');
-        const saveButton = document.getElementById('saveButton');
         const logDiv = document.getElementById('log');
-        const bankSettingsCard = document.getElementById('bankSettingsCard');
-        const bankSettingsTitle = document.getElementById('bankSettingsTitle');
-        
-        // --- WebHID & Device State ---
-        let device;
-        const REPORT_ID_WEB_CONFIG = 0x02;
-        const NUM_BANKS = 12;
-        const NUM_POTS = 8;
-        const NUM_BUTTONS = 4;
-        const TOTAL_INPUTS = NUM_POTS + NUM_BUTTONS;
-        const LABEL_LENGTH = 4;
+        const connectionStatusSpan = document.getElementById('connectionStatus');
 
-        // Command constants (must match Arduino sketch)
-        const CMD = {
-            GET_BANK_SETTINGS: 0x01,
-            SET_BANK_SETTINGS: 0x02,
-            SAVE_SETTINGS_TO_FLASH: 0x03,
-            GET_GLOBAL_SETTINGS: 0x04,
-            SET_GLOBAL_SETTINGS: 0x05,
-        };
+        let device; // Global variable to hold the connected HID device instance
+        let currentLedState = 0; // Tracks the state we intend to send for the LED
 
-        // --- Utility Functions ---
+        // Function to append messages to the log display
         function log(message, type = 'info') {
             const p = document.createElement('p');
-            const prefix = type === 'error' ? '[ERR]' : (type === 'success' ? '[OK]' : '>');
-            p.textContent = `${prefix} ${message}`;
-            if (type === 'error') p.classList.add('text-red-400');
-            if (type === 'success') p.classList.add('text-green-400');
+            p.textContent = message;
+            if (type === 'error') p.style.color = '#e74c3c';
+            else if (type === 'success') p.style.color = '#27ae60';
             logDiv.appendChild(p);
-            logDiv.scrollTop = logDiv.scrollHeight;
+            logDiv.scrollTop = logDiv.scrollHeight; // Auto-scroll to the bottom
         }
 
+        // Function to update UI state (button and panel enablement)
         function updateUI(isConnected) {
-            connectButton.classList.toggle('hidden', isConnected);
-            disconnectButton.classList.toggle('hidden', !isConnected);
+            connectButton.disabled = isConnected;
+            disconnectButton.disabled = !isConnected;
             controlPanel.disabled = !isConnected;
-            
             if (isConnected) {
-                connectionStatus.classList.remove('bg-red-500');
-                connectionStatus.classList.add('bg-green-500');
-                connectionText.textContent = `Connected to ${device.productName}`;
+                connectionStatusSpan.textContent = 'Connected';
+                connectionStatusSpan.className = 'connection-status connected';
             } else {
-                connectionStatus.classList.add('bg-red-500');
-                connectionStatus.classList.remove('bg-green-500');
-                connectionText.textContent = 'Disconnected';
-                bankSettingsCard.classList.add('hidden');
+                connectionStatusSpan.textContent = 'Disconnected';
+                connectionStatusSpan.className = 'connection-status disconnected';
             }
         }
 
-        // --- WebHID Logic ---
+        // --- Event Listener for Connect Button ---
         connectButton.addEventListener('click', async () => {
             if (!navigator.hid) {
                 log('WebHID is not supported in this browser.', 'error');
                 return;
             }
+
             try {
-                log('Requesting device...');
-                // --- MODIFICATION: Removed the VID/PID filter to show all devices ---
+                // Request access to a HID device.
+                // By providing an empty filters array, the browser will
+                // present a chooser dialog with ALL available (non-protected) HID devices.
+                // This makes it easier to find your device for testing.
                 const devices = await navigator.hid.requestDevice({
-                    filters: [] 
+                    filters: [] // This empty array is required by the WebHID API
                 });
 
-                if (!devices.length) {
-                    log('No device selected.', 'info');
-                    return;
+                if (devices.length > 0) {
+                    device = devices[0]; // Get the first selected device
+                    await device.open(); // Open the connection to the device
+                    log(`Connected to: ${device.productName} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)})`, 'success');
+                    updateUI(true);
+
+                    // Set up listener for incoming reports from the device (Input Reports)
+                    device.oninputreport = (event) => {
+                        const { reportId, data } = event; // Destructure the event object
+                        // Our Arduino sketch uses REPORT_ID_CUSTOM (0x01) and sends 1 byte
+                        if (reportId === 0x01 && data.byteLength >= 1) {
+                            const receivedValue = data.getUint8(0); // Get the first byte of data
+                            log(`Received Report ID ${reportId}: Value = ${receivedValue}`);
+                        }
+                    };
+
+                    // Set up listener for device disconnection
+                    device.ondisconnect = (event) => {
+                        log(`Device disconnected: ${event.device.productName}`, 'info');
+                        updateUI(false);
+                        device = null; // Clear the device reference
+                    };
+
+                } else {
+                    log('No device selected by the user or no matching device found.', 'info');
                 }
-
-                device = devices[0];
-                await device.open();
-                log(`Device opened: ${device.productName}`, 'success');
-                updateUI(true);
-
-                device.addEventListener('inputreport', handleInputReport);
-                
-                // Automatically load global settings on connect
-                await getGlobalSettings();
-
             } catch (error) {
-                log(`Error connecting: ${error.message}`, 'error');
-                console.error(error);
+                log(`Error connecting to HID device: ${error.message}`, 'error');
+                console.error('WebHID connection error:', error);
             }
         });
 
+        // --- Event Listener for Disconnect Button ---
         disconnectButton.addEventListener('click', async () => {
             if (device) {
-                await device.close();
-                log('Device closed.');
-                device = null;
-                updateUI(false);
+                try {
+                    await device.close(); // Close the connection
+                    log('Device disconnected successfully.', 'success');
+                    updateUI(false);
+                    device = null;
+                } catch (error) {
+                    log(`Error disconnecting: ${error.message}`, 'error');
+                    console.error('WebHID disconnection error:', error);
+                }
             }
         });
-        
-        async function getGlobalSettings() {
-            if (!device) return;
-            log('Requesting global settings...');
-            const report = new Uint8Array([CMD.GET_GLOBAL_SETTINGS]);
-            await device.sendReport(REPORT_ID_WEB_CONFIG, report);
-        }
 
-        loadBankButton.addEventListener('click', async () => {
-            if (!device) return;
-            const bankIndex = parseInt(bankSelect.value, 10);
-            log(`Requesting data for Bank ${bankIndex + 1}...`);
-            const report = new Uint8Array([CMD.GET_BANK_SETTINGS, bankIndex]);
-            await device.sendReport(REPORT_ID_WEB_CONFIG, report);
-        });
-
-        saveButton.addEventListener('click', async () => {
-            if (!device) return;
-            const bankIndex = parseInt(bankSelect.value, 10);
-            log(`Saving settings for Bank ${bankIndex + 1}...`);
-            
-            try {
-                // 1. Collect and send Global Settings
-                const globalReport = new Uint8Array(64);
-                globalReport[0] = CMD.SET_GLOBAL_SETTINGS;
-                const globalView = new DataView(globalReport.buffer, 1);
-                
-                globalView.setUint8(0, parseInt(document.getElementById('esbChannel').value, 10));
-                globalView.setUint8(1, 0); // Active bank is not set here, device handles it
-                globalView.setUint8(2, parseInt(document.getElementById('brightness').value, 10));
-                globalView.setUint8(3, parseInt(document.getElementById('autoCalEnabled').value, 10));
-                globalView.setInt16(4, parseInt(document.getElementById('autoCalMaxValue').value, 10), true); // true for little-endian
-                
-                await device.sendReport(REPORT_ID_WEB_CONFIG, globalReport);
-                log('Sent updated global settings.');
-
-                // 2. Collect and send Bank Settings
-                const bankReport = new Uint8Array(64);
-                bankReport[0] = CMD.SET_BANK_SETTINGS;
-                const bankView = new DataView(bankReport.buffer, 1);
-                
-                // Pack data according to BankSettings struct
-                let offset = 0;
-                bankView.setUint8(offset, parseInt(document.getElementById('midiChannel').value, 10)); offset += 1;
-                bankView.setUint8(offset, parseInt(document.getElementById('buttonMode').value, 10)); offset += 1;
-                
-                // CCs (12 bytes)
-                for(let i = 0; i < TOTAL_INPUTS; i++) {
-                    const id = (i < NUM_POTS) ? `pot_cc_${i}` : `btn_cc_${i - NUM_POTS}`;
-                    bankView.setUint8(offset + i, parseInt(document.getElementById(id).value, 10));
-                }
-                offset += TOTAL_INPUTS;
-
-                // Pot Labels (8 * 5 bytes)
-                const textEncoder = new TextEncoder();
-                for(let i = 0; i < NUM_POTS; i++) {
-                    let label = document.getElementById(`pot_label_${i}`).value.substring(0, LABEL_LENGTH).padEnd(LABEL_LENGTH + 1, '\0');
-                    const encoded = textEncoder.encode(label);
-                    for(let j = 0; j < encoded.length; j++) {
-                        bankView.setUint8(offset + j, encoded[j]);
+        // --- Event Listener for Send Custom Byte Button ---
+        sendButton.addEventListener('click', async () => {
+            if (device && device.opened) { // Check if a device is connected and open
+                try {
+                    const byteToSend = parseInt(sendByteInput.value);
+                    if (isNaN(byteToSend) || byteToSend < 0 || byteToSend > 255) {
+                        log('Please enter a number between 0 and 255 to send.', 'error');
+                        return;
                     }
-                    offset += (LABEL_LENGTH + 1);
+
+                    // Create a Uint8Array (a byte array) for the report data.
+                    // The content directly corresponds to the data payload defined in your Arduino sketch's
+                    // HID Report Descriptor for the Output Report.
+                    const reportData = new Uint8Array([byteToSend]);
+
+                    // Send an Output Report to the device.
+                    // The first argument is the Report ID (0x01 as defined in Arduino).
+                    // The second argument is the data payload.
+                    await device.sendReport(0x01, reportData);
+                    log(`Sent custom byte: ${byteToSend}`);
+                } catch (error) {
+                    log(`Error sending report: ${error.message}`, 'error');
+                    console.error('WebHID send report error:', error);
                 }
-
-                // Button Labels (4 * 5 bytes)
-                 for(let i = 0; i < NUM_BUTTONS; i++) {
-                    let label = document.getElementById(`btn_label_${i}`).value.substring(0, LABEL_LENGTH).padEnd(LABEL_LENGTH + 1, '\0');
-                    const encoded = textEncoder.encode(label);
-                    for(let j = 0; j < encoded.length; j++) {
-                        bankView.setUint8(offset + j, encoded[j]);
-                    }
-                    offset += (LABEL_LENGTH + 1);
-                }
-
-                // Pot Min/Max Raw (8 * 2 * 2 bytes)
-                // For simplicity, we don't edit these in the UI, so we'll just send back what we received.
-                // This would be the place to add them if the UI had inputs for min/max calibration.
-                
-                await device.sendReport(REPORT_ID_WEB_CONFIG, bankReport);
-                log(`Sent updated settings for Bank ${bankIndex + 1}.`);
-
-                // 3. Send Save Command
-                const saveReport = new Uint8Array([CMD.SAVE_SETTINGS_TO_FLASH, bankIndex]);
-                await device.sendReport(REPORT_ID_WEB_CONFIG, saveReport);
-                log('Sent save command. Settings are being written to flash.', 'success');
-
-            } catch (error) {
-                log(`Error saving settings: ${error.message}`, 'error');
-                console.error(error);
+            } else {
+                log('No device connected. Please connect first.', 'info');
             }
         });
 
-        function handleInputReport(event) {
-            const { data, reportId } = event;
-            if (reportId !== REPORT_ID_WEB_CONFIG) return;
-
-            const command = data.getUint8(0);
-            
-            if (command === CMD.GET_GLOBAL_SETTINGS) {
-                log('Received global settings from device.', 'success');
-                const esbChannel = data.getUint8(1);
-                // activeBank is data.getUint8(2)
-                const brightness = data.getUint8(3);
-                const autoCalEnabled = data.getUint8(4);
-                const autoCalMaxValue = data.getInt16(5, true); // true for little-endian
-
-                document.getElementById('esbChannel').value = esbChannel;
-                document.getElementById('brightness').value = brightness;
-                document.getElementById('autoCalEnabled').value = autoCalEnabled;
-                document.getElementById('autoCalMaxValue').value = autoCalMaxValue;
-            }
-
-            if (command === CMD.GET_BANK_SETTINGS) {
-                const bankIndex = data.getUint8(1);
-                log(`Received data for Bank ${bankIndex + 1}. Populating form.`, 'success');
-                
-                let offset = 2; // Start after command and bank index
-                
-                // Unpack data according to BankSettings struct
-                document.getElementById('midiChannel').value = data.getUint8(offset); offset += 1;
-                document.getElementById('buttonMode').value = data.getUint8(offset); offset += 1;
-
-                // CCs (12 bytes)
-                for(let i = 0; i < TOTAL_INPUTS; i++) {
-                    const id = (i < NUM_POTS) ? `pot_cc_${i}` : `btn_cc_${i - NUM_POTS}`;
-                    document.getElementById(id).value = data.getUint8(offset + i);
+        // --- Event Listener for Toggle LED Button ---
+        toggleLedButton.addEventListener('click', async () => {
+            if (device && device.opened) {
+                try {
+                    currentLedState = 1 - currentLedState; // Toggle between 0 and 1
+                    const reportData = new Uint8Array([currentLedState]);
+                    await device.sendReport(0x01, reportData);
+                    log(`Toggled LED: Sending ${currentLedState} to Arduino.`);
+                } catch (error) {
+                    log(`Error toggling LED: ${error.message}`, 'error');
+                    console.error('WebHID toggle LED error:', error);
                 }
-                offset += TOTAL_INPUTS;
-
-                const textDecoder = new TextDecoder('utf-8');
-                // Pot Labels (8 * 5 bytes)
-                for(let i = 0; i < NUM_POTS; i++) {
-                    const labelBytes = new Uint8Array(data.buffer, offset, LABEL_LENGTH + 1);
-                    const label = textDecoder.decode(labelBytes).replace(/\0/g, '');
-                    document.getElementById(`pot_label_${i}`).value = label;
-                    offset += (LABEL_LENGTH + 1);
-                }
-
-                // Button Labels (4 * 5 bytes)
-                for(let i = 0; i < NUM_BUTTONS; i++) {
-                    const labelBytes = new Uint8Array(data.buffer, offset, LABEL_LENGTH + 1);
-                    const label = textDecoder.decode(labelBytes).replace(/\0/g, '');
-                    document.getElementById(`btn_label_${i}`).value = label;
-                    offset += (LABEL_LENGTH + 1);
-                }
-
-                // Show the card
-                bankSettingsTitle.textContent = `Bank ${bankIndex + 1} Specific Settings`;
-                bankSettingsCard.classList.remove('hidden');
+            } else {
+                log('No device connected. Please connect first.', 'info');
             }
-        }
+        });
 
-        // --- Page Initialization ---
-        function initializePage() {
-            // Populate bank select dropdown
-            for (let i = 0; i < NUM_BANKS; i++) {
-                const option = document.createElement('option');
-                option.value = i;
-                option.textContent = `Bank ${i + 1}`;
-                bankSelect.appendChild(option);
-            }
-
-            // Generate pot and button input fields
-            const potContainer = document.getElementById('potSettingsContainer');
-            for (let i = 0; i < NUM_POTS; i++) {
-                potContainer.innerHTML += `
-                    <div class="p-3 bg-gray-50 rounded-lg border">
-                        <label class="block text-sm font-bold text-gray-600">P${i + 1}</label>
-                        <div class="mt-1">
-                            <label for="pot_cc_${i}" class="text-xs text-gray-500">CC</label>
-                            <input type="number" id="pot_cc_${i}" class="form-input" min="0" max="127">
-                        </div>
-                        <div class="mt-1">
-                            <label for="pot_label_${i}" class="text-xs text-gray-500">Label</label>
-                            <input type="text" id="pot_label_${i}" class="form-input" maxlength="${LABEL_LENGTH}">
-                        </div>
-                    </div>
-                `;
-            }
-            
-            const buttonContainer = document.getElementById('buttonSettingsContainer');
-            for (let i = 0; i < NUM_BUTTONS; i++) {
-                buttonContainer.innerHTML += `
-                    <div class="p-3 bg-gray-50 rounded-lg border">
-                        <label class="block text-sm font-bold text-gray-600">B${i + 1}</label>
-                        <div class="mt-1">
-                            <label for="btn_cc_${i}" class="text-xs text-gray-500">CC</label>
-                            <input type="number" id="btn_cc_${i}" class="form-input" min="0" max="127">
-                        </div>
-                        <div class="mt-1">
-                            <label for="btn_label_${i}" class="text-xs text-gray-500">Label</label>
-                            <input type="text" id="btn_label_${i}" class="form-input" maxlength="${LABEL_LENGTH}">
-                        </div>
-                    </div>
-                `;
-            }
-
-            updateUI(false);
-        }
-
-        initializePage();
-
+        // Initial UI state when the page loads
+        updateUI(false);
     </script>
 </body>
 </html>
