@@ -128,9 +128,12 @@
                 // The nRF52 family uses a single configuration.
                 await device.selectConfiguration(1);
 
-                // The CDC-ACM serial interface is typically interface 2 on Adafruit boards.
-                // You may need to adjust this if your board is different.
-                const interfaceNumber = 2; 
+                // The CDC-ACM serial interface number can vary. It's often 0 or 2.
+                // The error "The interface number provided is not supported" means this is the wrong number.
+                // We'll try 0, as it's a common default when only one serial interface is active.
+                // If this still fails, you can inspect the `device` object in the browser console
+                // (console.log(device)) right after it's opened to see the available interfaces.
+                const interfaceNumber = 0; 
                 await device.claimInterface(interfaceNumber);
                 log(`Interface ${interfaceNumber} claimed.`);
 
@@ -173,8 +176,8 @@
                 return;
             }
             try {
-                // The OUT endpoint is typically 4 for CDC-ACM on nRF52 boards.
-                const endpointNumber = 4;
+                // The OUT endpoint is typically 2 for CDC-ACM on nRF52 boards with this interface.
+                const endpointNumber = 2;
                 const data = textEncoder.encode(command);
                 await device.transferOut(endpointNumber, data);
             } catch (error) {
@@ -187,8 +190,8 @@
          * @brief Continuously reads data from the device's IN endpoint.
          */
         async function readLoop() {
-            // The IN endpoint is typically 4 for CDC-ACM on nRF52 boards.
-            const endpointNumber = 4;
+            // The IN endpoint is typically 1 for CDC-ACM on nRF52 boards with this interface.
+            const endpointNumber = 1;
             try {
                 while (isConnected) {
                     const result = await device.transferIn(endpointNumber, 64); // Read 64 bytes
