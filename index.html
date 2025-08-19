@@ -36,10 +36,13 @@
             <p id="status" class="text-sm text-red-400 mt-2 font-medium">Status: Disconnected</p>
         </div>
 
-        <!-- Connection Button -->
-        <div class="flex justify-center">
-            <button id="connectButton" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75">
+        <!-- Connection Buttons -->
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+            <button id="connectButton" class="w-full sm:w-auto flex-grow bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75">
                 Connect to Device
+            </button>
+            <button id="inspectButton" class="w-full sm:w-auto hidden bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
+                Inspect Device
             </button>
         </div>
 
@@ -64,6 +67,7 @@
     <script>
         // --- DOM Element References ---
         const connectButton = document.getElementById('connectButton');
+        const inspectButton = document.getElementById('inspectButton');
         const statusDisplay = document.getElementById('status');
         const controlsDiv = document.getElementById('controls');
         const ledOnButton = document.getElementById('ledOnButton');
@@ -80,14 +84,11 @@
         const textEncoder = new TextEncoder();
 
         // --- WebUSB Device Filters ---
-        // You MUST change the vendorId to match your device.
-        // 0x239A is the Vendor ID for Adafruit boards.
-        const filters = [
-            { vendorId: 0x000a }
-        ];
+        const filters = [ { vendorId: 0x000a } ]; // Adafruit Vendor ID
 
         // --- Event Listeners ---
         connectButton.addEventListener('click', handleConnectClick);
+        inspectButton.addEventListener('click', inspectDevice);
         ledOnButton.addEventListener('click', () => sendCommand('LED_ON\n'));
         ledOffButton.addEventListener('click', () => sendCommand('LED_OFF\n'));
         readSettingsButton.addEventListener('click', () => sendCommand('READ_SETTINGS\n'));
@@ -101,9 +102,6 @@
             log('Log cleared.');
         });
         
-        /**
-         * @brief Handles the connect/disconnect button click.
-         */
         async function handleConnectClick() {
             if (isConnected) {
                 await disconnect();
@@ -112,45 +110,42 @@
             }
         }
 
-        /**
-         * @brief Scans for and connects to a compatible WebUSB device.
-         */
         async function connect() {
             try {
                 log('Requesting device...');
                 device = await navigator.usb.requestDevice({ filters });
+                inspectButton.classList.remove('hidden'); // Show inspect button once we have a device object
 
                 log('Opening device...');
                 await device.open();
                 
                 log(`Device opened: ${device.manufacturerName} ${device.productName}`);
 
-                // The nRF52 family uses a single configuration.
                 await device.selectConfiguration(1);
 
-                // The CDC-ACM serial interface number can vary. It's often 0 or 2.
-                // The error "The interface number provided is not supported" means this is the wrong number.
-                // We'll try 0, as it's a common default when only one serial interface is active.
-                // If this still fails, you can inspect the `device` object in the browser console
-                // (console.log(device)) right after it's opened to see the available interfaces.
+                // This is the most likely point of failure. The interface number for CDC-ACM
+                // serial can vary. Common values are 0, 1, or 2.
                 const interfaceNumber = 0; 
                 await device.claimInterface(interfaceNumber);
                 log(`Interface ${interfaceNumber} claimed.`);
 
                 updateUIForConnection();
-                
-                // Start listening for data from the device
                 readLoop();
 
             } catch (error) {
                 log(`ERROR: ${error.message}`);
+                if (error.message.includes('claim interface')) {
+                    log('--------------------------------------------------');
+                    log('DEBUGGING HELP:');
+                    log('This error usually means one of two things:');
+                    log('1. Another program (like the Arduino IDE Serial Monitor or a terminal app) is already connected to the device. Please close it and try again.');
+                    log('2. The "interface number" is incorrect for your device. Click the "Inspect Device" button to see a list of available interfaces and their numbers.');
+                    log('--------------------------------------------------');
+                }
                 console.error(error);
             }
         }
 
-        /**
-         * @brief Disconnects from the currently connected device.
-         */
         async function disconnect() {
             if (!device) return;
             try {
@@ -165,18 +160,51 @@
                 updateUIForDisconnection();
             }
         }
-
+        
         /**
-         * @brief Sends a string command to the connected device.
-         * @param {string} command - The command to send. Must end with a newline.
+         * @brief Logs detailed information about the selected USB device's configuration.
          */
+        function inspectDevice() {
+            if (!device) {
+                log('ERROR: No device selected. Please click "Connect" first.');
+                return;
+            }
+            log('--- Inspecting Device ---');
+            console.log('Full device object:', device);
+
+            let info = `\nDevice: ${device.manufacturerName} ${device.productName}\n`;
+            info += `Configurations: ${device.configurations.length}\n`;
+
+            device.configurations.forEach((config, configIndex) => {
+                info += `\n  [Configuration ${config.configurationValue}]\n`;
+                config.interfaces.forEach(intf => {
+                    info += `    > Interface #${intf.interfaceNumber}\n`;
+                    intf.alternates.forEach(alt => {
+                        info += `      - Alternate Setting: ${alt.alternateSetting}\n`;
+                        info += `      - Interface Class: 0x${alt.interfaceClass.toString(16)}\n`;
+                        if (alt.endpoints.length > 0) {
+                            alt.endpoints.forEach(endpoint => {
+                                info += `        * Endpoint #${endpoint.endpointNumber} | Direction: ${endpoint.direction} | Type: ${endpoint.type}\n`;
+                            });
+                        } else {
+                            info += '        * No endpoints\n';
+                        }
+                    });
+                });
+            });
+            log(info);
+            log('--- End Inspection ---');
+            log('Look for the interface with class 0x0a (CDC-Data) or similar. Note its Interface # and Endpoint #s for the "in" and "out" directions.');
+        }
+
         async function sendCommand(command) {
             if (!device || !isConnected) {
                 log('ERROR: Not connected.');
                 return;
             }
             try {
-                // The OUT endpoint is typically 2 for CDC-ACM on nRF52 boards with this interface.
+                // The OUT endpoint number corresponds to the claimed interface.
+                // For interface 0, this is often 2.
                 const endpointNumber = 2;
                 const data = textEncoder.encode(command);
                 await device.transferOut(endpointNumber, data);
@@ -186,22 +214,20 @@
             }
         }
 
-        /**
-         * @brief Continuously reads data from the device's IN endpoint.
-         */
         async function readLoop() {
-            // The IN endpoint is typically 1 for CDC-ACM on nRF52 boards with this interface.
+            // The IN endpoint number corresponds to the claimed interface.
+            // For interface 0, this is often 1.
             const endpointNumber = 1;
             try {
                 while (isConnected) {
-                    const result = await device.transferIn(endpointNumber, 64); // Read 64 bytes
+                    const result = await device.transferIn(endpointNumber, 64);
                     if (result.data && result.data.byteLength > 0) {
                         const text = textDecoder.decode(result.data);
                         log(text, 'device');
                     }
                 }
             } catch (error) {
-                if (isConnected) { // Only log error if we weren't expecting to disconnect
+                if (isConnected) {
                    log(`ERROR during read: ${error.message}`);
                    console.error(error);
                    await disconnect();
@@ -209,9 +235,6 @@
             }
         }
 
-        /**
-         * @brief Updates the UI to reflect a connected state.
-         */
         function updateUIForConnection() {
             isConnected = true;
             statusDisplay.textContent = 'Status: Connected';
@@ -222,13 +245,12 @@
             connectButton.classList.add('bg-red-600', 'hover:bg-red-500');
             controlsDiv.classList.remove('hidden');
             controlsDiv.classList.add('grid');
+            inspectButton.classList.add('hidden');
         }
 
-        /**
-         * @brief Updates the UI to reflect a disconnected state.
-         */
         function updateUIForDisconnection() {
             isConnected = false;
+            device = null; // Clear device object on disconnect
             statusDisplay.textContent = 'Status: Disconnected';
             statusDisplay.classList.remove('text-green-400');
             statusDisplay.classList.add('text-red-400');
@@ -237,21 +259,15 @@
             connectButton.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
             controlsDiv.classList.add('hidden');
             controlsDiv.classList.remove('grid');
+            inspectButton.classList.add('hidden');
         }
 
-        /**
-         * @brief Appends a message to the log container on the page.
-         * @param {string} message - The message to log.
-         * @param {string} source - 'app' for internal messages, 'device' for device output.
-         */
         function log(message, source = 'app') {
             const prefix = source === 'device' ? '<< ' : '>> ';
             logContainer.textContent += prefix + message.trimEnd() + '\n';
-            // Auto-scroll to the bottom
             logContainer.scrollTop = logContainer.scrollHeight;
         }
-
-        // Add a class to all control buttons for easier styling
+        
         document.querySelectorAll('.control-button').forEach(button => {
             button.classList.add('text-white', 'font-bold', 'py-3', 'px-4', 'rounded-lg', 'transition-all', 'duration-300', 'ease-in-out', 'focus:outline-none', 'focus:ring-2', 'focus:ring-opacity-75', 'focus:ring-offset-2', 'focus:ring-offset-gray-800');
         });
