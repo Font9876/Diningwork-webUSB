@@ -267,10 +267,6 @@
         const REPORT_ID_GLOBAL_SETTINGS = 0x02;
         const REPORT_ID_BANK_SETTINGS = 0x03;
 
-        // Device VID/PID
-        const VENDOR_ID = 0x000A;
-        const PRODUCT_ID = 0x000A;
-
         // Struct sizes (must match Arduino __attribute__((packed)) sizes)
         const SIZEOF_GLOBAL_SETTINGS = 6; // 1+1+1+1+2
         const SIZEOF_BANK_SETTINGS = 106; // 1+1+12+40+20+16+16
@@ -573,10 +569,8 @@
             }
 
             try {
-                // Request access to the specific Dining Work device
-                const devices = await navigator.hid.requestDevice({
-                    filters: [{ vendorId: VENDOR_ID, productId: PRODUCT_ID }]
-                });
+                // Request access to any HID device. The user will be prompted to select one.
+                const devices = await navigator.hid.requestDevice();
 
                 if (devices.length > 0) {
                     device = devices[0];
@@ -603,7 +597,7 @@
                     await readAllSettings();
 
                 } else {
-                    log('No "Dining Work" device selected or found. Ensure it\'s connected and the firmware is uploaded.', 'info');
+                    log('No HID device selected.', 'info');
                 }
             } catch (error) {
                 log(`Error connecting to HID device: ${error.message}`, 'error');
