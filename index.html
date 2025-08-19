@@ -1,271 +1,258 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-gray-900">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebHID Test</title>
+    <title>WebUSB nRF52 Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Basic styling for readability */
         body {
             font-family: 'Inter', sans-serif;
-            margin: 20px;
-            background-color: #f4f7f6;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
         }
-        h1 {
-            color: #2c3e50;
-            margin-bottom: 20px;
+        .log-container::-webkit-scrollbar {
+            width: 8px;
         }
-        button, input[type="number"] {
-            padding: 10px 15px;
-            margin: 8px 5px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        .log-container::-webkit-scrollbar-track {
+            background: #1f2937;
         }
-        button {
-            background-color: #3498db;
-            color: white;
-            border-color: #2980b9;
+        .log-container::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
         }
-        button:hover:not(:disabled) {
-            background-color: #2980b9;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-        input[type="number"] {
-            width: 80px;
-            text-align: center;
-        }
-        fieldset {
-            border: 1px solid #c0d9ed;
-            padding: 20px;
-            margin-top: 25px;
-            border-radius: 10px;
-            background-color: #ffffff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            width: 100%;
-            max-width: 500px;
-        }
-        legend {
-            font-weight: bold;
-            color: #34495e;
-            padding: 0 10px;
-            font-size: 1.1em;
-        }
-        #log {
-            border: 1px solid #e0e0e0;
-            padding: 15px;
-            min-height: 150px;
-            max-height: 300px;
-            overflow-y: auto;
-            margin-top: 10px;
-            background-color: #fdfdfd;
-            border-radius: 5px;
-            font-family: monospace;
-            white-space: pre-wrap; /* Preserve whitespace and wrap text */
-            word-wrap: break-word; /* Break long words */
-        }
-        #log p {
-            margin: 5px 0;
-            line-height: 1.4;
-            color: #555;
-        }
-        .connection-status {
-            margin-bottom: 15px;
-            font-size: 1.1em;
-            color: #7f8c8d;
-        }
-        .connection-status.connected {
-            color: #27ae60;
-            font-weight: bold;
-        }
-        .connection-status.disconnected {
-            color: #e74c3c;
-            font-weight: bold;
+        .log-container::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
         }
     </style>
 </head>
-<body>
-    <h1>WebHID Device Tester</h1>
-    <p>Upload the Arduino sketch to your board and connect it via USB.</p>
+<body class="h-full flex items-center justify-center text-gray-200 p-4">
 
-    <div class="connection-status" id="connectionStatus">Disconnected</div>
+    <div class="w-full max-w-2xl bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 flex flex-col gap-6">
+        <!-- Header -->
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-white">WebUSB Device Control</h1>
+            <p id="status" class="text-sm text-red-400 mt-2 font-medium">Status: Disconnected</p>
+        </div>
 
-    <button id="connectButton">Connect to Device</button>
-    <button id="disconnectButton" disabled>Disconnect</button>
+        <!-- Connection Button -->
+        <div class="flex justify-center">
+            <button id="connectButton" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75">
+                Connect to Device
+            </button>
+        </div>
 
-    <fieldset id="controlPanel" disabled>
-        <legend>Device Control</legend>
-        <label for="sendByte">Send Byte (0-255):</label>
-        <input type="number" id="sendByte" min="0" max="255" value="1">
-        <button id="sendButton">Send Custom Byte</button>
-        <button id="toggleLedButton">Toggle LED (Sends 0 or 1)</button>
-    </fieldset>
+        <!-- Controls -->
+        <div id="controls" class="hidden grid grid-cols-2 md:grid-cols-4 gap-4">
+            <button id="ledOnButton" class="control-button bg-green-600 hover:bg-green-500">LED ON</button>
+            <button id="ledOffButton" class="control-button bg-red-600 hover:bg-red-500">LED OFF</button>
+            <button id="readSettingsButton" class="control-button bg-blue-600 hover:bg-blue-500">Read Settings</button>
+            <button id="factoryResetButton" class="control-button bg-yellow-600 hover:bg-yellow-500 text-gray-900">Factory Reset</button>
+        </div>
 
-    <fieldset>
-        <legend>Device Log</legend>
-        <div id="log"></div>
-    </fieldset>
+        <!-- Log Output -->
+        <div class="flex flex-col gap-2">
+            <div class="flex justify-between items-center">
+                 <h2 class="text-lg font-semibold text-white">Device Log</h2>
+                 <button id="clearLogButton" class="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium py-1 px-3 rounded-md transition-colors">Clear Log</button>
+            </div>
+            <pre id="log" class="log-container bg-gray-900 text-sm p-4 rounded-lg h-64 overflow-y-auto whitespace-pre-wrap break-words"></pre>
+        </div>
+    </div>
 
     <script>
+        // --- DOM Element References ---
         const connectButton = document.getElementById('connectButton');
-        const disconnectButton = document.getElementById('disconnectButton');
-        const sendByteInput = document.getElementById('sendByte');
-        const sendButton = document.getElementById('sendButton');
-        const toggleLedButton = document.getElementById('toggleLedButton');
-        const controlPanel = document.getElementById('controlPanel');
-        const logDiv = document.getElementById('log');
-        const connectionStatusSpan = document.getElementById('connectionStatus');
+        const statusDisplay = document.getElementById('status');
+        const controlsDiv = document.getElementById('controls');
+        const ledOnButton = document.getElementById('ledOnButton');
+        const ledOffButton = document.getElementById('ledOffButton');
+        const readSettingsButton = document.getElementById('readSettingsButton');
+        const factoryResetButton = document.getElementById('factoryResetButton');
+        const logContainer = document.getElementById('log');
+        const clearLogButton = document.getElementById('clearLogButton');
 
-        let device; // Global variable to hold the connected HID device instance
-        let currentLedState = 0; // Tracks the state we intend to send for the LED
+        // --- WebUSB State Variables ---
+        let device;
+        let isConnected = false;
+        const textDecoder = new TextDecoder();
+        const textEncoder = new TextEncoder();
 
-        // Function to append messages to the log display
-        function log(message, type = 'info') {
-            const p = document.createElement('p');
-            p.textContent = message;
-            if (type === 'error') p.style.color = '#e74c3c';
-            else if (type === 'success') p.style.color = '#27ae60';
-            logDiv.appendChild(p);
-            logDiv.scrollTop = logDiv.scrollHeight; // Auto-scroll to the bottom
-        }
+        // --- WebUSB Device Filters ---
+        // You MUST change the vendorId to match your device.
+        // 0x239A is the Vendor ID for Adafruit boards.
+        const filters = [
+            { vendorId: 0x239A }
+        ];
 
-        // Function to update UI state (button and panel enablement)
-        function updateUI(isConnected) {
-            connectButton.disabled = isConnected;
-            disconnectButton.disabled = !isConnected;
-            controlPanel.disabled = !isConnected;
+        // --- Event Listeners ---
+        connectButton.addEventListener('click', handleConnectClick);
+        ledOnButton.addEventListener('click', () => sendCommand('LED_ON\n'));
+        ledOffButton.addEventListener('click', () => sendCommand('LED_OFF\n'));
+        readSettingsButton.addEventListener('click', () => sendCommand('READ_SETTINGS\n'));
+        factoryResetButton.addEventListener('click', () => {
+            if (confirm('Are you sure you want to perform a factory reset? This cannot be undone.')) {
+                sendCommand('FACTORY_RESET\n');
+            }
+        });
+        clearLogButton.addEventListener('click', () => {
+            logContainer.textContent = '';
+            log('Log cleared.');
+        });
+        
+        /**
+         * @brief Handles the connect/disconnect button click.
+         */
+        async function handleConnectClick() {
             if (isConnected) {
-                connectionStatusSpan.textContent = 'Connected';
-                connectionStatusSpan.className = 'connection-status connected';
+                await disconnect();
             } else {
-                connectionStatusSpan.textContent = 'Disconnected';
-                connectionStatusSpan.className = 'connection-status disconnected';
+                await connect();
             }
         }
 
-        // --- Event Listener for Connect Button ---
-        connectButton.addEventListener('click', async () => {
-            if (!navigator.hid) {
-                log('WebHID is not supported in this browser.', 'error');
+        /**
+         * @brief Scans for and connects to a compatible WebUSB device.
+         */
+        async function connect() {
+            try {
+                log('Requesting device...');
+                device = await navigator.usb.requestDevice({ filters });
+
+                log('Opening device...');
+                await device.open();
+                
+                log(`Device opened: ${device.manufacturerName} ${device.productName}`);
+
+                // The nRF52 family uses a single configuration.
+                await device.selectConfiguration(1);
+
+                // The CDC-ACM serial interface is typically interface 2 on Adafruit boards.
+                // You may need to adjust this if your board is different.
+                const interfaceNumber = 2; 
+                await device.claimInterface(interfaceNumber);
+                log(`Interface ${interfaceNumber} claimed.`);
+
+                updateUIForConnection();
+                
+                // Start listening for data from the device
+                readLoop();
+
+            } catch (error) {
+                log(`ERROR: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        /**
+         * @brief Disconnects from the currently connected device.
+         */
+        async function disconnect() {
+            if (!device) return;
+            try {
+                log('Closing device...');
+                await device.close();
+                log('Device closed.');
+            } catch (error) {
+                log(`ERROR during disconnect: ${error.message}`);
+                console.error(error);
+            } finally {
+                device = null;
+                updateUIForDisconnection();
+            }
+        }
+
+        /**
+         * @brief Sends a string command to the connected device.
+         * @param {string} command - The command to send. Must end with a newline.
+         */
+        async function sendCommand(command) {
+            if (!device || !isConnected) {
+                log('ERROR: Not connected.');
                 return;
             }
-
             try {
-                // Request access to a HID device.
-                // By providing an empty filters array, the browser will
-                // present a chooser dialog with ALL available (non-protected) HID devices.
-                // This makes it easier to find your device for testing.
-                const devices = await navigator.hid.requestDevice({
-                    filters: [] // This empty array is required by the WebHID API
-                });
+                // The OUT endpoint is typically 4 for CDC-ACM on nRF52 boards.
+                const endpointNumber = 4;
+                const data = textEncoder.encode(command);
+                await device.transferOut(endpointNumber, data);
+            } catch (error) {
+                log(`ERROR sending command: ${error.message}`);
+                console.error(error);
+            }
+        }
 
-                if (devices.length > 0) {
-                    device = devices[0]; // Get the first selected device
-                    await device.open(); // Open the connection to the device
-                    log(`Connected to: ${device.productName} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)})`, 'success');
-                    updateUI(true);
-
-                    // Set up listener for incoming reports from the device (Input Reports)
-                    device.oninputreport = (event) => {
-                        const { reportId, data } = event; // Destructure the event object
-                        // Our Arduino sketch uses REPORT_ID_CUSTOM (0x01) and sends 1 byte
-                        if (reportId === 0x01 && data.byteLength >= 1) {
-                            const receivedValue = data.getUint8(0); // Get the first byte of data
-                            log(`Received Report ID ${reportId}: Value = ${receivedValue}`);
-                        }
-                    };
-
-                    // Set up listener for device disconnection
-                    device.ondisconnect = (event) => {
-                        log(`Device disconnected: ${event.device.productName}`, 'info');
-                        updateUI(false);
-                        device = null; // Clear the device reference
-                    };
-
-                } else {
-                    log('No device selected by the user or no matching device found.', 'info');
+        /**
+         * @brief Continuously reads data from the device's IN endpoint.
+         */
+        async function readLoop() {
+            // The IN endpoint is typically 4 for CDC-ACM on nRF52 boards.
+            const endpointNumber = 4;
+            try {
+                while (isConnected) {
+                    const result = await device.transferIn(endpointNumber, 64); // Read 64 bytes
+                    if (result.data && result.data.byteLength > 0) {
+                        const text = textDecoder.decode(result.data);
+                        log(text, 'device');
+                    }
                 }
             } catch (error) {
-                log(`Error connecting to HID device: ${error.message}`, 'error');
-                console.error('WebHID connection error:', error);
-            }
-        });
-
-        // --- Event Listener for Disconnect Button ---
-        disconnectButton.addEventListener('click', async () => {
-            if (device) {
-                try {
-                    await device.close(); // Close the connection
-                    log('Device disconnected successfully.', 'success');
-                    updateUI(false);
-                    device = null;
-                } catch (error) {
-                    log(`Error disconnecting: ${error.message}`, 'error');
-                    console.error('WebHID disconnection error:', error);
+                if (isConnected) { // Only log error if we weren't expecting to disconnect
+                   log(`ERROR during read: ${error.message}`);
+                   console.error(error);
+                   await disconnect();
                 }
             }
+        }
+
+        /**
+         * @brief Updates the UI to reflect a connected state.
+         */
+        function updateUIForConnection() {
+            isConnected = true;
+            statusDisplay.textContent = 'Status: Connected';
+            statusDisplay.classList.remove('text-red-400');
+            statusDisplay.classList.add('text-green-400');
+            connectButton.textContent = 'Disconnect';
+            connectButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
+            connectButton.classList.add('bg-red-600', 'hover:bg-red-500');
+            controlsDiv.classList.remove('hidden');
+            controlsDiv.classList.add('grid');
+        }
+
+        /**
+         * @brief Updates the UI to reflect a disconnected state.
+         */
+        function updateUIForDisconnection() {
+            isConnected = false;
+            statusDisplay.textContent = 'Status: Disconnected';
+            statusDisplay.classList.remove('text-green-400');
+            statusDisplay.classList.add('text-red-400');
+            connectButton.textContent = 'Connect to Device';
+            connectButton.classList.remove('bg-red-600', 'hover:bg-red-500');
+            connectButton.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
+            controlsDiv.classList.add('hidden');
+            controlsDiv.classList.remove('grid');
+        }
+
+        /**
+         * @brief Appends a message to the log container on the page.
+         * @param {string} message - The message to log.
+         * @param {string} source - 'app' for internal messages, 'device' for device output.
+         */
+        function log(message, source = 'app') {
+            const prefix = source === 'device' ? '<< ' : '>> ';
+            logContainer.textContent += prefix + message.trimEnd() + '\n';
+            // Auto-scroll to the bottom
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Add a class to all control buttons for easier styling
+        document.querySelectorAll('.control-button').forEach(button => {
+            button.classList.add('text-white', 'font-bold', 'py-3', 'px-4', 'rounded-lg', 'transition-all', 'duration-300', 'ease-in-out', 'focus:outline-none', 'focus:ring-2', 'focus:ring-opacity-75', 'focus:ring-offset-2', 'focus:ring-offset-gray-800');
         });
 
-        // --- Event Listener for Send Custom Byte Button ---
-        sendButton.addEventListener('click', async () => {
-            if (device && device.opened) { // Check if a device is connected and open
-                try {
-                    const byteToSend = parseInt(sendByteInput.value);
-                    if (isNaN(byteToSend) || byteToSend < 0 || byteToSend > 255) {
-                        log('Please enter a number between 0 and 255 to send.', 'error');
-                        return;
-                    }
-
-                    // Create a Uint8Array (a byte array) for the report data.
-                    // The content directly corresponds to the data payload defined in your Arduino sketch's
-                    // HID Report Descriptor for the Output Report.
-                    const reportData = new Uint8Array([byteToSend]);
-
-                    // Send an Output Report to the device.
-                    // The first argument is the Report ID (0x01 as defined in Arduino).
-                    // The second argument is the data payload.
-                    await device.sendReport(0x01, reportData);
-                    log(`Sent custom byte: ${byteToSend}`);
-                } catch (error) {
-                    log(`Error sending report: ${error.message}`, 'error');
-                    console.error('WebHID send report error:', error);
-                }
-            } else {
-                log('No device connected. Please connect first.', 'info');
-            }
-        });
-
-        // --- Event Listener for Toggle LED Button ---
-        toggleLedButton.addEventListener('click', async () => {
-            if (device && device.opened) {
-                try {
-                    currentLedState = 1 - currentLedState; // Toggle between 0 and 1
-                    const reportData = new Uint8Array([currentLedState]);
-                    await device.sendReport(0x01, reportData);
-                    log(`Toggled LED: Sending ${currentLedState} to Arduino.`);
-                } catch (error) {
-                    log(`Error toggling LED: ${error.message}`, 'error');
-                    console.error('WebHID toggle LED error:', error);
-                }
-            } else {
-                log('No device connected. Please connect first.', 'info');
-            }
-        });
-
-        // Initial UI state when the page loads
-        updateUI(false);
     </script>
 </body>
 </html>
