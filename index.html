@@ -164,24 +164,13 @@
 
             try {
                 // Request access to a HID device.
-                // The filters specify which devices the user can select from.
-                // You MUST adjust vendorId and productId to match your Arduino board's
-                // specific USB Vendor ID and Product ID.
-                //
-                // How to find your board's VID/PID:
-                // 1. In Arduino IDE, go to Tools > Port. The connected board might show its VID/PID.
-                // 2. On Windows: Device Manager > Ports (COM & LPT) > Your Arduino Board > Properties > Details tab > Hardware Ids.
-                // 3. On macOS: System Information > Hardware > USB. Find your device.
-                // 4. On Linux: `lsusb` command in terminal.
-                //
-                // Common Adafruit VID: 0x239A. PID will vary (e.g., 0x8025 for some generic HID on Adafruit boards).
-                // If you don't provide a productId, the user will see all devices from the vendorId
+                // By providing an empty filters array or omitting it, the browser will
+                // present a chooser dialog with ALL available (non-protected) HID devices.
+                // This makes it easier to find your device for testing.
                 const devices = await navigator.hid.requestDevice({
-                    filters: [{
-                        vendorId: 0x000A, // Example: Adafruit Industries VID
-                        // productId: 0x8025 // Example: A common PID for Adafruit boards (comment out or replace if unsure)
-                        // If you don't provide a productId, the user will see all devices from the vendorId
-                    }]
+                    // No filters specified, so all non-protected HID devices will be listed.
+                    // This is useful for initial testing to find your device.
+                    // For a production app, you'd typically use specific vendorId/productId filters.
                 });
 
                 if (devices.length > 0) {
