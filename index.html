@@ -83,9 +83,9 @@
 
         // --- Event Listeners ---
         connectButton.addEventListener('click', handleConnectClick);
-        ledOnButton.addEventListener('click', () => sendCommand('LED_ON\n'));
-        ledOffButton.addEventListener('click', () => sendCommand('LED_OFF\n'));
-        readSettingsButton.addEventListener('click', () => sendCommand('READ_SETTINGS\n'));
+        ledOnButton.addEventListener('click', () => sendCommand('LED_ON'));
+        ledOffButton.addEventListener('click', () => sendCommand('LED_OFF'));
+        readSettingsButton.addEventListener('click', () => sendCommand('READ_SETTINGS'));
         factoryResetButton.addEventListener('click', () => {
             if (confirm('Are you sure you want to perform a factory reset? This cannot be undone.')) {
                 sendCommand('FACTORY_RESET\n');
