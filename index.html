@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebUSB nRF52 Control</title>
+    <title>Web Serial Device Control</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,17 +32,14 @@
     <div class="w-full max-w-2xl bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 flex flex-col gap-6">
         <!-- Header -->
         <div class="text-center">
-            <h1 class="text-3xl font-bold text-white">WebUSB Device Control</h1>
+            <h1 class="text-3xl font-bold text-white">Web Serial Device Control</h1>
             <p id="status" class="text-sm text-red-400 mt-2 font-medium">Status: Disconnected</p>
         </div>
 
-        <!-- Connection Buttons -->
-        <div class="flex flex-col sm:flex-row justify-center gap-4">
-            <button id="connectButton" class="w-full sm:w-auto flex-grow bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75">
+        <!-- Connection Button -->
+        <div class="flex justify-center">
+            <button id="connectButton" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75">
                 Connect to Device
-            </button>
-            <button id="inspectButton" class="w-full sm:w-auto hidden bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
-                Inspect Device
             </button>
         </div>
 
@@ -67,7 +64,6 @@
     <script>
         // --- DOM Element References ---
         const connectButton = document.getElementById('connectButton');
-        const inspectButton = document.getElementById('inspectButton');
         const statusDisplay = document.getElementById('status');
         const controlsDiv = document.getElementById('controls');
         const ledOnButton = document.getElementById('ledOnButton');
@@ -77,18 +73,16 @@
         const logContainer = document.getElementById('log');
         const clearLogButton = document.getElementById('clearLogButton');
 
-        // --- WebUSB State Variables ---
-        let device;
+        // --- Web Serial State Variables ---
+        let port;
+        let reader;
+        let writer;
         let isConnected = false;
         const textDecoder = new TextDecoder();
         const textEncoder = new TextEncoder();
 
-        // --- WebUSB Device Filters ---
-        const filters = [ { vendorId: 0x000a } ]; // UPDATED Vendor ID
-
         // --- Event Listeners ---
         connectButton.addEventListener('click', handleConnectClick);
-        inspectButton.addEventListener('click', inspectDevice);
         ledOnButton.addEventListener('click', () => sendCommand('LED_ON\n'));
         ledOffButton.addEventListener('click', () => sendCommand('LED_OFF\n'));
         readSettingsButton.addEventListener('click', () => sendCommand('READ_SETTINGS\n'));
@@ -111,102 +105,67 @@
         }
 
         async function connect() {
+            if (!('serial' in navigator)) {
+                alert('Web Serial API not supported in this browser. Please use Chrome or Edge.');
+                return;
+            }
+
             try {
-                log('Requesting device...');
-                device = await navigator.usb.requestDevice({ filters });
-                inspectButton.classList.remove('hidden');
+                log('Requesting serial port...');
+                port = await navigator.serial.requestPort({ 
+                    filters: [{ usbVendorId: 0x000a }] 
+                });
 
-                log('Opening device...');
-                await device.open();
+                log('Opening port...');
+                await port.open({ baudRate: 115200 });
+
+                writer = port.writable.getWriter();
+                reader = port.readable.getReader();
                 
-                log(`Device opened: ${device.manufacturerName} ${device.productName}`);
-
-                await device.selectConfiguration(1);
-
-                // UPDATED based on your "Inspect Device" output.
-                // Your device uses Interface #1 for serial data (Class 0xa).
-                const interfaceNumber = 1; 
-                await device.claimInterface(interfaceNumber);
-                log(`Interface ${interfaceNumber} claimed.`);
-
                 updateUIForConnection();
+                log('Port opened and ready.');
+                
+                // Listen for data from the device
                 readLoop();
 
             } catch (error) {
                 log(`ERROR: ${error.message}`);
-                if (error.message.includes('claim interface')) {
-                    log('--------------------------------------------------');
-                    log('DEBUGGING HELP:');
-                    log('This error usually means one of two things:');
-                    log('1. Another program (like the Arduino IDE Serial Monitor or a terminal app) is already connected to the device. Please close it and try again.');
-                    log('2. The "interface number" is incorrect for your device. Click the "Inspect Device" button to see a list of available interfaces and their numbers.');
-                    log('--------------------------------------------------');
-                }
                 console.error(error);
             }
         }
 
         async function disconnect() {
-            if (!device) return;
+            if (!port) return;
             try {
-                // Before closing, it's good practice to release the interface
-                await device.releaseInterface(1); // Use the same interface number
-                log('Interface released.');
-                await device.close();
-                log('Device closed.');
+                // Signal the read loop to stop
+                await reader.cancel(); 
+                // The readLoop will handle closing the reader itself.
+
+                log('Closing port writer...');
+                await writer.close();
+                
+                log('Closing port...');
+                await port.close();
+
             } catch (error) {
                 log(`ERROR during disconnect: ${error.message}`);
                 console.error(error);
             } finally {
-                device = null;
+                port = null;
+                writer = null;
+                reader = null;
                 updateUIForDisconnection();
             }
         }
-        
-        function inspectDevice() {
-            if (!device) {
-                log('ERROR: No device selected. Please click "Connect" first.');
-                return;
-            }
-            log('--- Inspecting Device ---');
-            console.log('Full device object:', device);
-
-            let info = `\nDevice: ${device.manufacturerName} ${device.productName}\n`;
-            info += `Configurations: ${device.configurations.length}\n`;
-
-            device.configurations.forEach((config, configIndex) => {
-                info += `\n  [Configuration ${config.configurationValue}]\n`;
-                config.interfaces.forEach(intf => {
-                    info += `    > Interface #${intf.interfaceNumber}\n`;
-                    intf.alternates.forEach(alt => {
-                        info += `      - Alternate Setting: ${alt.alternateSetting}\n`;
-                        info += `      - Interface Class: 0x${alt.interfaceClass.toString(16)}\n`;
-                        if (alt.endpoints.length > 0) {
-                            alt.endpoints.forEach(endpoint => {
-                                info += `        * Endpoint #${endpoint.endpointNumber} | Direction: ${endpoint.direction} | Type: ${endpoint.type}\n`;
-                            });
-                        } else {
-                            info += '        * No endpoints\n';
-                        }
-                    });
-                });
-            });
-            log(info);
-            log('--- End Inspection ---');
-            log('Look for the interface with class 0x0a (CDC-Data) or similar. Note its Interface # and Endpoint #s for the "in" and "out" directions.');
-        }
 
         async function sendCommand(command) {
-            if (!device || !isConnected) {
+            if (!writer) {
                 log('ERROR: Not connected.');
                 return;
             }
             try {
-                // UPDATED based on your "Inspect Device" output.
-                // The OUT endpoint for Interface #1 is Endpoint #1.
-                const endpointNumber = 1;
                 const data = textEncoder.encode(command);
-                await device.transferOut(endpointNumber, data);
+                await writer.write(data);
             } catch (error) {
                 log(`ERROR sending command: ${error.message}`);
                 console.error(error);
@@ -214,23 +173,21 @@
         }
 
         async function readLoop() {
-            // UPDATED based on your "Inspect Device" output.
-            // The IN endpoint for Interface #1 is Endpoint #2.
-            const endpointNumber = 2;
             try {
-                while (isConnected) {
-                    const result = await device.transferIn(endpointNumber, 64);
-                    if (result.data && result.data.byteLength > 0) {
-                        const text = textDecoder.decode(result.data);
-                        log(text, 'device');
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        // The reader has been cancelled.
+                        break;
                     }
+                    const text = textDecoder.decode(value);
+                    log(text, 'device');
                 }
             } catch (error) {
-                if (isConnected) {
-                   log(`ERROR during read: ${error.message}`);
-                   console.error(error);
-                   await disconnect();
-                }
+               log(`ERROR during read: ${error.message}`);
+               console.error(error);
+            } finally {
+                reader.releaseLock();
             }
         }
 
@@ -244,12 +201,10 @@
             connectButton.classList.add('bg-red-600', 'hover:bg-red-500');
             controlsDiv.classList.remove('hidden');
             controlsDiv.classList.add('grid');
-            inspectButton.classList.add('hidden');
         }
 
         function updateUIForDisconnection() {
             isConnected = false;
-            device = null;
             statusDisplay.textContent = 'Status: Disconnected';
             statusDisplay.classList.remove('text-green-400');
             statusDisplay.classList.add('text-red-400');
@@ -258,12 +213,13 @@
             connectButton.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
             controlsDiv.classList.add('hidden');
             controlsDiv.classList.remove('grid');
-            inspectButton.classList.add('hidden');
+            log('Device disconnected.');
         }
 
         function log(message, source = 'app') {
             const prefix = source === 'device' ? '<< ' : '>> ';
-            logContainer.textContent += prefix + message.trimEnd() + '\n';
+            logContainer.textContent += prefix + message;
+            // Auto-scroll to the bottom
             logContainer.scrollTop = logContainer.scrollHeight;
         }
         
