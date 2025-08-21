@@ -154,7 +154,7 @@
             log("Requesting device...");
             try {
                 // Adafruit Vendor ID
-                const filters = [{ vendorId: 0x239A }];
+                const filters = [{ vendorId: 0x000a }];
                 device = await navigator.usb.requestDevice({ filters });
                 
                 log(`Device selected: ${device.manufacturerName} ${device.productName}`);
