@@ -3,380 +3,391 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIDI Controller WebUSB Editor</title>
+    <title>WebUSB Device Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f0f2f5;
-            color: #1c1e21;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
         }
-        .container {
-            width: 100%;
-            max-width: 900px;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+        .luxury-title {
+            font-family: 'Cormorant Garamond', serif;
         }
-        h1, h2, h3 {
-            text-align: center;
-            color: #333;
+        .btn {
+            @apply px-6 py-2 rounded-md text-sm font-semibold shadow-sm transition-all duration-200;
         }
-        h3 {
-            margin-top: 0;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
+        .btn-primary {
+            @apply bg-amber-500 text-gray-900 hover:bg-amber-400 disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed;
         }
-        button {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            color: #fff;
-            background-color: #1877f2;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-bottom: 15px;
-            transition: background-color 0.2s;
+        .btn-secondary {
+             @apply bg-gray-700 text-white hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed;
         }
-        button:hover:not(:disabled) {
-            background-color: #166fe5;
+        .input-field {
+            @apply block w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200;
         }
-        button:disabled {
-            background-color: #a0a0a0;
-            cursor: not-allowed;
+        .label {
+            @apply block text-sm font-medium text-gray-300 mb-1;
         }
-        button.saved {
-            background-color: #42b72a;
-        }
-        #settings-form {
-            display: none;
-            margin-top: 20px;
-        }
-        .form-section {
-            margin-bottom: 25px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-        }
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 15px;
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-        label {
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: #606770;
-        }
-        input, select {
-            padding: 8px;
-            border: 1px solid #ccd0d5;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .log-container {
-            width: 100%;
-            max-width: 900px;
+        .card {
+            @apply bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-lg p-6 shadow-lg;
         }
         #log {
-            background-color: #222;
-            color: #0f0;
-            font-family: monospace;
-            white-space: pre-wrap;
-            padding: 15px;
-            height: 150px;
-            overflow-y: scroll;
-            border-radius: 5px;
+            height: 200px;
+            background-color: #000;
+            border: 1px solid #374151;
         }
     </style>
 </head>
-<body>
+<body class="text-gray-200">
 
-    <div class="container">
-        <h1>MIDI Controller Settings Editor</h1>
-        <button id="connectButton">Connect to Device</button>
-        <button id="readButton" disabled>Read Settings from Device</button>
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        
+        <header class="text-center mb-8">
+            <h1 class="luxury-title text-5xl font-bold text-amber-400">Device Configuration Interface</h1>
+            <p class="text-gray-400 mt-2">Manage your device settings directly via WebUSB</p>
+        </header>
 
-        <form id="settings-form">
-            <div class="form-section">
-                <h2>Global Settings</h2>
-                <div class="form-grid" id="global-settings-container"></div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <!-- Control & Log Column -->
+            <div class="md:col-span-1 flex flex-col gap-8">
+                <div class="card">
+                    <h2 class="text-2xl font-semibold mb-4 luxury-title text-white">Connection</h2>
+                    <button id="connectButton" class="btn btn-primary w-full">Connect to Device</button>
+                </div>
+
+                <div class="card flex-grow flex flex-col">
+                    <h2 class="text-2xl font-semibold mb-4 luxury-title text-white">Log</h2>
+                    <div id="log" class="w-full bg-black rounded-md p-3 text-xs font-mono text-green-400 overflow-y-auto flex-grow"></div>
+                </div>
             </div>
-            <div class="form-section">
-                <h2 id="bank-settings-title">Bank Settings (Bank #)</h2>
-                <div id="bank-common-settings-container" class="form-grid" style="margin-bottom: 20px;"></div>
-                
-                <h3>Potentiometer Settings</h3>
-                <div class="form-grid" id="pot-settings-container"></div>
 
-                <h3>Button Settings</h3>
-                <div class="form-grid" id="button-settings-container"></div>
+            <!-- Settings Column -->
+            <div class="md:col-span-2 card">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-semibold luxury-title text-white">Settings</h2>
+                    <div class="flex gap-4">
+                        <button id="readButton" class="btn btn-secondary" disabled>Read Settings</button>
+                        <button id="writeButton" class="btn btn-primary" disabled>Write Settings</button>
+                    </div>
+                </div>
+
+                <form id="settingsForm">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Global Settings -->
+                        <div class="space-y-4 p-4 border border-gray-700 rounded-md">
+                            <h3 class="text-xl font-semibold luxury-title text-amber-400 border-b border-gray-700 pb-2">Global</h3>
+                            <div>
+                                <label for="esbChannel" class="label">ESB Channel</label>
+                                <input type="number" id="esbChannel" class="input-field">
+                            </div>
+                            <div>
+                                <label for="activeBank" class="label">Active Bank</label>
+                                <input type="number" id="activeBank" class="input-field">
+                            </div>
+                            <div>
+                                <label for="brightness" class="label">Brightness</label>
+                                <input type="number" id="brightness" class="input-field">
+                            </div>
+                             <div>
+                                <label for="autoCalEnabled" class="label">Auto Calibration</label>
+                                <select id="autoCalEnabled" class="input-field">
+                                    <option value="1">Enabled</option>
+                                    <option value="0">Disabled</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="autoCalMaxValue" class="label">Auto-Cal Max Value</label>
+                                <input type="number" id="autoCalMaxValue" class="input-field">
+                            </div>
+                        </div>
+
+                        <!-- Bank Settings -->
+                        <div class="space-y-4 p-4 border border-gray-700 rounded-md">
+                            <h3 class="text-xl font-semibold luxury-title text-amber-400 border-b border-gray-700 pb-2">Current Bank</h3>
+                            <div>
+                                <label for="midiChannel" class="label">MIDI Channel</label>
+                                <input type="number" id="midiChannel" class="input-field">
+                            </div>
+                            <div>
+                                <label for="buttonMode" class="label">Button Mode</label>
+                                 <select id="buttonMode" class="input-field">
+                                    <option value="0">Momentary</option>
+                                    <option value="1">Toggle</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="assignableCCs" class="label">Assignable CCs (comma-separated)</label>
+                                <input type="text" id="assignableCCs" class="input-field">
+                            </div>
+                             <div>
+                                <label for="potLabels" class="label">Pot Labels (4 chars each, comma-sep)</label>
+                                <input type="text" id="potLabels" class="input-field">
+                            </div>
+                            <div>
+                                <label for="buttonLabels" class="label">Button Labels (4 chars each, comma-sep)</label>
+                                <input type="text" id="buttonLabels" class="input-field">
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
-            <button type="submit" id="saveButton">Save Settings to Device</button>
-        </form>
-    </div>
-
-    <div class="log-container">
-        <h3>Log:</h3>
-        <pre id="log"></pre>
+        </div>
     </div>
 
     <script>
         const connectButton = document.getElementById('connectButton');
         const readButton = document.getElementById('readButton');
-        const saveButton = document.getElementById('saveButton');
-        const settingsForm = document.getElementById('settings-form');
+        const writeButton = document.getElementById('writeButton');
         const logElement = document.getElementById('log');
+        const form = document.getElementById('settingsForm');
 
         let device;
         let interfaceNumber;
         let endpointOut;
         let endpointIn;
 
-        function log(message) {
+        const TOTAL_ASSIGNABLE_INPUTS = 12;
+        const NUM_ANALOG_POTS = 8;
+        const NUM_DIGITAL_MIDI_BUTTONS = 4;
+        const POT_LABEL_LENGTH = 4;
+
+        function log(message, type = 'info') {
+            const colorMap = {
+                info: 'text-gray-400',
+                success: 'text-green-400',
+                error: 'text-red-400',
+                tx: 'text-amber-400',
+                rx: 'text-sky-400'
+            };
+            const prefixMap = {
+                info: '[INFO]',
+                success: '[OK]',
+                error: '[ERROR]',
+                tx: '[SENT]',
+                rx: '[RECV]'
+            };
+            
             console.log(message);
-            logElement.textContent += `> ${message}\n`;
+            const line = document.createElement('div');
+            line.innerHTML = `<span class="${colorMap[type]}">${prefixMap[type]}</span> ${message}`;
+            logElement.appendChild(line);
             logElement.scrollTop = logElement.scrollHeight;
         }
 
         connectButton.addEventListener('click', async () => {
-            log("Attempting to connect...");
+            log("Requesting device...");
             try {
-                const filters = [{ vendorId: 0x000a }]; // IMPORTANT: Use your device's Vendor ID
-                log(`Requesting device with filters: ${JSON.stringify(filters)}`);
-                device = await navigator.usb.requestDevice({ filters });
-
+                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x239A }] }); // Adafruit Vendor ID
                 log(`Device selected: ${device.manufacturerName} ${device.productName}`);
-                await device.open();
-                await device.selectConfiguration(1);
-
-                log("Searching for the correct interface and endpoints...");
-                const iface = device.configuration.interfaces.find(i => i.alternate.interfaceClass === 0xFF);
-                if (!iface) throw new Error("Could not find a valid WebUSB interface.");
                 
-                interfaceNumber = iface.interfaceNumber;
-                endpointOut = iface.alternate.endpoints.find(ep => ep.direction === 'out').endpointNumber;
-                endpointIn = iface.alternate.endpoints.find(ep => ep.direction === 'in').endpointNumber;
+                await device.open();
+                log("Device opened.");
+                await device.selectConfiguration(1);
+                log("Configuration selected.");
 
-                if (!endpointOut || !endpointIn) throw new Error("Could not find IN and OUT endpoints.");
+                for (const iface of device.configuration.interfaces) {
+                    if (iface.alternate.interfaceClass === 0xFF) { // Vendor-Specific
+                        interfaceNumber = iface.interfaceNumber;
+                        log(`Found WebUSB interface: ${interfaceNumber}`);
+                        
+                        for(const ep of iface.alternate.endpoints) {
+                            if (ep.direction === 'out') {
+                                endpointOut = ep.endpointNumber;
+                                log(`Found OUT endpoint: ${endpointOut}`);
+                            }
+                            if (ep.direction === 'in') {
+                                endpointIn = ep.endpointNumber;
+                                log(`Found IN endpoint: ${endpointIn}`);
+                            }
+                        }
+                        break;
+                    }
+                }
+
+                if (interfaceNumber === undefined || endpointOut === undefined || endpointIn === undefined) {
+                    throw new Error("Could not find all required WebUSB endpoints.");
+                }
 
                 await device.claimInterface(interfaceNumber);
-                log(`✅ Device connected! Interface: ${interfaceNumber}, EP Out: ${endpointOut}, EP In: ${endpointIn}`);
-                
+                log("Interface claimed.");
+
+                log("Device connected successfully!", 'success');
                 connectButton.disabled = true;
+                connectButton.textContent = "Connected";
                 readButton.disabled = false;
+                writeButton.disabled = false;
+                
+                // Start listening for data from the device
+                listenForData();
+
             } catch (error) {
-                log(`❌ ERROR: ${error.message}`);
+                log(`Connection failed: ${error.message}`, 'error');
             }
         });
+
+        async function listenForData() {
+            if (!device) return;
+            try {
+                let result = await device.transferIn(endpointIn, 512); // Read up to 512 bytes
+                const decoder = new TextDecoder();
+                const text = decoder.decode(result.data);
+                log(`Raw data: ${text}`, 'rx');
+
+                // Check for specific acknowledgements
+                if (text.includes("SETTINGS_UPDATED")) {
+                    log("Device confirmed settings update.", 'success');
+                }
+
+                // Continue listening
+                listenForData();
+            } catch (error) {
+                if (!error.message.includes("The device was disconnected")) {
+                   log(`Error receiving data: ${error.message}`, 'error');
+                } else {
+                   log('Device disconnected.');
+                }
+            }
+        }
+
 
         readButton.addEventListener('click', async () => {
-            if (!device) { log("Not connected."); return; }
+            if (!device) return;
             try {
-                log("Sending GET_SETTINGS command...");
-                await sendCommand("GET_SETTINGS");
+                log("Sending 'Read' command (R)...", 'tx');
+                await device.transferOut(endpointOut, new Uint8Array([0x52])); // 'R'
                 
-                log("Waiting for settings data...");
-                const result = await device.transferIn(endpointIn, 2048); // Read up to 2KB
-                const decoder = new TextDecoder();
-                const jsonString = decoder.decode(result.data);
-                
-                log("Received data. Parsing JSON...");
-                const settings = JSON.parse(jsonString);
-                
-                log("Successfully parsed settings. Populating form...");
-                populateForm(settings);
-                settingsForm.style.display = 'block';
+                log("Waiting for settings data...", 'rx');
+                // The device will send two packets back-to-back
+                const globalSettingsData = await device.transferIn(endpointIn, 64);
+                const bankSettingsData = await device.transferIn(endpointIn, 256);
+
+                if (globalSettingsData.status !== 'ok' || bankSettingsData.status !== 'ok') {
+                    throw new Error("USB transfer failed.");
+                }
+
+                log("Received settings data. Parsing...", 'rx');
+                parseAndDisplaySettings(globalSettingsData.data, bankSettingsData.data);
 
             } catch (error) {
-                log(`❌ ERROR reading settings: ${error.message}`);
+                log(`Error reading settings: ${error.message}`, 'error');
             }
         });
-
-        settingsForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            if (!device) { log("Not connected."); return; }
+        
+        writeButton.addEventListener('click', async () => {
+            if (!device) return;
             try {
-                log("Collecting form data...");
-                const settings = collectFormData();
+                log("Packing settings data...", 'info');
+                const { globalBuffer, bankBuffer } = packSettings();
                 
-                const jsonString = JSON.stringify(settings);
-                log("Sending SET_SETTINGS command with new data...");
-                
-                await sendCommand(`SET_SETTINGS:${jsonString}`);
-                
-                log("Waiting for confirmation...");
-                const result = await device.transferIn(endpointIn, 64);
-                const decoder = new TextDecoder();
-                const response = decoder.decode(result.data);
+                log("Sending 'Write' command (W)...", 'tx');
+                await device.transferOut(endpointOut, new Uint8Array([0x57])); // 'W'
 
-                if (response.startsWith("OK")) {
-                    log("✅ Settings saved successfully on device!");
-                    // Visual feedback for save button
-                    saveButton.classList.add('saved');
-                    saveButton.textContent = 'Saved!';
-                    setTimeout(() => {
-                        saveButton.classList.remove('saved');
-                        saveButton.textContent = 'Save Settings to Device';
-                    }, 2000);
-                } else {
-                    log(`⚠️ Received unexpected response: ${response}`);
-                }
+                log("Sending global settings payload...", 'tx');
+                await device.transferOut(endpointOut, globalBuffer);
+                
+                log("Sending bank settings payload...", 'tx');
+                await device.transferOut(endpointOut, bankBuffer);
+                
+                log("Settings data sent. Waiting for confirmation...", 'info');
 
-            } catch(error) {
-                log(`❌ ERROR saving settings: ${error.message}`);
+            } catch (error) {
+                log(`Error writing settings: ${error.message}`, 'error');
             }
         });
 
-        async function sendCommand(cmd) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(cmd);
-            await device.transferOut(endpointOut, data);
-        }
+        function parseAndDisplaySettings(globalDataView, bankDataView) {
+            // Global Settings (5 bytes total)
+            form.esbChannel.value = globalDataView.getUint8(0);
+            form.activeBank.value = globalDataView.getUint8(1);
+            form.brightness.value = globalDataView.getUint8(2);
+            form.autoCalEnabled.value = globalDataView.getUint8(3);
+            form.autoCalMaxValue.value = globalDataView.getInt16(4, true); // Assuming 2 bytes for int16_t, little-endian
 
-        function createFormElement(container, id, label, type = 'text', options = {}) {
-            const group = document.createElement('div');
-            group.className = 'form-group';
+            // Bank Settings
+            let offset = 0;
+            form.midiChannel.value = bankDataView.getUint8(offset); offset += 1;
+            form.buttonMode.value = bankDataView.getUint8(offset); offset += 1;
             
-            const labelEl = document.createElement('label');
-            labelEl.setAttribute('for', id);
-            labelEl.textContent = label;
-            group.appendChild(labelEl);
-
-            let inputEl;
-            if (type === 'select') {
-                inputEl = document.createElement('select');
-                options.choices.forEach(choice => {
-                    const option = document.createElement('option');
-                    option.value = choice.value;
-                    option.textContent = choice.text;
-                    inputEl.appendChild(option);
-                });
-            } else if (type === 'checkbox') {
-                inputEl = document.createElement('input');
-                inputEl.type = 'checkbox';
-            } else {
-                inputEl = document.createElement('input');
-                inputEl.type = type;
-                if (type === 'number') {
-                    inputEl.min = options.min || 0;
-                    inputEl.max = options.max || 127;
-                }
-                if (type === 'text') {
-                    inputEl.maxLength = options.maxLength || 50;
-                }
+            const ccs = [];
+            for(let i = 0; i < TOTAL_ASSIGNABLE_INPUTS; i++) {
+                ccs.push(bankDataView.getUint8(offset + i));
             }
-            inputEl.id = id;
-            inputEl.name = id;
-            group.appendChild(inputEl);
-            container.appendChild(group);
-        }
+            form.assignableCCs.value = ccs.join(',');
+            offset += TOTAL_ASSIGNABLE_INPUTS;
 
-        function populateForm(settings) {
-            const globalContainer = document.getElementById('global-settings-container');
-            const bankCommonContainer = document.getElementById('bank-common-settings-container');
-            const potContainer = document.getElementById('pot-settings-container');
-            const buttonContainer = document.getElementById('button-settings-container');
+            const decoder = new TextDecoder();
+            const potLabels = [];
+            for(let i = 0; i < NUM_ANALOG_POTS; i++) {
+                const labelBuffer = bankDataView.buffer.slice(offset, offset + POT_LABEL_LENGTH + 1);
+                potLabels.push(decoder.decode(labelBuffer).replace(/\0/g, ''));
+                offset += POT_LABEL_LENGTH + 1;
+            }
+            form.potLabels.value = potLabels.join(',');
+
+            const buttonLabels = [];
+            for(let i = 0; i < NUM_DIGITAL_MIDI_BUTTONS; i++) {
+                const labelBuffer = bankDataView.buffer.slice(offset, offset + POT_LABEL_LENGTH + 1);
+                buttonLabels.push(decoder.decode(labelBuffer).replace(/\0/g, ''));
+                offset += POT_LABEL_LENGTH + 1;
+            }
+            form.buttonLabels.value = buttonLabels.join(',');
             
-            globalContainer.innerHTML = '';
-            bankCommonContainer.innerHTML = '';
-            potContainer.innerHTML = '';
-            buttonContainer.innerHTML = '';
-
-            // Populate Global
-            createFormElement(globalContainer, 'esbChannel', 'ESB Channel', 'number', { min: 0, max: 255 });
-            document.getElementById('esbChannel').value = settings.global.esbChannel;
-
-            createFormElement(globalContainer, 'activeBank', 'Active Bank', 'number', { min: 0, max: 11 });
-            document.getElementById('activeBank').value = settings.global.activeBank;
-            
-            createFormElement(globalContainer, 'brightness', 'Brightness', 'number', { min: 3, max: 255 });
-            document.getElementById('brightness').value = settings.global.brightness;
-
-            createFormElement(globalContainer, 'autoCalEnabled', 'Auto Calibration', 'checkbox');
-            document.getElementById('autoCalEnabled').checked = settings.global.autoCalEnabled;
-
-            // Populate Bank
-            document.getElementById('bank-settings-title').textContent = `Bank Settings (Bank ${settings.global.activeBank})`;
-            createFormElement(bankCommonContainer, 'midiChannel', 'MIDI Channel', 'number', { min: 1, max: 16 });
-            document.getElementById('midiChannel').value = settings.bank.midiChannel;
-
-            createFormElement(bankCommonContainer, 'buttonMode', 'Button Mode', 'select', { choices: [{value: 0, text: 'Momentary'}, {value: 1, text: 'Toggle'}] });
-            document.getElementById('buttonMode').value = settings.bank.buttonMode;
-
-            // Potentiometer Settings
-            settings.bank.potLabels.forEach((label, i) => {
-                const id = `potLabel${i}`;
-                createFormElement(potContainer, id, `Pot ${i+1} Label`, 'text', { maxLength: 4 });
-                document.getElementById(id).value = label;
-                
-                const ccId = `cc${i}`;
-                createFormElement(potContainer, ccId, `Pot ${i+1} CC`, 'number', {min: 0, max: 127});
-                document.getElementById(ccId).value = settings.bank.assignableCCs[i];
-            });
-            
-            // Button Settings
-            settings.bank.buttonLabels.forEach((label, i) => {
-                const id = `buttonLabel${i}`;
-                createFormElement(buttonContainer, id, `Button ${i+1} Label`, 'text', { maxLength: 4 });
-                document.getElementById(id).value = label;
-
-                const ccIndex = i + 8; // Buttons are the last 4 CCs
-                const ccId = `cc${ccIndex}`;
-                createFormElement(buttonContainer, ccId, `Button ${i+1} CC`, 'number', {min: 0, max: 127});
-                document.getElementById(ccId).value = settings.bank.assignableCCs[ccIndex];
-            });
+            log("Settings parsed and displayed.", 'success');
         }
         
-        function collectFormData() {
-            const settings = {
-                global: {},
-                bank: {
-                    potLabels: [],
-                    buttonLabels: [],
-                    assignableCCs: new Array(12)
-                }
-            };
-            
-            // Collect Global
-            settings.global.esbChannel = parseInt(document.getElementById('esbChannel').value);
-            settings.global.activeBank = parseInt(document.getElementById('activeBank').value);
-            settings.global.brightness = parseInt(document.getElementById('brightness').value);
-            settings.global.autoCalEnabled = document.getElementById('autoCalEnabled').checked;
-            settings.global.autoCalMaxValue = 15000; // This value is read on device, so we send a default
+        function packSettings() {
+            // Global Settings: 1 + 1 + 1 + 1 + 2 = 6 bytes, but bool is 1 byte in C++ struct
+            const globalBuffer = new ArrayBuffer(5);
+            const globalView = new DataView(globalBuffer);
+            let offset = 0;
+            globalView.setUint8(offset, parseInt(form.esbChannel.value)); offset += 1;
+            globalView.setUint8(offset, parseInt(form.activeBank.value)); offset += 1;
+            globalView.setUint8(offset, parseInt(form.brightness.value)); offset += 1;
+            globalView.setUint8(offset, parseInt(form.autoCalEnabled.value)); offset += 1;
+            globalView.setInt16(offset, parseInt(form.autoCalMaxValue.value), true); offset += 2;
 
-            // Collect Bank
-            settings.bank.midiChannel = parseInt(document.getElementById('midiChannel').value);
-            settings.bank.buttonMode = parseInt(document.getElementById('buttonMode').value);
 
-            for (let i = 0; i < 8; i++) {
-                // Trim and limit label length
-                let label = document.getElementById(`potLabel${i}`).value.trim();
-                settings.bank.potLabels.push(label.substring(0, 4));
-                settings.bank.assignableCCs[i] = parseInt(document.getElementById(`cc${i}`).value);
+            // Bank Settings
+            const bankBufferSize = 2 + TOTAL_ASSIGNABLE_INPUTS + (NUM_ANALOG_POTS * (POT_LABEL_LENGTH + 1)) + (NUM_DIGITAL_MIDI_BUTTONS * (POT_LABEL_LENGTH + 1)) + (NUM_ANALOG_POTS * 4);
+            const bankBuffer = new ArrayBuffer(bankBufferSize);
+            const bankView = new DataView(bankBuffer);
+            const encoder = new TextEncoder();
+            offset = 0;
+
+            bankView.setUint8(offset, parseInt(form.midiChannel.value)); offset += 1;
+            bankView.setUint8(offset, parseInt(form.buttonMode.value)); offset += 1;
+
+            const ccs = form.assignableCCs.value.split(',').map(s => parseInt(s.trim()));
+            for(let i=0; i<TOTAL_ASSIGNABLE_INPUTS; i++) {
+                bankView.setUint8(offset + i, ccs[i] || 0);
             }
-            for (let i = 0; i < 4; i++) {
-                let label = document.getElementById(`buttonLabel${i}`).value.trim();
-                settings.bank.buttonLabels.push(label.substring(0, 4));
-                const ccIndex = i + 8;
-                settings.bank.assignableCCs[ccIndex] = parseInt(document.getElementById(`cc${ccIndex}`).value);
+            offset += TOTAL_ASSIGNABLE_INPUTS;
+
+            const potLabels = form.potLabels.value.split(',');
+            for(let i=0; i<NUM_ANALOG_POTS; i++) {
+                const label = (potLabels[i] || "").padEnd(POT_LABEL_LENGTH + 1, '\0');
+                const encoded = encoder.encode(label);
+                encoded.forEach((byte, j) => bankView.setUint8(offset + j, byte));
+                offset += POT_LABEL_LENGTH + 1;
             }
 
-            return settings;
+            const buttonLabels = form.buttonLabels.value.split(',');
+             for(let i=0; i<NUM_DIGITAL_MIDI_BUTTONS; i++) {
+                const label = (buttonLabels[i] || "").padEnd(POT_LABEL_LENGTH + 1, '\0');
+                const encoded = encoder.encode(label);
+                encoded.forEach((byte, j) => bankView.setUint8(offset + j, byte));
+                offset += POT_LABEL_LENGTH + 1;
+            }
+
+            // Note: potMinRaw and potMaxRaw are not editable in this UI, 
+            // so we are not packing them. The device-side code will need to handle this.
+            // For a complete solution, you would add fields for these and pack them here.
+
+            return { globalBuffer, bankBuffer };
         }
 
     </script>
