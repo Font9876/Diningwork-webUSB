@@ -19,11 +19,10 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        h1, h2, h3 {
+        h1, h2 {
             color: #444;
             border-bottom: 2px solid #e0e0e0;
             padding-bottom: 10px;
-            margin-top: 20px;
         }
         button {
             font-size: 16px;
@@ -33,7 +32,6 @@
             border-radius: 5px;
             border: 1px solid #ccc;
             background-color: #e7e7e7;
-            transition: background-color 0.3s ease;
         }
         button:hover {
             background-color: #ddd;
@@ -47,16 +45,10 @@
             color: white;
             border: none;
         }
-        #connectButton:hover:not(:disabled) {
-            background-color: #45a049;
-        }
         #disconnectButton {
             background-color: #f44336;
             color: white;
             border: none;
-        }
-        #disconnectButton:hover:not(:disabled) {
-            background-color: #da190b;
         }
         .controls, .settings-grid {
             display: grid;
@@ -81,26 +73,19 @@
             border-radius: 4px;
             border: 1px solid #ccc;
             margin-bottom: 10px;
-            box-sizing: border-box; /* Include padding and border in the element's total width and height */
         }
-        #log-container, #device-messages { 
+        #log-container { 
             margin-top: 20px;
         }
-        #log, #receivedMessages { 
+        #log { 
             background-color: #222; 
             color: #0f0; 
             font-family: monospace; 
             white-space: pre-wrap; 
             padding: 15px; 
-            height: 150px; /* Reduced height for better layout */
+            height: 200px; 
             overflow-y: scroll; 
             border-radius: 5px; 
-            margin-bottom: 10px;
-        }
-        #receivedMessages {
-            background-color: #e0f2f7; /* Light blue background for device messages */
-            color: #212121; /* Darker text for readability */
-            border: 1px solid #bbdefb;
         }
     </style>
 </head>
@@ -139,11 +124,6 @@
             </div>
         </div>
 
-        <div id="device-messages">
-            <h3>Messages from Device</h3>
-            <pre id="receivedMessages">Waiting for messages...</pre>
-        </div>
-
         <div id="log-container">
             <h3>Log</h3>
             <pre id="log"></pre>
@@ -156,7 +136,6 @@
         const refreshButton = document.getElementById('refreshButton');
         const logElement = document.getElementById('log');
         const mainControls = document.getElementById('main-controls');
-        const receivedMessagesElement = document.getElementById('receivedMessages'); // New element for device messages
 
         let device;
         let interfaceNumber;
@@ -174,9 +153,8 @@
         connectButton.addEventListener('click', async () => {
             log("Requesting device...");
             try {
-                // Adafruit Vendor ID (0x00a is not a standard USB Vendor ID. Using 0x239A for Adafruit)
-                // If your device's Vendor ID is truly 0x000a, keep it. Otherwise, use 0x239A for Adafruit.
-                const filters = [{ vendorId: 0x000a }]; // Updated Vendor ID for Adafruit
+                // Adafruit Vendor ID
+                const filters = [{ vendorId: 0x000a }];
                 device = await navigator.usb.requestDevice({ filters });
                 
                 log(`Device selected: ${device.manufacturerName} ${device.productName}`);
@@ -188,11 +166,9 @@
 
                 const interfaces = device.configuration.interfaces;
                 for (const iface of interfaces) {
-                    // Check if interfaceClass is 0xFF (Vendor Specific) or 0x0A (CDC-Data) depending on your WebUSB setup
-                    // For TinyUSB CDC+MSC, it might be 0x0A or 0xFF
-                    if (iface.alternate.interfaceClass === 0xFF || iface.alternate.interfaceClass === 0x0A) { 
+                    if (iface.alternate.interfaceClass === 0xFF) { // Vendor-Specific
                         interfaceNumber = iface.interfaceNumber;
-                        log(`Found relevant interface: ${interfaceNumber} (Class: 0x${iface.alternate.interfaceClass.toString(16).toUpperCase()})`);
+                        log(`Found vendor-specific interface: ${interfaceNumber}`);
                         for (const ep of iface.alternate.endpoints) {
                             if (ep.direction === 'out') {
                                 endpointOut = ep.endpointNumber;
@@ -203,15 +179,12 @@
                                 log(`Found IN endpoint: ${endpointIn}`);
                             }
                         }
-                        // Assuming the first matching interface is the correct one
-                        if (endpointIn && endpointOut) {
-                            break; 
-                        }
+                        break;
                     }
                 }
 
                 if (!interfaceNumber || !endpointIn || !endpointOut) {
-                    throw new Error("Could not find required interface and endpoints. Check device configuration.");
+                    throw new Error("Could not find required interface and endpoints.");
                 }
 
                 await device.claimInterface(interfaceNumber);
@@ -225,11 +198,10 @@
                 keepReading = true;
                 readLoop();
 
-                // Request initial settings from the device
                 await sendCommand("get_settings");
 
             } catch (error) {
-                log(` ERROR: ${error.message}`);
+                log(`❌ ERROR: ${error.message}`);
                 console.error(error);
             }
         });
@@ -242,14 +214,13 @@
                 await device.close();
                 log("Device disconnected.");
             } catch (error) {
-                log(` ERROR disconnecting: ${error.message}`);
+                log(`❌ ERROR disconnecting: ${error.message}`);
             }
             device = null;
             connectButton.disabled = false;
             disconnectButton.disabled = true;
             refreshButton.disabled = true;
             mainControls.style.display = 'none';
-            receivedMessagesElement.textContent = 'Waiting for messages...'; // Clear messages on disconnect
         });
 
         refreshButton.addEventListener('click', () => {
@@ -257,20 +228,15 @@
         });
 
         async function sendCommand(command) {
-            if (!device || !device.opened) { // Check if device is connected and open
-                log("Not connected or device not open. Cannot send command.");
+            if (!device) {
+                log("Not connected.");
                 return;
             }
             try {
                 log(`Sending: ${command}`);
-                const data = textEncoder.encode(command + '\n'); // Ensure newline for device parsing
-                await device.transferOut(endpointOut, data);
+                await device.transferOut(endpointOut, textEncoder.encode(command + '\n'));
             } catch (error) {
-                log(` ERROR sending command: ${error.message}`);
-                // Handle cases where transferOut might fail due to disconnection
-                if (error.message.includes("disconnected") || error.message.includes("No device with")) {
-                    await disconnectButton.click(); // Force disconnect if device is gone
-                }
+                log(`❌ ERROR sending command: ${error.message}`);
             }
         }
 
@@ -278,41 +244,33 @@
             let incomingData = "";
             while (keepReading) {
                 try {
-                    // Read up to 64 bytes at a time
                     let result = await device.transferIn(endpointIn, 64);
                     if (result.data) {
-                        // Append new data to our buffer
                         incomingData += textDecoder.decode(result.data, {stream: true});
-                        
-                        // Process complete lines (messages ending with newline)
-                        let newlineIndex;
-                        while ((newlineIndex = incomingData.indexOf('\n')) !== -1) {
-                            const message = incomingData.substring(0, newlineIndex).trim();
-                            incomingData = incomingData.substring(newlineIndex + 1);
+                        // Process complete JSON objects
+                        let lastBraceIndex;
+                        while ((lastBraceIndex = incomingData.indexOf('}')) !== -1) {
+                            const jsonString = incomingData.substring(0, lastBraceIndex + 1);
+                            incomingData = incomingData.substring(lastBraceIndex + 1);
                             
-                            if (message.length > 0) {
-                                try {
-                                    // Attempt to parse as JSON (for settings)
-                                    const settings = JSON.parse(message);
-                                    log("Received settings object.");
-                                    populateUI(settings);
-                                } catch (e) {
-                                    // If parsing fails, it's likely a plain text message from the device
-                                    receivedMessagesElement.textContent += `${message}\n`;
-                                    receivedMessagesElement.scrollTop = receivedMessagesElement.scrollHeight;
-                                    log(`Device message: "${message}"`);
-                                }
+                            try {
+                                const settings = JSON.parse(jsonString);
+                                log("Received settings object.");
+                                populateUI(settings);
+                            } catch (e) {
+                                // If parsing fails, it might be a simple log message
+                                log(`Device: ${jsonString.trim()}`);
                             }
                         }
                     }
                 } catch (error) {
-                    if (error.message.includes("The device was disconnected") || error.message.includes("No device with")) {
+                    if (error.message.includes("The device was disconnected")) {
                         log("Device appears to have been disconnected.");
                         await disconnectButton.click();
                     } else {
-                       log(` Read loop error: ${error.message}`);
+                       log(`❌ Read loop error: ${error.message}`);
                     }
-                    keepReading = false; // Stop reading on error
+                    keepReading = false;
                 }
             }
         }
