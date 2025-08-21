@@ -116,6 +116,19 @@
                 await device.claimInterface(interfaceNumber);
                 log('SYS', `Interface ${interfaceNumber} claimed.`);
 
+                // ** THE FIX IS HERE **
+                // This control transfer tells the device the PC is connected and ready.
+                // It triggers the line_state_callback on the device.
+                await device.controlTransferOut({
+                    requestType: 'class',
+                    recipient: 'interface',
+                    request: 0x22, // SET_CONTROL_LINE_STATE
+                    value: 0x01,   // DTR (Data Terminal Ready)
+                    index: interfaceNumber
+                });
+                log('SYS', 'Connection signal sent.');
+
+
                 connectButton.disabled = true;
                 disconnectButton.disabled = false;
                 mainControls.style.display = 'block';
@@ -133,6 +146,14 @@
             if (!device) return;
             keepReading = false;
             try {
+                // Send disconnect signal before releasing the interface
+                await device.controlTransferOut({
+                    requestType: 'class',
+                    recipient: 'interface',
+                    request: 0x22, // SET_CONTROL_LINE_STATE
+                    value: 0x00,   // DTR off
+                    index: interfaceNumber
+                });
                 await device.releaseInterface(interfaceNumber);
                 await device.close();
                 log('SYS', 'Device disconnected.');
