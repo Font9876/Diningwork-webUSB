@@ -363,7 +363,7 @@
              log("Requesting device...");
             try {
                 // MODIFICATION: Added vendorId filter for Adafruit devices.
-                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x239A }] });
+                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x000a }] });
                 await device.open();
                 if (device.configuration === null) await device.selectConfiguration(1);
 
