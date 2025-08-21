@@ -19,10 +19,11 @@
             transition: height 0.05s ease-out;
         }
         .btn-indicator {
-            transition: background-color 0.1s ease;
+            transition: background-color 0.1s ease, box-shadow 0.1s ease;
         }
         .btn-indicator.active {
             background-color: #2dd4bf; /* teal-400 */
+            box-shadow: 0 0 10px #2dd4bf;
         }
         ::-webkit-scrollbar {
             width: 8px;
@@ -43,6 +44,27 @@
             font-weight: bold;
             box-shadow: 0 0 15px rgba(56, 178, 172, 0.5);
         }
+        /* Custom styles for range sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            background: #4b5563;
+            height: 0.5rem;
+            border-radius: 0.25rem;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            margin-top: -4px;
+            background-color: #38b2ac;
+            height: 1.25rem;
+            width: 1.25rem;
+            border-radius: 50%;
+            border: 2px solid #fff;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
@@ -50,9 +72,15 @@
         
         <header class="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b border-gray-700">
             <h1 class="text-2xl font-bold text-white mb-4 sm:mb-0">MIDI Controller Interface</h1>
-            <div class="connection-controls text-center space-x-2">
-                <button id="connectButton" class="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition-transform transform hover:scale-105">Connect</button>
-                <button id="disconnectButton" disabled class="px-5 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition-transform transform hover:scale-105 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:transform-none">Disconnect</button>
+            <div class="flex items-center space-x-4">
+                <div id="ble-status" class="text-right text-xs hidden">
+                    <p class="text-gray-400">BLUETOOTH</p>
+                    <p id="ble-peer-name" class="font-semibold text-green-400">Disconnected</p>
+                </div>
+                <div class="connection-controls text-center space-x-2">
+                    <button id="connectButton" class="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition-transform transform hover:scale-105">Connect</button>
+                    <button id="disconnectButton" disabled class="px-5 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition-transform transform hover:scale-105 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:transform-none">Disconnect</button>
+                </div>
             </div>
         </header>
 
@@ -69,14 +97,20 @@
 
                 <section class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
                     <h2 class="text-lg font-semibold mb-3 text-cyan-300">Global & Bank Settings</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div>
-                            <label for="brightness" class="block text-sm font-medium text-gray-400">Brightness (3-255)</label>
-                            <input type="number" id="brightness" min="3" max="255" class="mt-1 block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center font-mono immediate-update-trigger" data-action="brightness">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center">
+                                <label for="brightness" class="block text-sm font-medium text-gray-400">Brightness</label>
+                                <span id="brightness-value" class="font-mono text-cyan-300"></span>
+                            </div>
+                            <input type="range" id="brightness" min="3" max="255" class="w-full immediate-update-trigger" data-action="brightness">
                         </div>
-                        <div>
-                            <label for="midiChannel" class="block text-sm font-medium text-gray-400">MIDI Channel (1-16)</label>
-                            <input type="number" id="midiChannel" min="1" max="16" class="mt-1 block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center font-mono update-trigger" data-action="midi_ch">
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center">
+                                <label for="midiChannel" class="block text-sm font-medium text-gray-400">MIDI Channel</label>
+                                <span id="midiChannel-value" class="font-mono text-cyan-300"></span>
+                            </div>
+                            <input type="range" id="midiChannel" min="1" max="16" class="w-full update-trigger" data-action="midi_ch">
                         </div>
                         <div>
                             <label for="buttonMode" class="block text-sm font-medium text-gray-400">Button Mode</label>
@@ -128,9 +162,9 @@
                         <p id="last-cc-sent" class="font-mono text-lg text-white">-</p>
                     </div>
                 </div>
-                <div id="cc-container" class="grid grid-cols-4 gap-4 mt-4">
-                    <div id="cc-pots-container" class="col-span-4 grid grid-cols-8 gap-3 h-64 items-end"></div>
-                    <div id="cc-btns-container" class="col-span-4 grid grid-cols-4 gap-3 h-24 items-center"></div>
+                <div id="cc-container" class="grid grid-cols-1 gap-4 mt-4">
+                    <div id="cc-pots-container" class="grid grid-cols-8 gap-3 h-80 items-end"></div>
+                    <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-24 items-center mt-4"></div>
                 </div>
             </div>
         </main>
@@ -143,6 +177,12 @@
         const mainControls = document.getElementById('main-controls');
         const visualizer = document.getElementById('visualizer');
         const lastCcSentEl = document.getElementById('last-cc-sent');
+        const brightnessSlider = document.getElementById('brightness');
+        const brightnessValueEl = document.getElementById('brightness-value');
+        const midiChannelSlider = document.getElementById('midiChannel');
+        const midiChannelValueEl = document.getElementById('midiChannel-value');
+        const bleStatusEl = document.getElementById('ble-status');
+        const blePeerNameEl = document.getElementById('ble-peer-name');
         
         // --- WebUSB State ---
         let device, interfaceNumber, endpointIn, endpointOut;
@@ -150,6 +190,7 @@
         const textEncoder = new TextEncoder();
         const textDecoder = new TextDecoder();
         let ccMap = {}; 
+        let currentSettingsCache = {};
 
         // --- Core Functions ---
         const log = (msg) => console.log(`[SYS] ${msg}`);
@@ -165,6 +206,7 @@
         };
 
         const populateUI = (settings) => {
+            currentSettingsCache = settings; // Cache the latest settings
             const bankGrid = document.getElementById('bank-selection-grid');
             bankGrid.innerHTML = '';
             for(let i = 0; i < 12; i++) {
@@ -178,8 +220,10 @@
                 bankGrid.appendChild(bankBtn);
             }
 
-            document.getElementById('brightness').value = settings.brightness;
-            document.getElementById('midiChannel').value = settings.midiChannel;
+            brightnessSlider.value = settings.brightness;
+            brightnessValueEl.textContent = settings.brightness;
+            midiChannelSlider.value = settings.midiChannel;
+            midiChannelValueEl.textContent = settings.midiChannel;
             document.getElementById('buttonMode').value = settings.buttonMode;
             document.getElementById('esbChannel').value = settings.esbChannel;
             
@@ -189,6 +233,13 @@
             bleButton.classList.toggle('hover:bg-green-500', settings.bleOn);
             bleButton.classList.toggle('bg-gray-600', !settings.bleOn);
             bleButton.classList.toggle('hover:bg-gray-500', !settings.bleOn);
+
+            if (settings.blePeerName) {
+                bleStatusEl.classList.remove('hidden');
+                blePeerNameEl.textContent = settings.blePeerName;
+            } else {
+                bleStatusEl.classList.add('hidden');
+            }
 
             const assignmentsGrid = document.getElementById('assignments-grid');
             const ccPotsContainer = document.getElementById('cc-pots-container');
@@ -243,17 +294,12 @@
             lastCcSentEl.textContent = `${cc}:${value}`;
             if (index === undefined) return;
             
-            if (index < 8) { // It's a Pot
+            if (index < 8) {
                 const bar = document.getElementById(`cc-bar-${index}`);
-                if (bar) {
-                    const percentage = (value / 127) * 100;
-                    bar.style.height = `${percentage}%`;
-                }
-            } else { // It's a Button
+                if (bar) bar.style.height = `${(value / 127) * 100}%`;
+            } else {
                 const btn = document.getElementById(`cc-btn-${index}`);
-                if (btn) {
-                    btn.classList.toggle('active', value > 64);
-                }
+                if (btn) btn.classList.toggle('active', value > 64);
             }
         };
 
@@ -261,7 +307,7 @@
             let incomingData = "";
             while (keepReading) {
                 try {
-                    let result = await device.transferIn(endpointIn, 256);
+                    let result = await device.transferIn(endpointIn, 512);
                     if (result.status === 'ok' && result.data.byteLength > 0) {
                         incomingData += textDecoder.decode(result.data, { stream: true });
                         let newlineIndex;
@@ -355,9 +401,12 @@
         });
 
         document.addEventListener('input', (e) => {
-            if (e.target.classList.contains('immediate-update-trigger')) {
+            if (e.target.classList.contains('immediate-update-trigger') || e.target.type === 'range') {
                 const action = e.target.dataset.action;
                 const value = e.target.value;
+                if(e.target.id === 'brightness') brightnessValueEl.textContent = value;
+                if(e.target.id === 'midiChannel') midiChannelValueEl.textContent = value;
+                
                 if (action === 'brightness') {
                     sendCommand(`set_brightness=${value}`);
                 } else if (action === 'label') {
@@ -372,13 +421,14 @@
                 const action = e.target.dataset.action;
                 const value = e.target.value;
                 sendCommand(`set_${action}=${e.target.dataset.index ? e.target.dataset.index + ',' : ''}${value}`);
-                setTimeout(() => sendCommand('get_settings'), 200); // Refresh UI after change
+                setTimeout(() => sendCommand('get_settings'), 200);
             }
         });
 
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('bank-btn')) {
                 sendCommand(`set_bank=${e.target.dataset.bank}`);
+                setTimeout(() => sendCommand('get_settings'), 250);
             } else if (e.target.id === 'bleToggleButton') {
                 sendCommand('toggle_ble');
             } else if (e.target.id === 'startCalButton') {
