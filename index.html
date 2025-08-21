@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>WebUSB MIDI Controller</title>
+    <title>WebUSB Two-Way Communication</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { 
@@ -10,356 +10,250 @@
             padding: 20px;
             background-color: #f4f4f8;
             color: #333;
+            display: flex;
+            justify-content: center;
         }
         .container {
-            max-width: 800px;
-            margin: auto;
+            max-width: 600px;
+            width: 100%;
             background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         h1, h2 {
             color: #444;
             border-bottom: 2px solid #e0e0e0;
             padding-bottom: 10px;
+            margin-top: 0;
         }
         button {
             font-size: 16px;
-            padding: 10px 15px;
+            padding: 12px 18px;
             margin: 5px;
             cursor: pointer;
-            border-radius: 5px;
+            border-radius: 8px;
             border: 1px solid #ccc;
             background-color: #e7e7e7;
+            transition: background-color 0.2s, box-shadow 0.2s;
         }
         button:hover {
             background-color: #ddd;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         button:disabled {
             cursor: not-allowed;
             opacity: 0.6;
         }
         #connectButton {
-            background-color: #4CAF50;
+            background-color: #28a745;
             color: white;
             border: none;
         }
         #disconnectButton {
-            background-color: #f44336;
+            background-color: #dc3545;
             color: white;
             border: none;
         }
-        .controls, .settings-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+        .controls, .log-container {
             margin-top: 20px;
         }
-        .setting-card {
-            background: #fafafa;
-            padding: 15px;
-            border-radius: 5px;
-            border: 1px solid #eee;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input[type="number"], input[type="text"] {
-            width: calc(100% - 20px);
-            padding: 8px 10px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            margin-bottom: 10px;
-        }
-        #log-container { 
-            margin-top: 20px;
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         #log { 
             background-color: #222; 
-            color: #0f0; 
+            color: #00ff00; 
             font-family: monospace; 
             white-space: pre-wrap; 
             padding: 15px; 
-            height: 200px; 
+            height: 250px; 
             overflow-y: scroll; 
-            border-radius: 5px; 
+            border-radius: 8px; 
+            border: 1px solid #444;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>WebUSB MIDI Controller Interface</h1>
+        <h1>WebUSB Device Control</h1>
         
+        <!-- Connection Controls -->
         <div class="connection-controls">
             <button id="connectButton">Connect to Device</button>
             <button id="disconnectButton" disabled>Disconnect</button>
-            <button id="refreshButton" disabled>Refresh Settings</button>
         </div>
 
+        <!-- Main controls, hidden until connected -->
         <div id="main-controls" style="display: none;">
-            <h2>Global Settings</h2>
+            <!-- Buttons to send specific commands -->
             <div class="controls">
-                <div class="setting-card">
-                    <label for="activeBank">Active Bank</label>
-                    <input type="number" id="activeBank" min="0" max="11" readonly>
-                </div>
-                <div class="setting-card">
-                    <label for="brightness">Brightness (3-255)</label>
-                    <input type="number" id="brightness" min="3" max="255">
-                    <button class="update-btn" data-action="brightness">Update</button>
-                </div>
-                <div class="setting-card">
-                    <label for="midiChannel">MIDI Channel (1-16)</label>
-                    <input type="number" id="midiChannel" min="1" max="16">
-                    <button class="update-btn" data-action="midi_ch">Update</button>
+                <h2>Send Command to Device</h2>
+                <div class="button-group">
+                    <button class="command-btn" data-command="A">Send 'A' (Button 6)</button>
+                    <button class="command-btn" data-command="B">Send 'B' (Button 7)</button>
+                    <button class="command-btn" data-command="C">Send 'C' (Button 8)</button>
+                    <button class="command-btn" data-command="D">Send 'D' (Button 9)</button>
                 </div>
             </div>
 
-            <h2>Input Assignments (Bank-Specific)</h2>
-            <div id="assignments-grid" class="settings-grid">
-                <!-- JS will populate this -->
+            <!-- Log for incoming messages -->
+            <div class="log-container">
+                <h2>Messages from Device</h2>
+                <pre id="log"></pre>
             </div>
-        </div>
-
-        <div id="log-container">
-            <h3>Log</h3>
-            <pre id="log"></pre>
         </div>
     </div>
 
     <script>
-        // Get references to HTML elements.
         const connectButton = document.getElementById('connectButton');
         const disconnectButton = document.getElementById('disconnectButton');
-        const refreshButton = document.getElementById('refreshButton');
         const logElement = document.getElementById('log');
         const mainControls = document.getElementById('main-controls');
 
-        // Global variables for WebUSB communication.
-        let device; // Stores the connected USB device object.
-        let interfaceNumber; // The interface number used for communication.
-        let endpointIn, endpointOut; // Endpoint numbers for IN (device to PC) and OUT (PC to device) transfers.
-        let textDecoder = new TextDecoder(); // Used to decode incoming byte arrays to strings.
-        let textEncoder = new TextEncoder(); // Used to encode strings to byte arrays for outgoing data.
-        let keepReading = false; // Flag to control the read loop.
+        let device;
+        let interfaceNumber;
+        let endpointIn, endpointOut;
+        const textDecoder = new TextDecoder();
+        const textEncoder = new TextEncoder();
+        let keepReading = false;
 
-        // Function to log messages to the console and the UI log area.
-        function log(message) {
+        // --- Utility Functions ---
+        function log(message, source = "Web") {
+            const prefix = source === "Device" ? "<" : ">";
             console.log(message);
-            logElement.textContent += `> ${message}\n`;
-            // Scroll to the bottom of the log to show the latest message.
+            logElement.textContent += `${prefix} ${message}\n`;
             logElement.scrollTop = logElement.scrollHeight;
         }
 
-        // Event listener for the Connect button.
+        // --- Connection Logic ---
         connectButton.addEventListener('click', async () => {
             log("Requesting device...");
             try {
-                // Define filters to find the specific USB device.
-                // Adafruit Vendor ID is 0x000a.
-                const filters = [{ vendorId: 0x000a }];
-                // Prompt the user to select a device that matches the filter.
+                // Standard Adafruit vendor ID. Change if your device is different.
+                const filters = [{ vendorId: 0x000a }]; 
                 device = await navigator.usb.requestDevice({ filters });
                 
                 log(`Device selected: ${device.manufacturerName} ${device.productName}`);
-                // Open the selected device.
                 await device.open();
                 log("Device opened.");
 
-                // Select the first configuration (most common for simple devices).
                 await device.selectConfiguration(1);
                 log("Configuration selected.");
 
-                // Iterate through interfaces to find the vendor-specific one (interfaceClass 0xFF).
+                // Find the correct interface and endpoints
                 const interfaces = device.configuration.interfaces;
                 for (const iface of interfaces) {
-                    if (iface.alternate.interfaceClass === 0xFF) { 
-                        interfaceNumber = iface.interfaceNumber;
-                        log(`Found vendor-specific interface: ${interfaceNumber}`);
-                        // Find the IN and OUT endpoints within this interface.
-                        for (const ep of iface.alternate.endpoints) {
-                            if (ep.direction === 'out') {
-                                endpointOut = ep.endpointNumber;
-                                log(`Found OUT endpoint: ${endpointOut}`);
+                    for (const alt of iface.alternates) {
+                         if (alt.interfaceClass === 0xFF) { // Vendor-Specific Class
+                            interfaceNumber = iface.interfaceNumber;
+                            log(`Found WebUSB interface: ${interfaceNumber}`);
+                            for (const ep of alt.endpoints) {
+                                if (ep.direction === 'out') {
+                                    endpointOut = ep.endpointNumber;
+                                    log(`Found OUT endpoint: ${endpointOut}`);
+                                }
+                                if (ep.direction === 'in') {
+                                    endpointIn = ep.endpointNumber;
+                                    log(`Found IN endpoint: ${endpointIn}`);
+                                }
                             }
-                            if (ep.direction === 'in') {
-                                endpointIn = ep.endpointNumber;
-                                log(`Found IN endpoint: ${endpointIn}`);
-                            }
-                        }
-                        break; // Exit loop once the correct interface is found.
+                         }
                     }
                 }
 
-                // Check if all necessary components (interface, IN/OUT endpoints) were found.
-                if (!interfaceNumber || !endpointIn || !endpointOut) {
-                    throw new Error("Could not find required interface and endpoints.");
+                if (interfaceNumber === undefined || !endpointIn || !endpointOut) {
+                    throw new Error("Could not find the required WebUSB interface and endpoints.");
                 }
 
-                // Claim the interface to take control of it.
                 await device.claimInterface(interfaceNumber);
                 log(`Interface ${interfaceNumber} claimed.`);
 
-                // Update UI state: disable connect, enable disconnect and refresh, show controls.
+                // Update UI
                 connectButton.disabled = true;
                 disconnectButton.disabled = false;
-                refreshButton.disabled = false;
                 mainControls.style.display = 'block';
 
-                // Start the read loop to continuously receive data from the device.
+                // Start listening for messages from the device
                 keepReading = true;
                 readLoop();
 
-                // Request initial settings from the device.
-                await sendCommand("get_settings");
-
             } catch (error) {
-                log(` ERROR: ${error.message}`);
+                log(`ERROR: ${error.message}`);
                 console.error(error);
             }
         });
         
-        // Event listener for the Disconnect button.
         disconnectButton.addEventListener('click', async () => {
-            if (!device) return; // Do nothing if no device is connected.
-            keepReading = false; // Stop the read loop.
+            if (!device) return;
+            keepReading = false;
             try {
-                // Release the claimed interface and close the device.
                 await device.releaseInterface(interfaceNumber);
                 await device.close();
                 log("Device disconnected.");
             } catch (error) {
-                log(` ERROR disconnecting: ${error.message}`);
+                log(`ERROR disconnecting: ${error.message}`);
             }
-            // Reset device variable and update UI state.
             device = null;
             connectButton.disabled = false;
             disconnectButton.disabled = true;
-            refreshButton.disabled = true;
             mainControls.style.display = 'none';
         });
 
-        // Event listener for the Refresh Settings button.
-        refreshButton.addEventListener('click', () => {
-            sendCommand("get_settings"); // Send command to get current settings from device.
-        });
-
-        // Function to send a command string to the connected device.
+        // --- Communication Logic ---
         async function sendCommand(command) {
             if (!device) {
-                log("Not connected.");
+                log("Cannot send command: Not connected.");
                 return;
             }
             try {
                 log(`Sending: ${command}`);
-                // Encode the command string (plus newline) to a byte array and send it.
+                // We add a newline because the Arduino code expects it
                 await device.transferOut(endpointOut, textEncoder.encode(command + '\n'));
             } catch (error) {
-                log(` ERROR sending command: ${error.message}`);
+                log(`ERROR sending command: ${error.message}`);
             }
         }
 
-        // Asynchronous function to continuously read data from the device.
         async function readLoop() {
-            let incomingDataBuffer = ""; // Buffer to accumulate incoming data chunks.
+            let incomingData = "";
             while (keepReading) {
                 try {
-                    // Read data from the IN endpoint in chunks (e.g., 64 bytes).
-                    let result = await device.transferIn(endpointIn, 64); 
+                    let result = await device.transferIn(endpointIn, 64); // Read up to 64 bytes
                     if (result.data) {
-                        // Decode the received data and append to the buffer.
-                        // {stream: true} ensures multi-part characters are handled correctly.
-                        incomingDataBuffer += textDecoder.decode(result.data, {stream: true});
+                        // Append new data to our buffer
+                        incomingData += textDecoder.decode(result.data, {stream: true});
                         
-                        // Process messages line by line.
-                        // The Arduino sends messages terminated by a newline.
+                        // Process all complete lines (ending in newline)
                         let newlineIndex;
-                        while ((newlineIndex = incomingDataBuffer.indexOf('\n')) !== -1) {
-                            // Extract the complete message (up to the newline).
-                            const message = incomingDataBuffer.substring(0, newlineIndex).trim();
-                            // Remove the processed message from the buffer.
-                            incomingDataBuffer = incomingDataBuffer.substring(newlineIndex + 1);
-
-                            if (message.length > 0) {
-                                try {
-                                    // Attempt to parse the message as JSON first (for settings updates).
-                                    const settings = JSON.parse(message);
-                                    log("Received settings object.");
-                                    populateUI(settings); // Update UI with received settings.
-                                } catch (e) {
-                                    // If parsing fails, it's likely a simple text message from the buttons.
-                                    log(`Device: ${message}`); // Log the message as plain text.
-                                }
+                        while ((newlineIndex = incomingData.indexOf('\n')) !== -1) {
+                            const line = incomingData.substring(0, newlineIndex).trim();
+                            incomingData = incomingData.substring(newlineIndex + 1);
+                            if (line) { // Don't log empty lines
+                                log(line, "Device");
                             }
                         }
                     }
                 } catch (error) {
-                    // Handle disconnection or other read errors.
                     if (error.message.includes("The device was disconnected")) {
                         log("Device appears to have been disconnected.");
-                        // Programmatically click the disconnect button to clean up.
-                        await disconnectButton.click();
+                        await disconnectButton.click(); // Gracefully disconnect
                     } else {
-                       log(` Read loop error: ${error.message}`);
+                       log(`Read loop error: ${error.message}`);
                     }
-                    keepReading = false; // Stop the loop on error.
+                    keepReading = false; // Stop the loop on error
                 }
             }
         }
         
-        // Function to populate the UI with settings received from the device.
-        function populateUI(settings) {
-            document.getElementById('activeBank').value = settings.activeBank;
-            document.getElementById('brightness').value = settings.brightness;
-            document.getElementById('midiChannel').value = settings.midiChannel;
-
-            const grid = document.getElementById('assignments-grid');
-            grid.innerHTML = ''; // Clear previous entries before repopulating.
-
-            for (let i = 0; i < 12; i++) {
-                // Determine if the input is a Potentiometer (Pot) or a Button (Btn).
-                const type = i < 8 ? 'Pot' : 'Btn';
-                // Calculate the display number for the input.
-                const num = i < 8 ? i + 1 : i - 7;
-                
-                // Create a new card element for each input.
-                const card = document.createElement('div');
-                card.className = 'setting-card';
-                card.innerHTML = `
-                    <label for="label-${i}">${type} ${num} Label</label>
-                    <input type="text" id="label-${i}" value="${settings.labels[i]}" maxlength="4">
-                    <label for="cc-${i}">${type} ${num} CC</label>
-                    <input type="number" id="cc-${i}" value="${settings.ccs[i]}" min="0" max="127">
-                    <button class="update-btn" data-action="input" data-index="${i}">Update</button>
-                `;
-                grid.appendChild(card);
-            }
-        }
-
-        // Event delegation for update buttons (brightness, MIDI channel, input assignments).
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('update-btn')) {
-                const action = e.target.dataset.action; // Get the action type from data-action attribute.
-                if (action === 'brightness') {
-                    const value = document.getElementById('brightness').value;
-                    sendCommand(`set_brightness=${value}`); // Send brightness command.
-                } else if (action === 'midi_ch') {
-                    const value = document.getElementById('midiChannel').value;
-                    sendCommand(`set_midi_ch=${value}`); // Send MIDI channel command.
-                } else if (action === 'input') {
-                    const index = e.target.dataset.index; // Get the input index from data-index.
-                    const cc = document.getElementById(`cc-${index}`).value;
-                    const label = document.getElementById(`label-${index}`).value;
-                    // Send CC value and label with a small delay to prevent command overlap.
-                    sendCommand(`set_cc=${index},${cc}`);
-                    setTimeout(() => {
-                         sendCommand(`set_label=${index},${label}`);
-                    }, 100);
-                }
-            }
+        // --- Event Listeners for Command Buttons ---
+        document.querySelectorAll('.command-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const command = button.dataset.command;
+                sendCommand(command);
+            });
         });
 
     </script>
