@@ -12,6 +12,7 @@
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
+        /* Rotates the container so the bar grows "up" */
         .cc-bar-container {
             transform: rotate(180deg);
         }
@@ -103,7 +104,8 @@
                                 <label for="brightness" class="block text-sm font-medium text-gray-400">Brightness</label>
                                 <span id="brightness-value" class="font-mono text-cyan-300"></span>
                             </div>
-                            <input type="range" id="brightness" min="3" max="255" class="w-full immediate-update-trigger" data-action="brightness">
+                            <!-- CHANGE: Switched to update-trigger to send value on release -->
+                            <input type="range" id="brightness" min="3" max="255" class="w-full update-trigger" data-action="brightness">
                         </div>
                         <div class="space-y-1">
                             <div class="flex justify-between items-center">
@@ -162,8 +164,9 @@
                         <p id="last-cc-sent" class="font-mono text-lg text-white">-</p>
                     </div>
                 </div>
+                <!-- CHANGE: Increased height of the container for longer bars -->
                 <div id="cc-container" class="grid grid-cols-1 gap-4 mt-4">
-                    <div id="cc-pots-container" class="grid grid-cols-8 gap-3 h-80 items-end"></div>
+                    <div id="cc-pots-container" class="grid grid-cols-8 gap-3 h-[26rem] items-end"></div>
                     <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-24 items-center mt-4"></div>
                 </div>
             </div>
@@ -273,13 +276,15 @@
                 assignmentsGrid.appendChild(card);
 
                 if (isPot) {
+                    // CHANGE: Added a span for the numeric value on top of the bar
                     const barWrapper = document.createElement('div');
                     barWrapper.className = 'flex flex-col items-center h-full justify-end';
                     barWrapper.innerHTML = `
+                        <span id="cc-val-${i}" class="text-sm mb-2 text-white font-mono">0</span>
                         <div class="cc-bar-container bg-gray-900 h-full w-4 rounded-full overflow-hidden flex items-start border border-gray-600">
                             <div id="cc-bar-${i}" class="cc-bar bg-cyan-400 w-full" style="height: 0%;"></div>
                         </div>
-                        <span class="text-xs mt-1 text-gray-400 font-mono">${cc}</span>
+                        <span class="text-xs mt-2 text-gray-400 font-mono">${cc}</span>
                     `;
                     ccPotsContainer.appendChild(barWrapper);
                 } else {
@@ -299,10 +304,12 @@
             lastCcSentEl.textContent = `${cc}:${value}`;
             if (index === undefined) return;
             
-            if (index < 8) {
+            if (index < 8) { // It's a potentiometer
                 const bar = document.getElementById(`cc-bar-${index}`);
+                const val = document.getElementById(`cc-val-${index}`);
                 if (bar) bar.style.height = `${(value / 127) * 100}%`;
-            } else {
+                if (val) val.textContent = value;
+            } else { // It's a button
                 const btn = document.getElementById(`cc-btn-${index}`);
                 if (btn) btn.classList.toggle('active', value > 64);
             }
@@ -359,7 +366,7 @@
 
                 for (const iface of device.configuration.interfaces) {
                     for (const alt of iface.alternates) {
-                        if (alt.interfaceClass === 0xFF) {
+                        if (alt.interfaceClass === 0xFF) { // Standard vendor-specific class
                             interfaceNumber = iface.interfaceNumber;
                             for (const ep of alt.endpoints) {
                                 if (ep.direction === 'out') endpointOut = ep.endpointNumber;
@@ -405,28 +412,38 @@
             log("Disconnected.");
         });
 
+        // This listener handles text inputs that should update instantly
         document.addEventListener('input', (e) => {
-            if (e.target.classList.contains('immediate-update-trigger') || e.target.type === 'range') {
+            if (e.target.classList.contains('immediate-update-trigger')) {
                 const action = e.target.dataset.action;
                 const value = e.target.value;
-                if(e.target.id === 'brightness') brightnessValueEl.textContent = value;
-                if(e.target.id === 'midiChannel') midiChannelValueEl.textContent = value;
-                
-                if (action === 'brightness') {
-                    sendCommand(`set_brightness=${value}`);
-                } else if (action === 'label') {
+                if (action === 'label') {
                     const index = e.target.dataset.index;
                     sendCommand(`set_label=${index},${value}`);
                 }
             }
+            // Also update the text display for sliders in real-time
+            if (e.target.type === 'range') {
+                 if(e.target.id === 'brightness') brightnessValueEl.textContent = e.target.value;
+                 if(e.target.id === 'midiChannel') midiChannelValueEl.textContent = e.target.value;
+            }
         });
         
+        // This listener handles sliders and dropdowns that should only update on release/change
         document.addEventListener('change', (e) => {
             if (e.target.classList.contains('update-trigger')) {
                 const action = e.target.dataset.action;
                 const value = e.target.value;
-                sendCommand(`set_${action}=${e.target.dataset.index ? e.target.dataset.index + ',' : ''}${value}`);
-                setTimeout(() => sendCommand('get_settings'), 200);
+                // For brightness, we now use the 'set_brightness_fade' command
+                if (action === 'brightness') {
+                    sendCommand(`set_brightness_fade=${value}`);
+                } else {
+                    sendCommand(`set_${action}=${e.target.dataset.index ? e.target.dataset.index + ',' : ''}${value}`);
+                }
+                // Don't request settings immediately for brightness, let the fade finish
+                if (action !== 'brightness') {
+                    setTimeout(() => sendCommand('get_settings'), 200);
+                }
             }
         });
 
@@ -435,10 +452,11 @@
                 sendCommand(`set_bank=${e.target.dataset.bank}`);
                 setTimeout(() => sendCommand('get_settings'), 250);
             } else if (e.target.id === 'bleToggleButton') {
-                sendCommand('toggle_ble');
+                sendCommand('toggle_ble_web'); // Use the new safe command for web
             } else if (e.target.id === 'startCalButton') {
                 sendCommand('start_cal');
-                alert("Calibration Started. Follow instructions on your device's screen.");
+                // Use a custom modal/alert in a real app, but for now, console log is safer
+                console.log("Calibration Started. Follow instructions on your device's screen.");
             }
         });
     </script>
