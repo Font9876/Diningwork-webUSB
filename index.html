@@ -234,9 +234,14 @@
             bleButton.classList.toggle('bg-gray-600', !settings.bleOn);
             bleButton.classList.toggle('hover:bg-gray-500', !settings.bleOn);
 
-            if (settings.blePeerName) {
+            if (settings.bleOn && settings.blePeerName) {
                 bleStatusEl.classList.remove('hidden');
                 blePeerNameEl.textContent = settings.blePeerName;
+                blePeerNameEl.classList.add('text-green-400');
+            } else if (settings.bleOn) {
+                bleStatusEl.classList.remove('hidden');
+                blePeerNameEl.textContent = 'Advertising...';
+                blePeerNameEl.classList.remove('text-green-400');
             } else {
                 bleStatusEl.classList.add('hidden');
             }
