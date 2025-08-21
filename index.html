@@ -181,7 +181,7 @@
         connectButton.addEventListener('click', async () => {
             log("Requesting device...");
             try {
-                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x239A }] }); // Adafruit Vendor ID
+                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x000a }] }); // Adafruit Vendor ID
                 log(`Device selected: ${device.manufacturerName} ${device.productName}`);
                 
                 await device.open();
