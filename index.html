@@ -1,224 +1,281 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>WebUSB 2-Way Communication</title>
+    <meta charset="UTF-8">
+    <title>WebUSB MIDI Controller</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
-        #log {
-            font-family: 'Fira Code', 'Courier New', monospace;
+        .cc-bar-container {
+            transform: rotate(180deg); /* Flip the container to have bars grow upwards */
+        }
+        .cc-bar {
+            transition: height 0.05s ease-out;
+        }
+        /* Custom scrollbar for a better look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2d3748; /* gray-800 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4a5568; /* gray-600 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #718096; /* gray-500 */
         }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="container mx-auto max-w-2xl w-full bg-white p-6 md:p-8 rounded-xl shadow-lg">
-        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 text-center mb-6">WebUSB 2-Way Communication</h1>
+<body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
+    <div class="container mx-auto max-w-7xl w-full bg-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-700">
         
-        <div class="connection-controls text-center space-x-2">
-            <button id="connectButton" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition-transform transform hover:scale-105">Connect to Device</button>
-            <button id="disconnectButton" disabled class="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none">Disconnect</button>
-        </div>
-
-        <div id="main-controls" class="controls mt-8" style="display: none;">
-            <h2 class="text-xl font-semibold text-gray-700 mb-2">Send Message to Device</h2>
-            <div class="input-group flex gap-3">
-                <input type="text" id="textToSend" placeholder="Type text and press Enter" class="flex-grow p-3 border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition">
-                <button id="sendButton" class="px-5 py-3 bg-gray-700 text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75 transition-transform transform hover:scale-105">Send</button>
+        <header class="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b border-gray-700">
+            <h1 class="text-2xl font-bold text-white mb-4 sm:mb-0">MIDI Controller Interface</h1>
+            <div class="connection-controls text-center space-x-2">
+                <button id="connectButton" class="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition-transform transform hover:scale-105">Connect</button>
+                <button id="disconnectButton" disabled class="px-5 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition-transform transform hover:scale-105 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:transform-none">Disconnect</button>
             </div>
-        </div>
+        </header>
 
-        <div class="log-container mt-8">
-            <h2 class="text-xl font-semibold text-gray-700 mb-2">Communication Log</h2>
-            <div id="log" class="bg-gray-900 text-white p-4 h-64 overflow-y-scroll rounded-lg leading-relaxed text-sm"></div>
-        </div>
+        <main class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            <!-- Left Column: Settings -->
+            <div id="main-controls" class="lg:col-span-3 space-y-6" style="display: none;">
+                <section class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+                    <h2 class="text-lg font-semibold mb-3 text-cyan-300">Global Settings</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label for="activeBank" class="block text-sm font-medium text-gray-400">Active Bank</label>
+                            <input type="number" id="activeBank" class="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center font-mono" readonly>
+                        </div>
+                        <div>
+                            <label for="brightness" class="block text-sm font-medium text-gray-400">Brightness (3-255)</label>
+                            <input type="number" id="brightness" min="3" max="255" class="mt-1 block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center font-mono update-trigger" data-action="brightness">
+                        </div>
+                        <div>
+                            <label for="midiChannel" class="block text-sm font-medium text-gray-400">MIDI Channel (1-16)</label>
+                            <input type="number" id="midiChannel" min="1" max="16" class="mt-1 block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center font-mono update-trigger" data-action="midi_ch">
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+                    <h2 class="text-lg font-semibold mb-3 text-cyan-300">Input Assignments (Bank-Specific)</h2>
+                    <div id="assignments-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                        <!-- JS will populate this -->
+                    </div>
+                </section>
+            </div>
+            
+            <!-- Right Column: CC Visualizer -->
+            <div id="visualizer" class="lg:col-span-2 bg-gray-700/50 p-4 rounded-lg border border-gray-600" style="display: none;">
+                <h2 class="text-lg font-semibold mb-4 text-center text-cyan-300">Real-time CC Monitor</h2>
+                <div id="cc-bars-container" class="grid grid-cols-6 md:grid-cols-12 gap-x-3 gap-y-1 h-[32rem] items-end">
+                    <!-- JS will populate this -->
+                </div>
+            </div>
+        </main>
     </div>
 
     <script>
+        // --- DOM Elements ---
         const connectButton = document.getElementById('connectButton');
         const disconnectButton = document.getElementById('disconnectButton');
         const mainControls = document.getElementById('main-controls');
-        const textToSend = document.getElementById('textToSend');
-        const sendButton = document.getElementById('sendButton');
-        const logElement = document.getElementById('log');
-
-        let device;
-        let interfaceNumber;
-        let endpointIn, endpointOut;
+        const visualizer = document.getElementById('visualizer');
+        
+        // --- WebUSB State ---
+        let device, interfaceNumber, endpointIn, endpointOut;
+        let keepReading = false;
         const textEncoder = new TextEncoder();
         const textDecoder = new TextDecoder();
-        let keepReading = false;
+        let ccMap = {}; // To map CC numbers to their visualizer bar index
 
-        function log(direction, message) {
-            console.log(`${direction}: ${message}`);
-            const line = document.createElement('div');
-            line.className = 'flex';
-            
-            const dirSpan = document.createElement('span');
-            dirSpan.className = 'w-16 flex-shrink-0';
-            if (direction === 'PC >') {
-                dirSpan.textContent = '[SENT]';
-                dirSpan.className += ' text-cyan-400';
-            } else if (direction === '< DEV') {
-                dirSpan.textContent = '[RECV]';
-                dirSpan.className += ' text-green-400';
-            } else if (direction === 'SYS') {
-                 dirSpan.textContent = '[SYS]';
-                 dirSpan.className += ' text-yellow-400';
-            } else { // ERROR
-                 dirSpan.textContent = '[ERROR]';
-                 dirSpan.className += ' text-red-400';
-            }
+        // --- Core Functions ---
+        const log = (msg) => console.log(`[SYS] ${msg}`);
 
-            const msgSpan = document.createElement('span');
-            msgSpan.textContent = message;
-            line.appendChild(dirSpan);
-            line.appendChild(msgSpan);
-            logElement.appendChild(line);
-            logElement.scrollTop = logElement.scrollHeight;
-        }
-
-        connectButton.addEventListener('click', async () => {
-            log('SYS', 'Requesting device...');
-            try {
-                device = await navigator.usb.requestDevice({ filters: [] });
-                
-                log('SYS', `Device selected: ${device.manufacturerName} ${device.productName}`);
-                await device.open();
-                log('SYS', 'Device opened.');
-
-                if (device.configuration === null) {
-                    await device.selectConfiguration(1);
-                }
-                log('SYS', 'Configuration selected.');
-
-                for (const iface of device.configuration.interfaces) {
-                    for (const alt of iface.alternates) {
-                        if (alt.interfaceClass === 0xFF) { // Vendor-Specific
-                            interfaceNumber = iface.interfaceNumber;
-                            for (const ep of alt.endpoints) {
-                                if (ep.direction === 'out') endpointOut = ep.endpointNumber;
-                                if (ep.direction === 'in') endpointIn = ep.endpointNumber;
-                            }
-                            break;
-                        }
-                    }
-                    if (interfaceNumber !== undefined) break;
-                }
-
-                if (interfaceNumber === undefined || endpointIn === undefined || endpointOut === undefined) {
-                    throw new Error("Could not find required interface and endpoints.");
-                }
-                log('SYS', `Found IN endpoint: ${endpointIn}, OUT endpoint: ${endpointOut}`);
-
-                await device.claimInterface(interfaceNumber);
-                log('SYS', `Interface ${interfaceNumber} claimed.`);
-
-                await device.controlTransferOut({
-                    requestType: 'class',
-                    recipient: 'interface',
-                    request: 0x22, // SET_CONTROL_LINE_STATE
-                    value: 0x01,   // DTR (Data Terminal Ready)
-                    index: interfaceNumber
-                });
-                log('SYS', 'Connection signal sent.');
-
-
-                connectButton.disabled = true;
-                disconnectButton.disabled = false;
-                mainControls.style.display = 'block';
-
-                keepReading = true;
-                readLoop();
-
-            } catch (error) {
-                log('ERROR', error.message);
-                console.error(error);
-            }
-        });
-        
-        disconnectButton.addEventListener('click', async () => {
+        const sendCommand = async (command) => {
             if (!device) return;
-            keepReading = false;
+            log(`Sending: ${command}`);
             try {
-                await device.controlTransferOut({
-                    requestType: 'class',
-                    recipient: 'interface',
-                    request: 0x22, // SET_CONTROL_LINE_STATE
-                    value: 0x00,   // DTR off
-                    index: interfaceNumber
-                });
-                await device.releaseInterface(interfaceNumber);
-                await device.close();
-                log('SYS', 'Device disconnected.');
+                await device.transferOut(endpointOut, textEncoder.encode(command + '\n'));
             } catch (error) {
-                log('ERROR', `Disconnecting: ${error.message}`);
+                console.error("Send command error:", error);
             }
-            device = null;
-            connectButton.disabled = false;
-            disconnectButton.disabled = true;
-            mainControls.style.display = 'none';
-        });
+        };
 
-        async function sendMessage() {
-            if (!device) {
-                log('ERROR', 'Not connected.');
-                return;
-            }
-            const message = textToSend.value;
-            if (!message) return;
+        const populateUI = (settings) => {
+            document.getElementById('activeBank').value = settings.activeBank + 1; // Display as 1-based
+            document.getElementById('brightness').value = settings.brightness;
+            document.getElementById('midiChannel').value = settings.midiChannel;
 
-            try {
-                log('PC >', message);
-                await device.transferOut(endpointOut, textEncoder.encode(message + '\n'));
-                textToSend.value = ''; // Clear input after sending
-            } catch (error) {
-                log('ERROR', `Sending message: ${error.message}`);
-            }
-        }
+            const assignmentsGrid = document.getElementById('assignments-grid');
+            const ccBarsContainer = document.getElementById('cc-bars-container');
+            assignmentsGrid.innerHTML = '';
+            ccBarsContainer.innerHTML = '';
+            ccMap = {};
 
-        sendButton.addEventListener('click', sendMessage);
-        textToSend.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                sendMessage();
+            for (let i = 0; i < 12; i++) {
+                const type = i < 8 ? 'Pot' : 'Btn';
+                const num = i < 8 ? i + 1 : i - 7;
+                const cc = settings.ccs[i];
+                ccMap[cc] = i; // Map CC number to index
+
+                // Create Assignment Card
+                const card = document.createElement('div');
+                card.className = 'bg-gray-800 p-3 rounded-md border border-gray-700';
+                card.innerHTML = `
+                    <label class="block text-sm font-bold text-gray-300">${type} ${num}</label>
+                    <div class="flex gap-2 mt-1">
+                        <input type="text" value="${settings.labels[i]}" maxlength="4" placeholder="Label" class="w-1/2 bg-gray-900 border-gray-600 rounded-md text-xs p-1 focus:ring-blue-500 focus:border-blue-500 update-trigger" data-action="label" data-index="${i}">
+                        <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="w-1/2 bg-gray-900 border-gray-600 rounded-md text-xs p-1 text-center font-mono focus:ring-blue-500 focus:border-blue-500 update-trigger" data-action="cc" data-index="${i}">
+                    </div>
+                `;
+                assignmentsGrid.appendChild(card);
+
+                // Create CC Bar Visualizer
+                const barWrapper = document.createElement('div');
+                barWrapper.className = 'flex flex-col items-center h-full justify-end';
+                barWrapper.innerHTML = `
+                    <div class="cc-bar-container bg-gray-900 h-full w-4 rounded-full overflow-hidden flex items-start border border-gray-600">
+                        <div id="cc-bar-${i}" class="cc-bar bg-cyan-400 w-full" style="height: 0%;"></div>
+                    </div>
+                    <span class="text-xs mt-1 text-gray-400 font-mono">${cc}</span>
+                `;
+                ccBarsContainer.appendChild(barWrapper);
             }
-        });
+        };
+
+        const updateCCVisualizer = (cc, value) => {
+            const index = ccMap[cc];
+            if (index === undefined) return;
+            
+            const bar = document.getElementById(`cc-bar-${index}`);
+            if (bar) {
+                const percentage = (value / 127) * 100;
+                bar.style.height = `${percentage}%`;
+            }
+        };
 
         async function readLoop() {
-            // ** FIX IS HERE: Buffer for incoming data **
             let incomingData = "";
             while (keepReading) {
                 try {
-                    let result = await device.transferIn(endpointIn, 64);
+                    let result = await device.transferIn(endpointIn, 256);
                     if (result.status === 'ok' && result.data.byteLength > 0) {
-                        // Add new data to the buffer
                         incomingData += textDecoder.decode(result.data, { stream: true });
-                        
-                        // Process all complete lines in the buffer
                         let newlineIndex;
                         while ((newlineIndex = incomingData.indexOf('\n')) !== -1) {
                             const line = incomingData.slice(0, newlineIndex).trim();
                             incomingData = incomingData.slice(newlineIndex + 1);
-                            if (line) { // Don't log empty lines
-                                log('< DEV', line);
+
+                            if (line.startsWith('{')) {
+                                try {
+                                    const settings = JSON.parse(line);
+                                    log("Received settings object.");
+                                    populateUI(settings);
+                                } catch (e) {
+                                    console.error("JSON Parse Error:", e, "Data:", line);
+                                }
+                            } else if (line.startsWith('cc:')) {
+                                const parts = line.substring(3).split(',');
+                                if (parts.length === 2) {
+                                    const cc = parseInt(parts[0], 10);
+                                    const value = parseInt(parts[1], 10);
+                                    updateCCVisualizer(cc, value);
+                                }
                             }
                         }
                     }
                 } catch (error) {
-                    if (error.message.includes("The device was disconnected")) {
-                        log('SYS', 'Device appears to have been disconnected.');
-                        if (!disconnectButton.disabled) {
-                           await disconnectButton.click();
-                        }
+                    if (error.message.includes("disconnected")) {
+                        log("Device disconnected.");
+                        if (!disconnectButton.disabled) await disconnectButton.click();
                     } else {
-                       log('ERROR', `Read loop: ${error.message}`);
+                       console.error(`Read loop error: ${error.message}`);
                     }
                     keepReading = false;
                 }
             }
         }
+
+        // --- Event Listeners ---
+        connectButton.addEventListener('click', async () => {
+            log("Requesting device...");
+            try {
+                device = await navigator.usb.requestDevice({ filters: [] });
+                await device.open();
+                if (device.configuration === null) await device.selectConfiguration(1);
+
+                for (const iface of device.configuration.interfaces) {
+                    for (const alt of iface.alternates) {
+                        if (alt.interfaceClass === 0xFF) {
+                            interfaceNumber = iface.interfaceNumber;
+                            for (const ep of alt.endpoints) {
+                                if (ep.direction === 'out') endpointOut = ep.endpointNumber;
+                                if (ep.direction === 'in') endpointIn = ep.endpointNumber;
+                            }
+                        }
+                    }
+                }
+                if (interfaceNumber === undefined) throw new Error("Vendor-specific interface not found.");
+
+                await device.claimInterface(interfaceNumber);
+                await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x01, index: interfaceNumber });
+                
+                log("Device connected.");
+                connectButton.disabled = true;
+                disconnectButton.disabled = false;
+                mainControls.style.display = 'block';
+                visualizer.style.display = 'block';
+
+                keepReading = true;
+                readLoop();
+                
+                await sendCommand("get_settings");
+
+            } catch (error) {
+                console.error("Connection failed:", error);
+            }
+        });
+
+        disconnectButton.addEventListener('click', async () => {
+            if (!device) return;
+            keepReading = false;
+            try {
+                await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x00, index: interfaceNumber });
+                await device.releaseInterface(interfaceNumber);
+                await device.close();
+            } catch (error) {
+                console.error("Disconnect error:", error);
+            }
+            device = null;
+            connectButton.disabled = false;
+            disconnectButton.disabled = true;
+            mainControls.style.display = 'none';
+            visualizer.style.display = 'none';
+            log("Disconnected.");
+        });
+
+        document.addEventListener('change', (e) => {
+            if (e.target.classList.contains('update-trigger')) {
+                const action = e.target.dataset.action;
+                const value = e.target.value;
+                if (action === 'brightness' || action === 'midi_ch') {
+                    sendCommand(`set_${action}=${value}`);
+                } else {
+                    const index = e.target.dataset.index;
+                    sendCommand(`set_${action}=${index},${value}`);
+                }
+            }
+        });
     </script>
 </body>
 </html>
