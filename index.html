@@ -19,11 +19,10 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        h1, h2, h3 {
+        h1, h2 {
             color: #444;
             border-bottom: 2px solid #e0e0e0;
             padding-bottom: 10px;
-            margin-top: 20px;
         }
         button {
             font-size: 16px;
@@ -33,7 +32,6 @@
             border-radius: 5px;
             border: 1px solid #ccc;
             background-color: #e7e7e7;
-            transition: background-color 0.3s ease;
         }
         button:hover {
             background-color: #ddd;
@@ -47,16 +45,10 @@
             color: white;
             border: none;
         }
-        #connectButton:hover:not(:disabled) {
-            background-color: #45a049;
-        }
         #disconnectButton {
             background-color: #f44336;
             color: white;
             border: none;
-        }
-        #disconnectButton:hover:not(:disabled) {
-            background-color: #da190b;
         }
         .controls, .settings-grid {
             display: grid;
@@ -81,26 +73,19 @@
             border-radius: 4px;
             border: 1px solid #ccc;
             margin-bottom: 10px;
-            box-sizing: border-box; /* Include padding and border in the element's total width and height */
         }
-        #log-container, #device-messages { 
+        #log-container { 
             margin-top: 20px;
         }
-        #log, #receivedMessages { 
+        #log { 
             background-color: #222; 
             color: #0f0; 
             font-family: monospace; 
             white-space: pre-wrap; 
             padding: 15px; 
-            height: 150px; /* Reduced height for better layout */
+            height: 200px; 
             overflow-y: scroll; 
             border-radius: 5px; 
-            margin-bottom: 10px;
-        }
-        #receivedMessages {
-            background-color: #e0f2f7; /* Light blue background for device messages */
-            color: #212121; /* Darker text for readability */
-            border: 1px solid #bbdefb;
         }
     </style>
 </head>
@@ -139,11 +124,6 @@
             </div>
         </div>
 
-        <div id="device-messages">
-            <h3>Messages from Device</h3>
-            <pre id="receivedMessages">Waiting for messages...</pre>
-        </div>
-
         <div id="log-container">
             <h3>Log</h3>
             <pre id="log"></pre>
@@ -151,47 +131,55 @@
     </div>
 
     <script>
+        // Get references to HTML elements.
         const connectButton = document.getElementById('connectButton');
         const disconnectButton = document.getElementById('disconnectButton');
         const refreshButton = document.getElementById('refreshButton');
         const logElement = document.getElementById('log');
         const mainControls = document.getElementById('main-controls');
-        const receivedMessagesElement = document.getElementById('receivedMessages'); // New element for device messages
 
-        let device;
-        let interfaceNumber;
-        let endpointIn, endpointOut;
-        let textDecoder = new TextDecoder();
-        let textEncoder = new TextEncoder();
-        let keepReading = false;
+        // Global variables for WebUSB communication.
+        let device; // Stores the connected USB device object.
+        let interfaceNumber; // The interface number used for communication.
+        let endpointIn, endpointOut; // Endpoint numbers for IN (device to PC) and OUT (PC to device) transfers.
+        let textDecoder = new TextDecoder(); // Used to decode incoming byte arrays to strings.
+        let textEncoder = new TextEncoder(); // Used to encode strings to byte arrays for outgoing data.
+        let keepReading = false; // Flag to control the read loop.
 
+        // Function to log messages to the console and the UI log area.
         function log(message) {
             console.log(message);
             logElement.textContent += `> ${message}\n`;
+            // Scroll to the bottom of the log to show the latest message.
             logElement.scrollTop = logElement.scrollHeight;
         }
 
+        // Event listener for the Connect button.
         connectButton.addEventListener('click', async () => {
             log("Requesting device...");
             try {
-                // Changed Vendor ID to 0x000a as requested for custom testing.
-                const filters = [{ vendorId: 0x000a }]; 
+                // Define filters to find the specific USB device.
+                // Adafruit Vendor ID is 0x000a.
+                const filters = [{ vendorId: 0x000a }];
+                // Prompt the user to select a device that matches the filter.
                 device = await navigator.usb.requestDevice({ filters });
                 
                 log(`Device selected: ${device.manufacturerName} ${device.productName}`);
+                // Open the selected device.
                 await device.open();
                 log("Device opened.");
 
+                // Select the first configuration (most common for simple devices).
                 await device.selectConfiguration(1);
                 log("Configuration selected.");
 
+                // Iterate through interfaces to find the vendor-specific one (interfaceClass 0xFF).
                 const interfaces = device.configuration.interfaces;
                 for (const iface of interfaces) {
-                    // Check if interfaceClass is 0xFF (Vendor Specific) or 0x0A (CDC-Data) depending on your WebUSB setup
-                    // For TinyUSB CDC+MSC, it might be 0x0A or 0xFF
-                    if (iface.alternate.interfaceClass === 0xFF || iface.alternate.interfaceClass === 0x0A) { 
+                    if (iface.alternate.interfaceClass === 0xFF) { 
                         interfaceNumber = iface.interfaceNumber;
-                        log(`Found relevant interface: ${interfaceNumber} (Class: 0x${iface.alternate.interfaceClass.toString(16).toUpperCase()})`);
+                        log(`Found vendor-specific interface: ${interfaceNumber}`);
+                        // Find the IN and OUT endpoints within this interface.
                         for (const ep of iface.alternate.endpoints) {
                             if (ep.direction === 'out') {
                                 endpointOut = ep.endpointNumber;
@@ -199,33 +187,33 @@
                             }
                             if (ep.direction === 'in') {
                                 endpointIn = ep.endpointNumber;
-                                // CORRECTED: Typo fixed here from 'inendpointNumber' to 'endpointIn'
-                                log(`Found IN endpoint: ${endpointIn}`); 
+                                log(`Found IN endpoint: ${endpointIn}`);
                             }
                         }
-                        // Assuming the first matching interface is the correct one
-                        if (endpointIn && endpointOut) {
-                            break; 
-                        }
+                        break; // Exit loop once the correct interface is found.
                     }
                 }
 
+                // Check if all necessary components (interface, IN/OUT endpoints) were found.
                 if (!interfaceNumber || !endpointIn || !endpointOut) {
-                    throw new Error("Could not find required interface and endpoints. Check device configuration.");
+                    throw new Error("Could not find required interface and endpoints.");
                 }
 
+                // Claim the interface to take control of it.
                 await device.claimInterface(interfaceNumber);
                 log(`Interface ${interfaceNumber} claimed.`);
 
+                // Update UI state: disable connect, enable disconnect and refresh, show controls.
                 connectButton.disabled = true;
                 disconnectButton.disabled = false;
                 refreshButton.disabled = false;
                 mainControls.style.display = 'block';
 
+                // Start the read loop to continuously receive data from the device.
                 keepReading = true;
                 readLoop();
 
-                // Request initial settings from the device
+                // Request initial settings from the device.
                 await sendCommand("get_settings");
 
             } catch (error) {
@@ -234,101 +222,110 @@
             }
         });
         
+        // Event listener for the Disconnect button.
         disconnectButton.addEventListener('click', async () => {
-            if (!device) return;
-            keepReading = false;
+            if (!device) return; // Do nothing if no device is connected.
+            keepReading = false; // Stop the read loop.
             try {
+                // Release the claimed interface and close the device.
                 await device.releaseInterface(interfaceNumber);
                 await device.close();
                 log("Device disconnected.");
             } catch (error) {
                 log(` ERROR disconnecting: ${error.message}`);
             }
+            // Reset device variable and update UI state.
             device = null;
             connectButton.disabled = false;
             disconnectButton.disabled = true;
             refreshButton.disabled = true;
             mainControls.style.display = 'none';
-            receivedMessagesElement.textContent = 'Waiting for messages...'; // Clear messages on disconnect
         });
 
+        // Event listener for the Refresh Settings button.
         refreshButton.addEventListener('click', () => {
-            sendCommand("get_settings");
+            sendCommand("get_settings"); // Send command to get current settings from device.
         });
 
+        // Function to send a command string to the connected device.
         async function sendCommand(command) {
-            if (!device || !device.opened) { // Check if device is connected and open
-                log("Not connected or device not open. Cannot send command.");
+            if (!device) {
+                log("Not connected.");
                 return;
             }
             try {
                 log(`Sending: ${command}`);
-                const data = textEncoder.encode(command + '\n'); // Ensure newline for device parsing
-                await device.transferOut(endpointOut, data);
+                // Encode the command string (plus newline) to a byte array and send it.
+                await device.transferOut(endpointOut, textEncoder.encode(command + '\n'));
             } catch (error) {
                 log(` ERROR sending command: ${error.message}`);
-                // Handle cases where transferOut might fail due to disconnection
-                if (error.message.includes("disconnected") || error.message.includes("No device with")) {
-                    await disconnectButton.click(); // Force disconnect if device is gone
-                }
             }
         }
 
+        // Asynchronous function to continuously read data from the device.
         async function readLoop() {
-            let incomingData = "";
+            let incomingDataBuffer = ""; // Buffer to accumulate incoming data chunks.
             while (keepReading) {
                 try {
-                    // Read up to 64 bytes at a time
-                    let result = await device.transferIn(endpointIn, 64);
+                    // Read data from the IN endpoint in chunks (e.g., 64 bytes).
+                    let result = await device.transferIn(endpointIn, 64); 
                     if (result.data) {
-                        // Append new data to our buffer
-                        incomingData += textDecoder.decode(result.data, {stream: true});
+                        // Decode the received data and append to the buffer.
+                        // {stream: true} ensures multi-part characters are handled correctly.
+                        incomingDataBuffer += textDecoder.decode(result.data, {stream: true});
                         
-                        // Process complete lines (messages ending with newline)
+                        // Process messages line by line.
+                        // The Arduino sends messages terminated by a newline.
                         let newlineIndex;
-                        while ((newlineIndex = incomingData.indexOf('\n')) !== -1) {
-                            const message = incomingData.substring(0, newlineIndex).trim();
-                            incomingData = incomingData.substring(newlineIndex + 1);
-                            
+                        while ((newlineIndex = incomingDataBuffer.indexOf('\n')) !== -1) {
+                            // Extract the complete message (up to the newline).
+                            const message = incomingDataBuffer.substring(0, newlineIndex).trim();
+                            // Remove the processed message from the buffer.
+                            incomingDataBuffer = incomingDataBuffer.substring(newlineIndex + 1);
+
                             if (message.length > 0) {
                                 try {
-                                    // Attempt to parse as JSON (for settings)
+                                    // Attempt to parse the message as JSON first (for settings updates).
                                     const settings = JSON.parse(message);
                                     log("Received settings object.");
-                                    populateUI(settings);
+                                    populateUI(settings); // Update UI with received settings.
                                 } catch (e) {
-                                    // If parsing fails, it's likely a plain text message from the device
-                                    receivedMessagesElement.textContent += `${message}\n`;
-                                    receivedMessagesElement.scrollTop = receivedMessagesElement.scrollHeight;
-                                    log(`Device message: "${message}"`);
+                                    // If parsing fails, it's likely a simple text message from the buttons.
+                                    log(`Device: ${message}`); // Log the message as plain text.
                                 }
                             }
                         }
                     }
                 } catch (error) {
-                    if (error.message.includes("The device was disconnected") || error.message.includes("No device with")) {
+                    // Handle disconnection or other read errors.
+                    if (error.message.includes("The device was disconnected")) {
                         log("Device appears to have been disconnected.");
+                        // Programmatically click the disconnect button to clean up.
                         await disconnectButton.click();
                     } else {
                        log(` Read loop error: ${error.message}`);
                     }
-                    keepReading = false; // Stop reading on error
+                    keepReading = false; // Stop the loop on error.
                 }
             }
         }
         
+        // Function to populate the UI with settings received from the device.
         function populateUI(settings) {
             document.getElementById('activeBank').value = settings.activeBank;
             document.getElementById('brightness').value = settings.brightness;
             document.getElementById('midiChannel').value = settings.midiChannel;
 
             const grid = document.getElementById('assignments-grid');
-            grid.innerHTML = ''; // Clear previous entries
+            grid.innerHTML = ''; // Clear previous entries before repopulating.
 
             for (let i = 0; i < 12; i++) {
+                // Determine if the input is a Potentiometer (Pot) or a Button (Btn).
                 const type = i < 8 ? 'Pot' : 'Btn';
+                // Calculate the display number for the input.
                 const num = i < 8 ? i + 1 : i - 7;
                 
+                // Create a new card element for each input.
                 const card = document.createElement('div');
                 card.className = 'setting-card';
                 card.innerHTML = `
@@ -342,21 +339,22 @@
             }
         }
 
+        // Event delegation for update buttons (brightness, MIDI channel, input assignments).
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('update-btn')) {
-                const action = e.target.dataset.action;
+                const action = e.target.dataset.action; // Get the action type from data-action attribute.
                 if (action === 'brightness') {
                     const value = document.getElementById('brightness').value;
-                    sendCommand(`set_brightness=${value}`);
+                    sendCommand(`set_brightness=${value}`); // Send brightness command.
                 } else if (action === 'midi_ch') {
                     const value = document.getElementById('midiChannel').value;
-                    sendCommand(`set_midi_ch=${value}`);
+                    sendCommand(`set_midi_ch=${value}`); // Send MIDI channel command.
                 } else if (action === 'input') {
-                    const index = e.target.dataset.index;
+                    const index = e.target.dataset.index; // Get the input index from data-index.
                     const cc = document.getElementById(`cc-${index}`).value;
                     const label = document.getElementById(`label-${index}`).value;
+                    // Send CC value and label with a small delay to prevent command overlap.
                     sendCommand(`set_cc=${index},${cc}`);
-                    // A small delay to prevent commands from overlapping
                     setTimeout(() => {
                          sendCommand(`set_label=${index},${label}`);
                     }, 100);
