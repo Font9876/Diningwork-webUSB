@@ -32,6 +32,11 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #718096; /* gray-500 */
         }
+        .bank-btn.active {
+            background-color: #38b2ac; /* teal-500 */
+            color: white;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
@@ -48,20 +53,54 @@
         <main class="grid grid-cols-1 lg:grid-cols-5 gap-8">
             <!-- Left Column: Settings -->
             <div id="main-controls" class="lg:col-span-3 space-y-6" style="display: none;">
+                
                 <section class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
-                    <h2 class="text-lg font-semibold mb-3 text-cyan-300">Global Settings</h2>
+                    <h2 class="text-lg font-semibold mb-3 text-cyan-300">Bank Select</h2>
+                    <div id="bank-selection-grid" class="grid grid-cols-6 gap-2">
+                        <!-- JS will populate banks -->
+                    </div>
+                </section>
+
+                <section class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+                    <h2 class="text-lg font-semibold mb-3 text-cyan-300">Global & Bank Settings</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
-                            <label for="activeBank" class="block text-sm font-medium text-gray-400">Active Bank</label>
-                            <input type="number" id="activeBank" class="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center font-mono" readonly>
-                        </div>
-                        <div>
                             <label for="brightness" class="block text-sm font-medium text-gray-400">Brightness (3-255)</label>
-                            <input type="number" id="brightness" min="3" max="255" class="mt-1 block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center font-mono update-trigger" data-action="brightness">
+                            <input type="number" id="brightness" min="3" max="255" class="mt-1 block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center font-mono immediate-update-trigger" data-action="brightness">
                         </div>
                         <div>
                             <label for="midiChannel" class="block text-sm font-medium text-gray-400">MIDI Channel (1-16)</label>
                             <input type="number" id="midiChannel" min="1" max="16" class="mt-1 block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center font-mono update-trigger" data-action="midi_ch">
+                        </div>
+                        <div>
+                            <label for="buttonMode" class="block text-sm font-medium text-gray-400">Button Mode</label>
+                            <select id="buttonMode" class="mt-1 block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center update-trigger" data-action="button_mode">
+                                <option value="0">Momentary</option>
+                                <option value="1">Toggle</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+                    <h2 class="text-lg font-semibold mb-3 text-cyan-300">Device Setup</h2>
+                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label for="esbChannel" class="block text-sm font-medium text-gray-400">ESB Channel</label>
+                            <select id="esbChannel" class="mt-1 block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center update-trigger" data-action="esb_ch">
+                                <option value="5">5</option>
+                                <option value="10">10</option>
+                                <option value="15">15</option>
+                                <option value="20">20</option>
+                            </select>
+                        </div>
+                        <div>
+                             <label class="block text-sm font-medium text-gray-400">Bluetooth</label>
+                             <button id="bleToggleButton" class="mt-1 w-full px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-500" data-action="toggle_ble">Enable</button>
+                        </div>
+                        <div>
+                             <label class="block text-sm font-medium text-gray-400">Calibration</label>
+                             <button id="startCalButton" class="mt-1 w-full px-4 py-2 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-500" data-action="start_cal">Start EasyCal</button>
                         </div>
                     </div>
                 </section>
@@ -76,8 +115,14 @@
             
             <!-- Right Column: CC Visualizer -->
             <div id="visualizer" class="lg:col-span-2 bg-gray-700/50 p-4 rounded-lg border border-gray-600" style="display: none;">
-                <h2 class="text-lg font-semibold mb-4 text-center text-cyan-300">Real-time CC Monitor</h2>
-                <div id="cc-bars-container" class="grid grid-cols-6 md:grid-cols-12 gap-x-3 gap-y-1 h-[32rem] items-end">
+                <div class="flex justify-between items-baseline">
+                    <h2 class="text-lg font-semibold text-cyan-300">Real-time CC Monitor</h2>
+                    <div class="text-right">
+                        <p class="text-xs text-gray-400">LAST SENT</p>
+                        <p id="last-cc-sent" class="font-mono text-lg text-white">-</p>
+                    </div>
+                </div>
+                <div id="cc-bars-container" class="grid grid-cols-6 md:grid-cols-12 gap-x-3 gap-y-1 h-[32rem] items-end mt-4">
                     <!-- JS will populate this -->
                 </div>
             </div>
@@ -90,13 +135,14 @@
         const disconnectButton = document.getElementById('disconnectButton');
         const mainControls = document.getElementById('main-controls');
         const visualizer = document.getElementById('visualizer');
+        const lastCcSentEl = document.getElementById('last-cc-sent');
         
         // --- WebUSB State ---
         let device, interfaceNumber, endpointIn, endpointOut;
         let keepReading = false;
         const textEncoder = new TextEncoder();
         const textDecoder = new TextDecoder();
-        let ccMap = {}; // To map CC numbers to their visualizer bar index
+        let ccMap = {}; 
 
         // --- Core Functions ---
         const log = (msg) => console.log(`[SYS] ${msg}`);
@@ -112,9 +158,33 @@
         };
 
         const populateUI = (settings) => {
-            document.getElementById('activeBank').value = settings.activeBank + 1; // Display as 1-based
+            // Update bank buttons
+            const bankGrid = document.getElementById('bank-selection-grid');
+            bankGrid.innerHTML = '';
+            for(let i = 0; i < 12; i++) {
+                const bankBtn = document.createElement('button');
+                bankBtn.className = 'bank-btn p-2 text-xs font-semibold rounded-md bg-gray-900 hover:bg-gray-600';
+                bankBtn.textContent = `B${i+1}`;
+                bankBtn.dataset.bank = i;
+                if(i === settings.activeBank) {
+                    bankBtn.classList.add('active');
+                }
+                bankGrid.appendChild(bankBtn);
+            }
+
+            // Update settings
             document.getElementById('brightness').value = settings.brightness;
             document.getElementById('midiChannel').value = settings.midiChannel;
+            document.getElementById('buttonMode').value = settings.buttonMode;
+            document.getElementById('esbChannel').value = settings.esbChannel;
+            
+            const bleButton = document.getElementById('bleToggleButton');
+            bleButton.textContent = settings.bleOn ? 'Disable BLE' : 'Enable BLE';
+            bleButton.classList.toggle('bg-green-600', settings.bleOn);
+            bleButton.classList.toggle('hover:bg-green-500', settings.bleOn);
+            bleButton.classList.toggle('bg-gray-600', !settings.bleOn);
+            bleButton.classList.toggle('hover:bg-gray-500', !settings.bleOn);
+
 
             const assignmentsGrid = document.getElementById('assignments-grid');
             const ccBarsContainer = document.getElementById('cc-bars-container');
@@ -126,21 +196,19 @@
                 const type = i < 8 ? 'Pot' : 'Btn';
                 const num = i < 8 ? i + 1 : i - 7;
                 const cc = settings.ccs[i];
-                ccMap[cc] = i; // Map CC number to index
+                ccMap[cc] = i;
 
-                // Create Assignment Card
                 const card = document.createElement('div');
                 card.className = 'bg-gray-800 p-3 rounded-md border border-gray-700';
                 card.innerHTML = `
                     <label class="block text-sm font-bold text-gray-300">${type} ${num}</label>
                     <div class="flex gap-2 mt-1">
-                        <input type="text" value="${settings.labels[i]}" maxlength="4" placeholder="Label" class="w-1/2 bg-gray-900 border-gray-600 rounded-md text-xs p-1 focus:ring-blue-500 focus:border-blue-500 update-trigger" data-action="label" data-index="${i}">
+                        <input type="text" value="${settings.labels[i]}" maxlength="4" placeholder="Label" class="w-1/2 bg-gray-900 border-gray-600 rounded-md text-xs p-1 focus:ring-blue-500 focus:border-blue-500 immediate-update-trigger" data-action="label" data-index="${i}">
                         <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="w-1/2 bg-gray-900 border-gray-600 rounded-md text-xs p-1 text-center font-mono focus:ring-blue-500 focus:border-blue-500 update-trigger" data-action="cc" data-index="${i}">
                     </div>
                 `;
                 assignmentsGrid.appendChild(card);
 
-                // Create CC Bar Visualizer
                 const barWrapper = document.createElement('div');
                 barWrapper.className = 'flex flex-col items-center h-full justify-end';
                 barWrapper.innerHTML = `
@@ -155,6 +223,7 @@
 
         const updateCCVisualizer = (cc, value) => {
             const index = ccMap[cc];
+            lastCcSentEl.textContent = `${cc}:${value}`;
             if (index === undefined) return;
             
             const bar = document.getElementById(`cc-bar-${index}`);
@@ -191,6 +260,12 @@
                                     const value = parseInt(parts[1], 10);
                                     updateCCVisualizer(cc, value);
                                 }
+                            } else if (line.startsWith('bank_changed:')) {
+                                const newBank = parseInt(line.substring(13), 10);
+                                document.querySelectorAll('.bank-btn').forEach(btn => {
+                                    btn.classList.toggle('active', parseInt(btn.dataset.bank) === newBank);
+                                });
+                                sendCommand('get_settings'); // Refresh UI for new bank
                             }
                         }
                     }
@@ -208,7 +283,7 @@
 
         // --- Event Listeners ---
         connectButton.addEventListener('click', async () => {
-            log("Requesting device...");
+             log("Requesting device...");
             try {
                 device = await navigator.usb.requestDevice({ filters: [] });
                 await device.open();
@@ -264,16 +339,46 @@
             log("Disconnected.");
         });
 
+        // Use 'input' for instant updates on brightness and labels
+        document.addEventListener('input', (e) => {
+            if (e.target.classList.contains('immediate-update-trigger')) {
+                const action = e.target.dataset.action;
+                const value = e.target.value;
+                if (action === 'brightness') {
+                    sendCommand(`set_brightness=${value}`);
+                } else if (action === 'label') {
+                    const index = e.target.dataset.index;
+                    sendCommand(`set_label=${index},${value}`);
+                }
+            }
+        });
+        
+        // Use 'change' for less frequent updates (CC, channel, etc)
         document.addEventListener('change', (e) => {
             if (e.target.classList.contains('update-trigger')) {
                 const action = e.target.dataset.action;
                 const value = e.target.value;
-                if (action === 'brightness' || action === 'midi_ch') {
+                if (action === 'midi_ch' || action === 'button_mode' || action === 'esb_ch') {
                     sendCommand(`set_${action}=${value}`);
-                } else {
+                } else if (action === 'cc') {
                     const index = e.target.dataset.index;
-                    sendCommand(`set_${action}=${index},${value}`);
+                    sendCommand(`set_cc=${index},${value}`);
                 }
+            }
+        });
+
+        // Bank selection and other buttons
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('bank-btn')) {
+                const bankIndex = e.target.dataset.bank;
+                sendCommand(`set_bank=${bankIndex}`);
+            }
+            if(e.target.id === 'bleToggleButton'){
+                sendCommand('toggle_ble');
+            }
+            if(e.target.id === 'startCalButton'){
+                sendCommand('start_cal');
+                alert("Calibration Started. Follow instructions on your device's screen.");
             }
         });
     </script>
