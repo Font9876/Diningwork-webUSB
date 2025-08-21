@@ -116,9 +116,6 @@
                 await device.claimInterface(interfaceNumber);
                 log('SYS', `Interface ${interfaceNumber} claimed.`);
 
-                // ** THE FIX IS HERE **
-                // This control transfer tells the device the PC is connected and ready.
-                // It triggers the line_state_callback on the device.
                 await device.controlTransferOut({
                     requestType: 'class',
                     recipient: 'interface',
@@ -146,7 +143,6 @@
             if (!device) return;
             keepReading = false;
             try {
-                // Send disconnect signal before releasing the interface
                 await device.controlTransferOut({
                     requestType: 'class',
                     recipient: 'interface',
@@ -176,7 +172,6 @@
 
             try {
                 log('PC >', message);
-                // The .ino sketch expects a newline to terminate the message
                 await device.transferOut(endpointOut, textEncoder.encode(message + '\n'));
                 textToSend.value = ''; // Clear input after sending
             } catch (error) {
@@ -192,12 +187,24 @@
         });
 
         async function readLoop() {
+            // ** FIX IS HERE: Buffer for incoming data **
+            let incomingData = "";
             while (keepReading) {
                 try {
                     let result = await device.transferIn(endpointIn, 64);
                     if (result.status === 'ok' && result.data.byteLength > 0) {
-                        const text = textDecoder.decode(result.data);
-                        log('< DEV', text);
+                        // Add new data to the buffer
+                        incomingData += textDecoder.decode(result.data, { stream: true });
+                        
+                        // Process all complete lines in the buffer
+                        let newlineIndex;
+                        while ((newlineIndex = incomingData.indexOf('\n')) !== -1) {
+                            const line = incomingData.slice(0, newlineIndex).trim();
+                            incomingData = incomingData.slice(newlineIndex + 1);
+                            if (line) { // Don't log empty lines
+                                log('< DEV', line);
+                            }
+                        }
                     }
                 } catch (error) {
                     if (error.message.includes("The device was disconnected")) {
