@@ -149,8 +149,10 @@
         let interfaceNumber;
         let endpointOut;
         let endpointIn;
-        let cachedBankSettingsDataView = null; // To store raw calibration data
+        let cachedBankSettingsDataView = null;
 
+        const SIZEOF_GLOBAL_SETTINGS = 6;
+        const SIZEOF_BANK_SETTINGS = 106;
         const TOTAL_ASSIGNABLE_INPUTS = 12;
         const NUM_ANALOG_POTS = 8;
         const NUM_DIGITAL_MIDI_BUTTONS = 4;
@@ -182,7 +184,7 @@
         connectButton.addEventListener('click', async () => {
             log("Requesting device...");
             try {
-                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x000a }] }); // Adafruit Vendor ID
+                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x000a }] });
                 log(`Device selected: ${device.manufacturerName} ${device.productName}`);
                 
                 await device.open();
@@ -191,19 +193,13 @@
                 log("Configuration selected.");
 
                 for (const iface of device.configuration.interfaces) {
-                    if (iface.alternate.interfaceClass === 0xFF) { // Vendor-Specific
+                    if (iface.alternate.interfaceClass === 0xFF) {
                         interfaceNumber = iface.interfaceNumber;
                         log(`Found WebUSB interface: ${interfaceNumber}`);
                         
                         for(const ep of iface.alternate.endpoints) {
-                            if (ep.direction === 'out') {
-                                endpointOut = ep.endpointNumber;
-                                log(`Found OUT endpoint: ${endpointOut}`);
-                            }
-                            if (ep.direction === 'in') {
-                                endpointIn = ep.endpointNumber;
-                                log(`Found IN endpoint: ${endpointIn}`);
-                            }
+                            if (ep.direction === 'out') endpointOut = ep.endpointNumber;
+                            if (ep.direction === 'in') endpointIn = ep.endpointNumber;
                         }
                         break;
                     }
@@ -232,15 +228,15 @@
         async function listenForData() {
             if (!device) return;
             try {
-                let result = await device.transferIn(endpointIn, 512);
+                let result = await device.transferIn(endpointIn, 64); // Listen for small packets
                 const decoder = new TextDecoder();
                 const text = decoder.decode(result.data);
-                log(`Raw data: ${text}`, 'rx');
-
-                if (text.includes("SETTINGS_UPDATED")) {
-                    log("Device confirmed settings update.", 'success');
+                if (text.trim().length > 0) {
+                    log(`Received: ${text}`, 'rx');
+                    if (text.includes("SETTINGS_UPDATED")) {
+                        log("Device confirmed settings update.", 'success');
+                    }
                 }
-
                 listenForData();
             } catch (error) {
                 if (!error.message.includes("The device was disconnected")) {
@@ -257,16 +253,19 @@
                 log("Sending 'Read' command (R)...", 'tx');
                 await device.transferOut(endpointOut, new Uint8Array([0x52])); // 'R'
                 
-                log("Waiting for settings data...", 'rx');
-                const globalSettingsData = await device.transferIn(endpointIn, 64);
-                const bankSettingsData = await device.transferIn(endpointIn, 256);
+                log("Waiting for combined settings data...", 'rx');
+                const combinedData = await device.transferIn(endpointIn, SIZEOF_GLOBAL_SETTINGS + SIZEOF_BANK_SETTINGS);
 
-                if (globalSettingsData.status !== 'ok' || bankSettingsData.status !== 'ok') {
+                if (combinedData.status !== 'ok') {
                     throw new Error("USB transfer failed.");
                 }
 
-                log("Received settings data. Parsing...", 'rx');
-                parseAndDisplaySettings(globalSettingsData.data, bankSettingsData.data);
+                log(`Received ${combinedData.data.byteLength} bytes. Parsing...`, 'rx');
+                
+                const globalSettingsData = new DataView(combinedData.data.buffer.slice(0, SIZEOF_GLOBAL_SETTINGS));
+                const bankSettingsData = new DataView(combinedData.data.buffer.slice(SIZEOF_GLOBAL_SETTINGS));
+
+                parseAndDisplaySettings(globalSettingsData, bankSettingsData);
 
             } catch (error) {
                 log(`Error reading settings: ${error.message}`, 'error');
@@ -279,34 +278,33 @@
                 log("Packing settings data...", 'info');
                 const { globalBuffer, bankBuffer } = packSettings();
                 
+                const combinedBuffer = new Uint8Array(globalBuffer.byteLength + bankBuffer.byteLength);
+                combinedBuffer.set(new Uint8Array(globalBuffer), 0);
+                combinedBuffer.set(new Uint8Array(bankBuffer), globalBuffer.byteLength);
+
                 log("Sending 'Write' command (W)...", 'tx');
                 await device.transferOut(endpointOut, new Uint8Array([0x57])); // 'W'
 
-                log("Sending global settings payload...", 'tx');
-                await device.transferOut(endpointOut, globalBuffer);
-                
-                log("Sending bank settings payload...", 'tx');
-                await device.transferOut(endpointOut, bankBuffer);
+                log(`Sending combined settings payload (${combinedBuffer.byteLength} bytes)...`, 'tx');
+                await device.transferOut(endpointOut, combinedBuffer);
                 
                 log("Settings data sent. Waiting for confirmation...", 'info');
 
-            } catch (error) {
+            } catch (error)
+            {
                 log(`Error writing settings: ${error.message}`, 'error');
             }
         });
 
         function parseAndDisplaySettings(globalDataView, bankDataView) {
-            // Cache the raw bank data to preserve calibration values
             cachedBankSettingsDataView = bankDataView;
 
-            // Global Settings
             form.esbChannel.value = globalDataView.getUint8(0);
             form.activeBank.value = globalDataView.getUint8(1);
             form.brightness.value = globalDataView.getUint8(2);
             form.autoCalEnabled.value = globalDataView.getUint8(3);
             form.autoCalMaxValue.value = globalDataView.getInt16(4, true);
 
-            // Bank Settings
             let offset = 0;
             form.midiChannel.value = bankDataView.getUint8(offset); offset += 1;
             form.buttonMode.value = bankDataView.getUint8(offset); offset += 1;
@@ -339,8 +337,7 @@
         }
         
         function packSettings() {
-            // Global Settings: 1+1+1+1+2 = 6 bytes
-            const globalBuffer = new ArrayBuffer(6);
+            const globalBuffer = new ArrayBuffer(SIZEOF_GLOBAL_SETTINGS);
             const globalView = new DataView(globalBuffer);
             let offset = 0;
             globalView.setUint8(offset, parseInt(form.esbChannel.value)); offset += 1;
@@ -349,9 +346,7 @@
             globalView.setUint8(offset, parseInt(form.autoCalEnabled.value)); offset += 1;
             globalView.setInt16(offset, parseInt(form.autoCalMaxValue.value), true);
 
-            // Bank Settings: 1+1+12+40+20+16+16 = 106 bytes
-            const bankBufferSize = 106;
-            const bankBuffer = new ArrayBuffer(bankBufferSize);
+            const bankBuffer = new ArrayBuffer(SIZEOF_BANK_SETTINGS);
             const bankView = new DataView(bankBuffer);
             const encoder = new TextEncoder();
             offset = 0;
@@ -381,11 +376,10 @@
                 offset += POT_LABEL_LENGTH + 1;
             }
 
-            // Preserve the potMinRaw and potMaxRaw values from the last read
             if (cachedBankSettingsDataView) {
                 log("Using cached pot calibration data for write.", 'info');
                 const calDataOffset = 1 + 1 + TOTAL_ASSIGNABLE_INPUTS + (NUM_ANALOG_POTS * (POT_LABEL_LENGTH + 1)) + (NUM_DIGITAL_MIDI_BUTTONS * (POT_LABEL_LENGTH + 1));
-                const calDataLength = (NUM_ANALOG_POTS * 2) + (NUM_ANALOG_POTS * 2); // 32 bytes for min/max arrays
+                const calDataLength = (NUM_ANALOG_POTS * 2) + (NUM_ANALOG_POTS * 2);
                 for(let i = 0; i < calDataLength; i++) {
                     bankView.setUint8(offset + i, cachedBankSettingsDataView.getUint8(calDataOffset + i));
                 }
