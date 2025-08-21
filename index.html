@@ -176,7 +176,7 @@
             try {
                 // Adafruit Vendor ID (0x00a is not a standard USB Vendor ID. Using 0x239A for Adafruit)
                 // If your device's Vendor ID is truly 0x000a, keep it. Otherwise, use 0x239A for Adafruit.
-                const filters = [{ vendorId: 0x239A }]; // Updated Vendor ID for Adafruit
+                const filters = [{ vendorId: 0x000a }]; // Updated Vendor ID for Adafruit
                 device = await navigator.usb.requestDevice({ filters });
                 
                 log(`Device selected: ${device.manufacturerName} ${device.productName}`);
