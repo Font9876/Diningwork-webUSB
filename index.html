@@ -1,120 +1,384 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>WebUSB LED Control</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDI Controller WebUSB Editor</title>
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding-top: 20px; }
-        .controls { text-align: center; margin-bottom: 20px; }
-        button { font-size: 18px; padding: 10px 15px; margin: 5px; cursor: pointer; }
-        #log-container { width: 80%; max-width: 800px; }
-        #log { background-color: #222; color: #0f0; font-family: monospace; white-space: pre-wrap; padding: 15px; height: 300px; overflow-y: scroll; border-radius: 5px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #1c1e21;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2, h3 {
+            text-align: center;
+            color: #333;
+        }
+        h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #1877f2;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: background-color 0.2s;
+        }
+        button:hover:not(:disabled) {
+            background-color: #166fe5;
+        }
+        button:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+        }
+        button.saved {
+            background-color: #42b72a;
+        }
+        #settings-form {
+            display: none;
+            margin-top: 20px;
+        }
+        .form-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #606770;
+        }
+        input, select {
+            padding: 8px;
+            border: 1px solid #ccd0d5;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .log-container {
+            width: 100%;
+            max-width: 900px;
+        }
+        #log {
+            background-color: #222;
+            color: #0f0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            padding: 15px;
+            height: 150px;
+            overflow-y: scroll;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
-    <div class="controls">
-        <h1>WebUSB LED Control 💡</h1>
+
+    <div class="container">
+        <h1>MIDI Controller Settings Editor</h1>
         <button id="connectButton">Connect to Device</button>
-        <p>
-            <button id="ledOnButton" disabled>Turn LED ON</button>
-            <button id="ledOffButton" disabled>Turn LED OFF</button>
-        </p>
+        <button id="readButton" disabled>Read Settings from Device</button>
+
+        <form id="settings-form">
+            <div class="form-section">
+                <h2>Global Settings</h2>
+                <div class="form-grid" id="global-settings-container"></div>
+            </div>
+            <div class="form-section">
+                <h2 id="bank-settings-title">Bank Settings (Bank #)</h2>
+                <div id="bank-common-settings-container" class="form-grid" style="margin-bottom: 20px;"></div>
+                
+                <h3>Potentiometer Settings</h3>
+                <div class="form-grid" id="pot-settings-container"></div>
+
+                <h3>Button Settings</h3>
+                <div class="form-grid" id="button-settings-container"></div>
+            </div>
+            <button type="submit" id="saveButton">Save Settings to Device</button>
+        </form>
     </div>
 
-    <div id="log-container">
-        <h3>Debug Log:</h3>
+    <div class="log-container">
+        <h3>Log:</h3>
         <pre id="log"></pre>
     </div>
 
     <script>
         const connectButton = document.getElementById('connectButton');
-        const ledOnButton = document.getElementById('ledOnButton');
-        const ledOffButton = document.getElementById('ledOffButton');
+        const readButton = document.getElementById('readButton');
+        const saveButton = document.getElementById('saveButton');
+        const settingsForm = document.getElementById('settings-form');
         const logElement = document.getElementById('log');
 
         let device;
         let interfaceNumber;
         let endpointOut;
+        let endpointIn;
 
         function log(message) {
             console.log(message);
             logElement.textContent += `> ${message}\n`;
-            logElement.scrollTop = logElement.scrollHeight; // Auto-scroll
+            logElement.scrollTop = logElement.scrollHeight;
         }
 
         connectButton.addEventListener('click', async () => {
             log("Attempting to connect...");
             try {
-                // IMPORTANT: Replace with your device's Vendor and Product ID
-                const filters = [
-                    { vendorId: 0x000a } // Example: Adafruit's Vendor ID
-                    // { vendorId: 0x239A, productId: 0x80F7 } // More specific
-                ];
-
+                const filters = [{ vendorId: 0x000a }]; // IMPORTANT: Use your device's Vendor ID
                 log(`Requesting device with filters: ${JSON.stringify(filters)}`);
                 device = await navigator.usb.requestDevice({ filters });
-                
+
                 log(`Device selected: ${device.manufacturerName} ${device.productName}`);
-                log("Opening device...");
                 await device.open();
-                
-                log("Selecting configuration...");
                 await device.selectConfiguration(1);
 
-                log("Searching for the correct interface...");
-                const interfaces = device.configuration.interfaces;
-                for (const iface of interfaces) {
-                    // Look for a vendor-specific interface, which is what Adafruit_USBD_WebUSB creates.
-                    if (iface.alternate.interfaceClass === 0xFF) { // 0xFF is the code for Vendor-Specific
-                        interfaceNumber = iface.interfaceNumber;
-                        log(`Found vendor-specific interface: ${interfaceNumber}`);
-                        
-                        // Find the OUT endpoint on this interface
-                        for (const ep of iface.alternate.endpoints) {
-                            if (ep.direction === 'out') {
-                                endpointOut = ep.endpointNumber;
-                                log(`Found OUT endpoint: ${endpointOut}`);
-                                break;
-                            }
-                        }
-                        break;
-                    }
-                }
+                log("Searching for the correct interface and endpoints...");
+                const iface = device.configuration.interfaces.find(i => i.alternate.interfaceClass === 0xFF);
+                if (!iface) throw new Error("Could not find a valid WebUSB interface.");
+                
+                interfaceNumber = iface.interfaceNumber;
+                endpointOut = iface.alternate.endpoints.find(ep => ep.direction === 'out').endpointNumber;
+                endpointIn = iface.alternate.endpoints.find(ep => ep.direction === 'in').endpointNumber;
 
-                if (interfaceNumber === undefined || endpointOut === undefined) {
-                    throw new Error("Could not find a valid WebUSB interface or endpoint.");
-                }
+                if (!endpointOut || !endpointIn) throw new Error("Could not find IN and OUT endpoints.");
 
-                log(`Claiming interface ${interfaceNumber}...`);
                 await device.claimInterface(interfaceNumber);
-
-                log("✅ Device connected and ready!");
+                log(`✅ Device connected! Interface: ${interfaceNumber}, EP Out: ${endpointOut}, EP In: ${endpointIn}`);
+                
                 connectButton.disabled = true;
-                ledOnButton.disabled = false;
-                ledOffButton.disabled = false;
-
+                readButton.disabled = false;
             } catch (error) {
                 log(`❌ ERROR: ${error.message}`);
-                console.error("Connection failed:", error);
             }
         });
 
-        async function sendData(data) {
-            if (!device) {
-                log("Device not connected!");
-                return;
-            }
+        readButton.addEventListener('click', async () => {
+            if (!device) { log("Not connected."); return; }
             try {
-                const dataToSend = new TextEncoder().encode(data);
-                log(`Sending data ('${data}') to endpoint ${endpointOut}...`);
-                await device.transferOut(endpointOut, dataToSend);
-                log("Data sent successfully.");
+                log("Sending GET_SETTINGS command...");
+                await sendCommand("GET_SETTINGS");
+                
+                log("Waiting for settings data...");
+                const result = await device.transferIn(endpointIn, 2048); // Read up to 2KB
+                const decoder = new TextDecoder();
+                const jsonString = decoder.decode(result.data);
+                
+                log("Received data. Parsing JSON...");
+                const settings = JSON.parse(jsonString);
+                
+                log("Successfully parsed settings. Populating form...");
+                populateForm(settings);
+                settingsForm.style.display = 'block';
+
             } catch (error) {
-                log(`❌ ERROR sending data: ${error.message}`);
+                log(`❌ ERROR reading settings: ${error.message}`);
             }
+        });
+
+        settingsForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (!device) { log("Not connected."); return; }
+            try {
+                log("Collecting form data...");
+                const settings = collectFormData();
+                
+                const jsonString = JSON.stringify(settings);
+                log("Sending SET_SETTINGS command with new data...");
+                
+                await sendCommand(`SET_SETTINGS:${jsonString}`);
+                
+                log("Waiting for confirmation...");
+                const result = await device.transferIn(endpointIn, 64);
+                const decoder = new TextDecoder();
+                const response = decoder.decode(result.data);
+
+                if (response.startsWith("OK")) {
+                    log("✅ Settings saved successfully on device!");
+                    // Visual feedback for save button
+                    saveButton.classList.add('saved');
+                    saveButton.textContent = 'Saved!';
+                    setTimeout(() => {
+                        saveButton.classList.remove('saved');
+                        saveButton.textContent = 'Save Settings to Device';
+                    }, 2000);
+                } else {
+                    log(`⚠️ Received unexpected response: ${response}`);
+                }
+
+            } catch(error) {
+                log(`❌ ERROR saving settings: ${error.message}`);
+            }
+        });
+
+        async function sendCommand(cmd) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(cmd);
+            await device.transferOut(endpointOut, data);
         }
 
-        ledOnButton.addEventListener('click', () => sendData('1'));
-        ledOffButton.addEventListener('click', () => sendData('0'));
+        function createFormElement(container, id, label, type = 'text', options = {}) {
+            const group = document.createElement('div');
+            group.className = 'form-group';
+            
+            const labelEl = document.createElement('label');
+            labelEl.setAttribute('for', id);
+            labelEl.textContent = label;
+            group.appendChild(labelEl);
+
+            let inputEl;
+            if (type === 'select') {
+                inputEl = document.createElement('select');
+                options.choices.forEach(choice => {
+                    const option = document.createElement('option');
+                    option.value = choice.value;
+                    option.textContent = choice.text;
+                    inputEl.appendChild(option);
+                });
+            } else if (type === 'checkbox') {
+                inputEl = document.createElement('input');
+                inputEl.type = 'checkbox';
+            } else {
+                inputEl = document.createElement('input');
+                inputEl.type = type;
+                if (type === 'number') {
+                    inputEl.min = options.min || 0;
+                    inputEl.max = options.max || 127;
+                }
+                if (type === 'text') {
+                    inputEl.maxLength = options.maxLength || 50;
+                }
+            }
+            inputEl.id = id;
+            inputEl.name = id;
+            group.appendChild(inputEl);
+            container.appendChild(group);
+        }
+
+        function populateForm(settings) {
+            const globalContainer = document.getElementById('global-settings-container');
+            const bankCommonContainer = document.getElementById('bank-common-settings-container');
+            const potContainer = document.getElementById('pot-settings-container');
+            const buttonContainer = document.getElementById('button-settings-container');
+            
+            globalContainer.innerHTML = '';
+            bankCommonContainer.innerHTML = '';
+            potContainer.innerHTML = '';
+            buttonContainer.innerHTML = '';
+
+            // Populate Global
+            createFormElement(globalContainer, 'esbChannel', 'ESB Channel', 'number', { min: 0, max: 255 });
+            document.getElementById('esbChannel').value = settings.global.esbChannel;
+
+            createFormElement(globalContainer, 'activeBank', 'Active Bank', 'number', { min: 0, max: 11 });
+            document.getElementById('activeBank').value = settings.global.activeBank;
+            
+            createFormElement(globalContainer, 'brightness', 'Brightness', 'number', { min: 3, max: 255 });
+            document.getElementById('brightness').value = settings.global.brightness;
+
+            createFormElement(globalContainer, 'autoCalEnabled', 'Auto Calibration', 'checkbox');
+            document.getElementById('autoCalEnabled').checked = settings.global.autoCalEnabled;
+
+            // Populate Bank
+            document.getElementById('bank-settings-title').textContent = `Bank Settings (Bank ${settings.global.activeBank})`;
+            createFormElement(bankCommonContainer, 'midiChannel', 'MIDI Channel', 'number', { min: 1, max: 16 });
+            document.getElementById('midiChannel').value = settings.bank.midiChannel;
+
+            createFormElement(bankCommonContainer, 'buttonMode', 'Button Mode', 'select', { choices: [{value: 0, text: 'Momentary'}, {value: 1, text: 'Toggle'}] });
+            document.getElementById('buttonMode').value = settings.bank.buttonMode;
+
+            // Potentiometer Settings
+            settings.bank.potLabels.forEach((label, i) => {
+                const id = `potLabel${i}`;
+                createFormElement(potContainer, id, `Pot ${i+1} Label`, 'text', { maxLength: 4 });
+                document.getElementById(id).value = label;
+                
+                const ccId = `cc${i}`;
+                createFormElement(potContainer, ccId, `Pot ${i+1} CC`, 'number', {min: 0, max: 127});
+                document.getElementById(ccId).value = settings.bank.assignableCCs[i];
+            });
+            
+            // Button Settings
+            settings.bank.buttonLabels.forEach((label, i) => {
+                const id = `buttonLabel${i}`;
+                createFormElement(buttonContainer, id, `Button ${i+1} Label`, 'text', { maxLength: 4 });
+                document.getElementById(id).value = label;
+
+                const ccIndex = i + 8; // Buttons are the last 4 CCs
+                const ccId = `cc${ccIndex}`;
+                createFormElement(buttonContainer, ccId, `Button ${i+1} CC`, 'number', {min: 0, max: 127});
+                document.getElementById(ccId).value = settings.bank.assignableCCs[ccIndex];
+            });
+        }
+        
+        function collectFormData() {
+            const settings = {
+                global: {},
+                bank: {
+                    potLabels: [],
+                    buttonLabels: [],
+                    assignableCCs: new Array(12)
+                }
+            };
+            
+            // Collect Global
+            settings.global.esbChannel = parseInt(document.getElementById('esbChannel').value);
+            settings.global.activeBank = parseInt(document.getElementById('activeBank').value);
+            settings.global.brightness = parseInt(document.getElementById('brightness').value);
+            settings.global.autoCalEnabled = document.getElementById('autoCalEnabled').checked;
+            settings.global.autoCalMaxValue = 15000; // This value is read on device, so we send a default
+
+            // Collect Bank
+            settings.bank.midiChannel = parseInt(document.getElementById('midiChannel').value);
+            settings.bank.buttonMode = parseInt(document.getElementById('buttonMode').value);
+
+            for (let i = 0; i < 8; i++) {
+                // Trim and limit label length
+                let label = document.getElementById(`potLabel${i}`).value.trim();
+                settings.bank.potLabels.push(label.substring(0, 4));
+                settings.bank.assignableCCs[i] = parseInt(document.getElementById(`cc${i}`).value);
+            }
+            for (let i = 0; i < 4; i++) {
+                let label = document.getElementById(`buttonLabel${i}`).value.trim();
+                settings.bank.buttonLabels.push(label.substring(0, 4));
+                const ccIndex = i + 8;
+                settings.bank.assignableCCs[ccIndex] = parseInt(document.getElementById(`cc${ccIndex}`).value);
+            }
+
+            return settings;
+        }
+
     </script>
 </body>
 </html>
