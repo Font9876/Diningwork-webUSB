@@ -13,16 +13,10 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         .cc-bar-container {
-            /* Removed transform: rotate(180deg); as it's not needed with the new layout */
-            height: 100%; /* Ensure container takes full height */
-            display: flex;
-            flex-direction: column-reverse; /* Stack from bottom up */
-            align-items: center;
-            position: relative; /* For absolute positioning of value text */
+            transform: rotate(180deg);
         }
         .cc-bar {
             transition: height 0.05s ease-out;
-            width: 100%; /* Make bar fill its container width */
         }
         .btn-indicator {
             transition: background-color 0.1s ease, box-shadow 0.1s ease;
@@ -71,14 +65,6 @@
             border-radius: 50%;
             border: 2px solid #fff;
         }
-        /* Style for the CC value text on top of the bars */
-        .cc-value-text {
-            position: absolute;
-            top: -1.5rem; /* Adjust as needed to position above the bar */
-            font-size: 0.75rem; /* text-xs */
-            color: #a0aec0; /* gray-400 */
-            font-weight: bold;
-        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
@@ -117,15 +103,13 @@
                                 <label for="brightness" class="block text-sm font-medium text-gray-400">Brightness</label>
                                 <span id="brightness-value" class="font-mono text-cyan-300"></span>
                             </div>
-                            <!-- Changed to 'change' event for brightness for immediate update -->
-                            <input type="range" id="brightness" min="3" max="255" class="w-full update-trigger" data-action="brightness">
+                            <input type="range" id="brightness" min="3" max="255" class="w-full immediate-update-trigger" data-action="brightness">
                         </div>
                         <div class="space-y-1">
                             <div class="flex justify-between items-center">
                                 <label for="midiChannel" class="block text-sm font-medium text-gray-400">MIDI Channel</label>
                                 <span id="midiChannel-value" class="font-mono text-cyan-300"></span>
                             </div>
-                            <!-- Changed to 'change' event for midiChannel -->
                             <input type="range" id="midiChannel" min="1" max="16" class="w-full update-trigger" data-action="midi_ch">
                         </div>
                         <div>
@@ -178,9 +162,8 @@
                         <p id="last-cc-sent" class="font-mono text-lg text-white">-</p>
                     </div>
                 </div>
-                <!-- Increased height for cc-pots-container and cc-btns-container -->
                 <div id="cc-container" class="grid grid-cols-1 gap-4 mt-4">
-                    <div id="cc-pots-container" class="grid grid-cols-4 gap-3 h-96 items-end"></div>
+                    <div id="cc-pots-container" class="grid grid-cols-8 gap-3 h-80 items-end"></div>
                     <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-24 items-center mt-4"></div>
                 </div>
             </div>
@@ -251,7 +234,7 @@
             bleButton.classList.toggle('bg-gray-600', !settings.bleOn);
             bleButton.classList.toggle('hover:bg-gray-500', !settings.bleOn);
 
-            if (settings.bleOn && settings.blePeerName && settings.blePeerName.length > 0) {
+            if (settings.bleOn && settings.blePeerName) {
                 bleStatusEl.classList.remove('hidden');
                 blePeerNameEl.textContent = settings.blePeerName;
                 blePeerNameEl.classList.add('text-green-400');
@@ -283,23 +266,20 @@
                 card.innerHTML = `
                     <label class="block text-sm font-bold text-gray-300">${type} ${num}</label>
                     <div class="flex gap-2 mt-1">
-                        <!-- Changed to 'change' event for label -->
-                        <input type="text" value="${settings.labels[i]}" maxlength="4" placeholder="Label" class="w-1/2 bg-gray-900 border-gray-600 rounded-md text-xs p-1 focus:ring-blue-500 focus:border-blue-500 update-trigger" data-action="label" data-index="${i}">
-                        <!-- Changed to 'change' event for cc -->
-                        <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="w-1/2 bg-gray-900 border-gray-600 rounded-md text-xs p-1 text-center font-mono update-trigger" data-action="cc" data-index="${i}">
+                        <input type="text" value="${settings.labels[i]}" maxlength="4" placeholder="Label" class="w-1/2 bg-gray-900 border-gray-600 rounded-md text-xs p-1 focus:ring-blue-500 focus:border-blue-500 immediate-update-trigger" data-action="label" data-index="${i}">
+                        <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="w-1/2 bg-gray-900 border-gray-600 rounded-md text-xs p-1 text-center font-mono focus:ring-blue-500 focus:border-blue-500 update-trigger" data-action="cc" data-index="${i}">
                     </div>
                 `;
                 assignmentsGrid.appendChild(card);
 
                 if (isPot) {
                     const barWrapper = document.createElement('div');
-                    barWrapper.className = 'flex flex-col items-center h-full justify-end relative'; // Added relative for value text positioning
+                    barWrapper.className = 'flex flex-col items-center h-full justify-end';
                     barWrapper.innerHTML = `
-                        <span id="cc-value-text-${i}" class="cc-value-text text-gray-400 font-bold">--</span>
-                        <div class="cc-bar-container bg-gray-900 h-full w-8 rounded-full overflow-hidden flex items-start border border-gray-600">
+                        <div class="cc-bar-container bg-gray-900 h-full w-4 rounded-full overflow-hidden flex items-start border border-gray-600">
                             <div id="cc-bar-${i}" class="cc-bar bg-cyan-400 w-full" style="height: 0%;"></div>
                         </div>
-                        <span class="text-xs mt-1 text-gray-400 font-mono">CC ${cc}</span>
+                        <span class="text-xs mt-1 text-gray-400 font-mono">${cc}</span>
                     `;
                     ccPotsContainer.appendChild(barWrapper);
                 } else {
@@ -307,7 +287,7 @@
                     btnWrapper.className = 'flex flex-col items-center justify-center';
                     btnWrapper.innerHTML = `
                         <div id="cc-btn-${i}" class="btn-indicator bg-gray-900 h-12 w-12 rounded-full border-2 border-gray-600"></div>
-                        <span class="text-xs mt-2 text-gray-400 font-mono">CC ${cc}</span>
+                        <span class="text-xs mt-2 text-gray-400 font-mono">${cc}</span>
                     `;
                     ccBtnsContainer.appendChild(btnWrapper);
                 }
@@ -321,9 +301,7 @@
             
             if (index < 8) {
                 const bar = document.getElementById(`cc-bar-${index}`);
-                const valueText = document.getElementById(`cc-value-text-${index}`);
                 if (bar) bar.style.height = `${(value / 127) * 100}%`;
-                if (valueText) valueText.textContent = value;
             } else {
                 const btn = document.getElementById(`cc-btn-${index}`);
                 if (btn) btn.classList.toggle('active', value > 64);
@@ -358,12 +336,7 @@
                                 document.querySelectorAll('.bank-btn').forEach(btn => {
                                     btn.classList.toggle('active', parseInt(btn.dataset.bank) === newBank);
                                 });
-                                // Request full settings to update labels and CC assignments
                                 sendCommand('get_settings');
-                            } else if (line === 'cc_values_sync_start') {
-                                log('Starting CC values sync...');
-                            } else if (line === 'cc_values_sync_end') {
-                                log('CC values sync complete.');
                             }
                         }
                     }
@@ -409,9 +382,7 @@
                 keepReading = true;
                 readLoop();
                 
-                // Request full settings and then all current CC values
                 await sendCommand("get_settings");
-                await sendCommand("request_cc_values");
 
             } catch (error) {
                 console.error("Connection failed:", error);
@@ -434,17 +405,27 @@
             log("Disconnected.");
         });
 
-        // Changed 'input' event to 'change' for range sliders and text inputs
+        document.addEventListener('input', (e) => {
+            if (e.target.classList.contains('immediate-update-trigger') || e.target.type === 'range') {
+                const action = e.target.dataset.action;
+                const value = e.target.value;
+                if(e.target.id === 'brightness') brightnessValueEl.textContent = value;
+                if(e.target.id === 'midiChannel') midiChannelValueEl.textContent = value;
+                
+                if (action === 'brightness') {
+                    sendCommand(`set_brightness=${value}`);
+                } else if (action === 'label') {
+                    const index = e.target.dataset.index;
+                    sendCommand(`set_label=${index},${value}`);
+                }
+            }
+        });
+        
         document.addEventListener('change', (e) => {
             if (e.target.classList.contains('update-trigger')) {
                 const action = e.target.dataset.action;
                 const value = e.target.value;
-                // Update display values for sliders immediately on change
-                if(e.target.id === 'brightness') brightnessValueEl.textContent = value;
-                if(e.target.id === 'midiChannel') midiChannelValueEl.textContent = value;
-
                 sendCommand(`set_${action}=${e.target.dataset.index ? e.target.dataset.index + ',' : ''}${value}`);
-                // Request settings after a short delay to ensure device has processed
                 setTimeout(() => sendCommand('get_settings'), 200);
             }
         });
@@ -452,38 +433,15 @@
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('bank-btn')) {
                 sendCommand(`set_bank=${e.target.dataset.bank}`);
-                // Request settings after a short delay to ensure device has processed
                 setTimeout(() => sendCommand('get_settings'), 250);
             } else if (e.target.id === 'bleToggleButton') {
                 sendCommand('toggle_ble');
             } else if (e.target.id === 'startCalButton') {
                 sendCommand('start_cal');
-                // Replaced alert with a custom message box for better UX
-                showCustomAlert("Calibration Started. Follow instructions on your device's screen.");
+                alert("Calibration Started. Follow instructions on your device's screen.");
             }
         });
-
-        // Custom Alert/Message Box (replacing alert())
-        function showCustomAlert(message) {
-            const existingAlert = document.getElementById('custom-alert');
-            if (existingAlert) existingAlert.remove();
-
-            const alertDiv = document.createElement('div');
-            alertDiv.id = 'custom-alert';
-            alertDiv.className = 'fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50';
-            alertDiv.innerHTML = `
-                <div class="bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-700 max-w-sm w-full text-center">
-                    <p class="text-white text-lg mb-4">${message}</p>
-                    <button id="custom-alert-ok" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">OK</button>
-                </div>
-            `;
-            document.body.appendChild(alertDiv);
-
-            document.getElementById('custom-alert-ok').addEventListener('click', () => {
-                alertDiv.remove();
-            });
-        }
-
     </script>
 </body>
 </html>
+
