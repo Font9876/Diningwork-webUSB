@@ -359,7 +359,7 @@
             try {
                 // The vendorId (0x239A) is for Adafruit devices.
                 // You can remove this or change it if your device is different.
-                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x239A }] });
+                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x000a }] });
                 await device.open();
                 if (device.configuration === null) await device.selectConfiguration(1);
 
