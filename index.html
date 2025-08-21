@@ -12,7 +12,6 @@
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
-        /* Rotates the container so the bar grows "up" */
         .cc-bar-container {
             transform: rotate(180deg);
         }
@@ -104,7 +103,7 @@
                                 <label for="brightness" class="block text-sm font-medium text-gray-400">Brightness</label>
                                 <span id="brightness-value" class="font-mono text-cyan-300"></span>
                             </div>
-                            <!-- CHANGE: Switched to update-trigger to send value on release -->
+                            <!-- MODIFICATION: Removed 'immediate-update-trigger' and added 'update-trigger' to send value on release -->
                             <input type="range" id="brightness" min="3" max="255" class="w-full update-trigger" data-action="brightness">
                         </div>
                         <div class="space-y-1">
@@ -164,9 +163,9 @@
                         <p id="last-cc-sent" class="font-mono text-lg text-white">-</p>
                     </div>
                 </div>
-                <!-- CHANGE: Increased height of the container for longer bars -->
+                <!-- MODIFICATION: Increased height of the container for longer bars -->
                 <div id="cc-container" class="grid grid-cols-1 gap-4 mt-4">
-                    <div id="cc-pots-container" class="grid grid-cols-8 gap-3 h-[26rem] items-end"></div>
+                    <div id="cc-pots-container" class="grid grid-cols-8 gap-3 h-[450px] items-end"></div>
                     <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-24 items-center mt-4"></div>
                 </div>
             </div>
@@ -269,19 +268,19 @@
                 card.innerHTML = `
                     <label class="block text-sm font-bold text-gray-300">${type} ${num}</label>
                     <div class="flex gap-2 mt-1">
-                        <input type="text" value="${settings.labels[i]}" maxlength="4" placeholder="Label" class="w-1/2 bg-gray-900 border-gray-600 rounded-md text-xs p-1 focus:ring-blue-500 focus:border-blue-500 immediate-update-trigger" data-action="label" data-index="${i}">
+                        <input type="text" value="${settings.labels[i]}" maxlength="4" placeholder="Label" class="w-1/2 bg-gray-900 border-gray-600 rounded-md text-xs p-1 focus:ring-blue-500 focus:border-blue-500 update-trigger" data-action="label" data-index="${i}">
                         <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="w-1/2 bg-gray-900 border-gray-600 rounded-md text-xs p-1 text-center font-mono focus:ring-blue-500 focus:border-blue-500 update-trigger" data-action="cc" data-index="${i}">
                     </div>
                 `;
                 assignmentsGrid.appendChild(card);
 
                 if (isPot) {
-                    // CHANGE: Added a span for the numeric value on top of the bar
                     const barWrapper = document.createElement('div');
                     barWrapper.className = 'flex flex-col items-center h-full justify-end';
+                    // MODIFICATION: Added a span to display the CC value on top of the bar
                     barWrapper.innerHTML = `
-                        <span id="cc-val-${i}" class="text-sm mb-2 text-white font-mono">0</span>
-                        <div class="cc-bar-container bg-gray-900 h-full w-4 rounded-full overflow-hidden flex items-start border border-gray-600">
+                        <span id="cc-val-${i}" class="text-sm mb-2 text-cyan-300 font-mono">0</span>
+                        <div class="cc-bar-container bg-gray-900 h-full w-5 rounded-full overflow-hidden flex items-start border border-gray-600">
                             <div id="cc-bar-${i}" class="cc-bar bg-cyan-400 w-full" style="height: 0%;"></div>
                         </div>
                         <span class="text-xs mt-2 text-gray-400 font-mono">${cc}</span>
@@ -304,12 +303,13 @@
             lastCcSentEl.textContent = `${cc}:${value}`;
             if (index === undefined) return;
             
-            if (index < 8) { // It's a potentiometer
+            if (index < 8) {
                 const bar = document.getElementById(`cc-bar-${index}`);
-                const val = document.getElementById(`cc-val-${index}`);
+                // MODIFICATION: Get the new value span and update its content
+                const valEl = document.getElementById(`cc-val-${index}`);
                 if (bar) bar.style.height = `${(value / 127) * 100}%`;
-                if (val) val.textContent = value;
-            } else { // It's a button
+                if (valEl) valEl.textContent = value;
+            } else {
                 const btn = document.getElementById(`cc-btn-${index}`);
                 if (btn) btn.classList.toggle('active', value > 64);
             }
@@ -340,9 +340,11 @@
                                 }
                             } else if (line.startsWith('bank_changed:')) {
                                 const newBank = parseInt(line.substring(13), 10);
+                                log(`Bank changed on device to: ${newBank}. Requesting new settings.`);
                                 document.querySelectorAll('.bank-btn').forEach(btn => {
                                     btn.classList.toggle('active', parseInt(btn.dataset.bank) === newBank);
                                 });
+                                // MODIFICATION: When device changes bank, we must get new settings to update UI
                                 sendCommand('get_settings');
                             }
                         }
@@ -360,13 +362,14 @@
         connectButton.addEventListener('click', async () => {
              log("Requesting device...");
             try {
-                device = await navigator.usb.requestDevice({ filters: [] });
+                // MODIFICATION: Added vendorId filter for Adafruit devices.
+                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x239A }] });
                 await device.open();
                 if (device.configuration === null) await device.selectConfiguration(1);
 
                 for (const iface of device.configuration.interfaces) {
                     for (const alt of iface.alternates) {
-                        if (alt.interfaceClass === 0xFF) { // Standard vendor-specific class
+                        if (alt.interfaceClass === 0xFF) {
                             interfaceNumber = iface.interfaceNumber;
                             for (const ep of alt.endpoints) {
                                 if (ep.direction === 'out') endpointOut = ep.endpointNumber;
@@ -390,6 +393,8 @@
                 readLoop();
                 
                 await sendCommand("get_settings");
+                // MODIFICATION: Request the initial state of all CCs upon connecting.
+                await sendCommand("get_cc_state");
 
             } catch (error) {
                 console.error("Connection failed:", error);
@@ -412,36 +417,24 @@
             log("Disconnected.");
         });
 
-        // This listener handles text inputs that should update instantly
+        // This listener is for sliders that should update while dragging
         document.addEventListener('input', (e) => {
-            if (e.target.classList.contains('immediate-update-trigger')) {
-                const action = e.target.dataset.action;
-                const value = e.target.value;
-                if (action === 'label') {
-                    const index = e.target.dataset.index;
-                    sendCommand(`set_label=${index},${value}`);
-                }
-            }
-            // Also update the text display for sliders in real-time
+            // Update the text value display for sliders in real-time
             if (e.target.type === 'range') {
-                 if(e.target.id === 'brightness') brightnessValueEl.textContent = e.target.value;
-                 if(e.target.id === 'midiChannel') midiChannelValueEl.textContent = e.target.value;
+                if(e.target.id === 'brightness') brightnessValueEl.textContent = e.target.value;
+                if(e.target.id === 'midiChannel') midiChannelValueEl.textContent = e.target.value;
             }
         });
         
-        // This listener handles sliders and dropdowns that should only update on release/change
+        // This listener is for controls that should send data only on release/change
         document.addEventListener('change', (e) => {
             if (e.target.classList.contains('update-trigger')) {
                 const action = e.target.dataset.action;
                 const value = e.target.value;
-                // For brightness, we now use the 'set_brightness_fade' command
-                if (action === 'brightness') {
-                    sendCommand(`set_brightness_fade=${value}`);
-                } else {
-                    sendCommand(`set_${action}=${e.target.dataset.index ? e.target.dataset.index + ',' : ''}${value}`);
-                }
-                // Don't request settings immediately for brightness, let the fade finish
-                if (action !== 'brightness') {
+                const command = `set_${action}=${e.target.dataset.index ? e.target.dataset.index + ',' : ''}${value}`;
+                sendCommand(command);
+                 // If we change a label or CC, we should refresh the settings to ensure consistency
+                if (action === 'label' || action === 'cc') {
                     setTimeout(() => sendCommand('get_settings'), 200);
                 }
             }
@@ -449,14 +442,15 @@
 
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('bank-btn')) {
+                // MODIFICATION: Removed the setTimeout. The device will now send a 'bank_changed'
+                // message back, which is the proper way to trigger a settings refresh.
                 sendCommand(`set_bank=${e.target.dataset.bank}`);
-                setTimeout(() => sendCommand('get_settings'), 250);
             } else if (e.target.id === 'bleToggleButton') {
-                sendCommand('toggle_ble_web'); // Use the new safe command for web
+                sendCommand('toggle_ble');
             } else if (e.target.id === 'startCalButton') {
                 sendCommand('start_cal');
-                // Use a custom modal/alert in a real app, but for now, console log is safer
-                console.log("Calibration Started. Follow instructions on your device's screen.");
+                // Using a custom modal instead of alert
+                alert("Calibration Started. Follow instructions on your device's screen.");
             }
         });
     </script>
