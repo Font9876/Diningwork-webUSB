@@ -13,29 +13,35 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         .cc-bar-container {
-            transform: rotate(180deg); /* Flip the container to have bars grow upwards */
+            transform: rotate(180deg);
         }
         .cc-bar {
             transition: height 0.05s ease-out;
         }
-        /* Custom scrollbar for a better look */
+        .btn-indicator {
+            transition: background-color 0.1s ease;
+        }
+        .btn-indicator.active {
+            background-color: #2dd4bf; /* teal-400 */
+        }
         ::-webkit-scrollbar {
             width: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #2d3748; /* gray-800 */
+            background: #1f2937; /* gray-800 */
         }
         ::-webkit-scrollbar-thumb {
-            background: #4a5568; /* gray-600 */
+            background: #4b5563; /* gray-600 */
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #718096; /* gray-500 */
+            background: #6b7280; /* gray-500 */
         }
         .bank-btn.active {
             background-color: #38b2ac; /* teal-500 */
             color: white;
             font-weight: bold;
+            box-shadow: 0 0 15px rgba(56, 178, 172, 0.5);
         }
     </style>
 </head>
@@ -96,7 +102,7 @@
                         </div>
                         <div>
                              <label class="block text-sm font-medium text-gray-400">Bluetooth</label>
-                             <button id="bleToggleButton" class="mt-1 w-full px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-500" data-action="toggle_ble">Enable</button>
+                             <button id="bleToggleButton" class="mt-1 w-full px-4 py-2 text-white font-semibold rounded-lg shadow-md" data-action="toggle_ble">Enable</button>
                         </div>
                         <div>
                              <label class="block text-sm font-medium text-gray-400">Calibration</label>
@@ -122,8 +128,9 @@
                         <p id="last-cc-sent" class="font-mono text-lg text-white">-</p>
                     </div>
                 </div>
-                <div id="cc-bars-container" class="grid grid-cols-6 md:grid-cols-12 gap-x-3 gap-y-1 h-[32rem] items-end mt-4">
-                    <!-- JS will populate this -->
+                <div id="cc-container" class="grid grid-cols-4 gap-4 mt-4">
+                    <div id="cc-pots-container" class="col-span-4 grid grid-cols-8 gap-3 h-64 items-end"></div>
+                    <div id="cc-btns-container" class="col-span-4 grid grid-cols-4 gap-3 h-24 items-center"></div>
                 </div>
             </div>
         </main>
@@ -158,12 +165,11 @@
         };
 
         const populateUI = (settings) => {
-            // Update bank buttons
             const bankGrid = document.getElementById('bank-selection-grid');
             bankGrid.innerHTML = '';
             for(let i = 0; i < 12; i++) {
                 const bankBtn = document.createElement('button');
-                bankBtn.className = 'bank-btn p-2 text-xs font-semibold rounded-md bg-gray-900 hover:bg-gray-600';
+                bankBtn.className = 'bank-btn p-2 text-xs font-semibold rounded-md bg-gray-900 hover:bg-gray-600 transition-colors';
                 bankBtn.textContent = `B${i+1}`;
                 bankBtn.dataset.bank = i;
                 if(i === settings.activeBank) {
@@ -172,7 +178,6 @@
                 bankGrid.appendChild(bankBtn);
             }
 
-            // Update settings
             document.getElementById('brightness').value = settings.brightness;
             document.getElementById('midiChannel').value = settings.midiChannel;
             document.getElementById('buttonMode').value = settings.buttonMode;
@@ -185,16 +190,18 @@
             bleButton.classList.toggle('bg-gray-600', !settings.bleOn);
             bleButton.classList.toggle('hover:bg-gray-500', !settings.bleOn);
 
-
             const assignmentsGrid = document.getElementById('assignments-grid');
-            const ccBarsContainer = document.getElementById('cc-bars-container');
+            const ccPotsContainer = document.getElementById('cc-pots-container');
+            const ccBtnsContainer = document.getElementById('cc-btns-container');
             assignmentsGrid.innerHTML = '';
-            ccBarsContainer.innerHTML = '';
+            ccPotsContainer.innerHTML = '';
+            ccBtnsContainer.innerHTML = '';
             ccMap = {};
 
             for (let i = 0; i < 12; i++) {
-                const type = i < 8 ? 'Pot' : 'Btn';
-                const num = i < 8 ? i + 1 : i - 7;
+                const isPot = i < 8;
+                const type = isPot ? 'Pot' : 'Btn';
+                const num = isPot ? i + 1 : i - 7;
                 const cc = settings.ccs[i];
                 ccMap[cc] = i;
 
@@ -209,15 +216,25 @@
                 `;
                 assignmentsGrid.appendChild(card);
 
-                const barWrapper = document.createElement('div');
-                barWrapper.className = 'flex flex-col items-center h-full justify-end';
-                barWrapper.innerHTML = `
-                    <div class="cc-bar-container bg-gray-900 h-full w-4 rounded-full overflow-hidden flex items-start border border-gray-600">
-                        <div id="cc-bar-${i}" class="cc-bar bg-cyan-400 w-full" style="height: 0%;"></div>
-                    </div>
-                    <span class="text-xs mt-1 text-gray-400 font-mono">${cc}</span>
-                `;
-                ccBarsContainer.appendChild(barWrapper);
+                if (isPot) {
+                    const barWrapper = document.createElement('div');
+                    barWrapper.className = 'flex flex-col items-center h-full justify-end';
+                    barWrapper.innerHTML = `
+                        <div class="cc-bar-container bg-gray-900 h-full w-4 rounded-full overflow-hidden flex items-start border border-gray-600">
+                            <div id="cc-bar-${i}" class="cc-bar bg-cyan-400 w-full" style="height: 0%;"></div>
+                        </div>
+                        <span class="text-xs mt-1 text-gray-400 font-mono">${cc}</span>
+                    `;
+                    ccPotsContainer.appendChild(barWrapper);
+                } else {
+                    const btnWrapper = document.createElement('div');
+                    btnWrapper.className = 'flex flex-col items-center justify-center';
+                    btnWrapper.innerHTML = `
+                        <div id="cc-btn-${i}" class="btn-indicator bg-gray-900 h-12 w-12 rounded-full border-2 border-gray-600"></div>
+                        <span class="text-xs mt-2 text-gray-400 font-mono">${cc}</span>
+                    `;
+                    ccBtnsContainer.appendChild(btnWrapper);
+                }
             }
         };
 
@@ -226,10 +243,17 @@
             lastCcSentEl.textContent = `${cc}:${value}`;
             if (index === undefined) return;
             
-            const bar = document.getElementById(`cc-bar-${index}`);
-            if (bar) {
-                const percentage = (value / 127) * 100;
-                bar.style.height = `${percentage}%`;
+            if (index < 8) { // It's a Pot
+                const bar = document.getElementById(`cc-bar-${index}`);
+                if (bar) {
+                    const percentage = (value / 127) * 100;
+                    bar.style.height = `${percentage}%`;
+                }
+            } else { // It's a Button
+                const btn = document.getElementById(`cc-btn-${index}`);
+                if (btn) {
+                    btn.classList.toggle('active', value > 64);
+                }
             }
         };
 
@@ -250,22 +274,18 @@
                                     const settings = JSON.parse(line);
                                     log("Received settings object.");
                                     populateUI(settings);
-                                } catch (e) {
-                                    console.error("JSON Parse Error:", e, "Data:", line);
-                                }
+                                } catch (e) { console.error("JSON Parse Error:", e, "Data:", line); }
                             } else if (line.startsWith('cc:')) {
                                 const parts = line.substring(3).split(',');
                                 if (parts.length === 2) {
-                                    const cc = parseInt(parts[0], 10);
-                                    const value = parseInt(parts[1], 10);
-                                    updateCCVisualizer(cc, value);
+                                    updateCCVisualizer(parseInt(parts[0], 10), parseInt(parts[1], 10));
                                 }
                             } else if (line.startsWith('bank_changed:')) {
                                 const newBank = parseInt(line.substring(13), 10);
                                 document.querySelectorAll('.bank-btn').forEach(btn => {
                                     btn.classList.toggle('active', parseInt(btn.dataset.bank) === newBank);
                                 });
-                                sendCommand('get_settings'); // Refresh UI for new bank
+                                sendCommand('get_settings');
                             }
                         }
                     }
@@ -273,15 +293,12 @@
                     if (error.message.includes("disconnected")) {
                         log("Device disconnected.");
                         if (!disconnectButton.disabled) await disconnectButton.click();
-                    } else {
-                       console.error(`Read loop error: ${error.message}`);
-                    }
+                    } else { console.error(`Read loop error: ${error.message}`); }
                     keepReading = false;
                 }
             }
         }
 
-        // --- Event Listeners ---
         connectButton.addEventListener('click', async () => {
              log("Requesting device...");
             try {
@@ -328,9 +345,7 @@
                 await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x00, index: interfaceNumber });
                 await device.releaseInterface(interfaceNumber);
                 await device.close();
-            } catch (error) {
-                console.error("Disconnect error:", error);
-            }
+            } catch (error) { console.error("Disconnect error:", error); }
             device = null;
             connectButton.disabled = false;
             disconnectButton.disabled = true;
@@ -339,7 +354,6 @@
             log("Disconnected.");
         });
 
-        // Use 'input' for instant updates on brightness and labels
         document.addEventListener('input', (e) => {
             if (e.target.classList.contains('immediate-update-trigger')) {
                 const action = e.target.dataset.action;
@@ -353,30 +367,21 @@
             }
         });
         
-        // Use 'change' for less frequent updates (CC, channel, etc)
         document.addEventListener('change', (e) => {
             if (e.target.classList.contains('update-trigger')) {
                 const action = e.target.dataset.action;
                 const value = e.target.value;
-                if (action === 'midi_ch' || action === 'button_mode' || action === 'esb_ch') {
-                    sendCommand(`set_${action}=${value}`);
-                } else if (action === 'cc') {
-                    const index = e.target.dataset.index;
-                    sendCommand(`set_cc=${index},${value}`);
-                }
+                sendCommand(`set_${action}=${e.target.dataset.index ? e.target.dataset.index + ',' : ''}${value}`);
+                setTimeout(() => sendCommand('get_settings'), 200); // Refresh UI after change
             }
         });
 
-        // Bank selection and other buttons
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('bank-btn')) {
-                const bankIndex = e.target.dataset.bank;
-                sendCommand(`set_bank=${bankIndex}`);
-            }
-            if(e.target.id === 'bleToggleButton'){
+                sendCommand(`set_bank=${e.target.dataset.bank}`);
+            } else if (e.target.id === 'bleToggleButton') {
                 sendCommand('toggle_ble');
-            }
-            if(e.target.id === 'startCalButton'){
+            } else if (e.target.id === 'startCalButton') {
                 sendCommand('start_cal');
                 alert("Calibration Started. Follow instructions on your device's screen.");
             }
