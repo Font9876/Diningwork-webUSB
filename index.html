@@ -149,6 +149,7 @@
         let interfaceNumber;
         let endpointOut;
         let endpointIn;
+        let cachedBankSettingsDataView = null; // To store raw calibration data
 
         const TOTAL_ASSIGNABLE_INPUTS = 12;
         const NUM_ANALOG_POTS = 8;
@@ -181,7 +182,7 @@
         connectButton.addEventListener('click', async () => {
             log("Requesting device...");
             try {
-                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x000a }] }); // Adafruit Vendor ID
+                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x239A }] }); // Adafruit Vendor ID
                 log(`Device selected: ${device.manufacturerName} ${device.productName}`);
                 
                 await device.open();
@@ -221,7 +222,6 @@
                 readButton.disabled = false;
                 writeButton.disabled = false;
                 
-                // Start listening for data from the device
                 listenForData();
 
             } catch (error) {
@@ -232,17 +232,15 @@
         async function listenForData() {
             if (!device) return;
             try {
-                let result = await device.transferIn(endpointIn, 512); // Read up to 512 bytes
+                let result = await device.transferIn(endpointIn, 512);
                 const decoder = new TextDecoder();
                 const text = decoder.decode(result.data);
                 log(`Raw data: ${text}`, 'rx');
 
-                // Check for specific acknowledgements
                 if (text.includes("SETTINGS_UPDATED")) {
                     log("Device confirmed settings update.", 'success');
                 }
 
-                // Continue listening
                 listenForData();
             } catch (error) {
                 if (!error.message.includes("The device was disconnected")) {
@@ -253,7 +251,6 @@
             }
         }
 
-
         readButton.addEventListener('click', async () => {
             if (!device) return;
             try {
@@ -261,7 +258,6 @@
                 await device.transferOut(endpointOut, new Uint8Array([0x52])); // 'R'
                 
                 log("Waiting for settings data...", 'rx');
-                // The device will send two packets back-to-back
                 const globalSettingsData = await device.transferIn(endpointIn, 64);
                 const bankSettingsData = await device.transferIn(endpointIn, 256);
 
@@ -300,12 +296,15 @@
         });
 
         function parseAndDisplaySettings(globalDataView, bankDataView) {
-            // Global Settings (5 bytes total)
+            // Cache the raw bank data to preserve calibration values
+            cachedBankSettingsDataView = bankDataView;
+
+            // Global Settings
             form.esbChannel.value = globalDataView.getUint8(0);
             form.activeBank.value = globalDataView.getUint8(1);
             form.brightness.value = globalDataView.getUint8(2);
             form.autoCalEnabled.value = globalDataView.getUint8(3);
-            form.autoCalMaxValue.value = globalDataView.getInt16(4, true); // Assuming 2 bytes for int16_t, little-endian
+            form.autoCalMaxValue.value = globalDataView.getInt16(4, true);
 
             // Bank Settings
             let offset = 0;
@@ -340,19 +339,18 @@
         }
         
         function packSettings() {
-            // Global Settings: 1 + 1 + 1 + 1 + 2 = 6 bytes, but bool is 1 byte in C++ struct
-            const globalBuffer = new ArrayBuffer(5);
+            // Global Settings: 1+1+1+1+2 = 6 bytes
+            const globalBuffer = new ArrayBuffer(6);
             const globalView = new DataView(globalBuffer);
             let offset = 0;
             globalView.setUint8(offset, parseInt(form.esbChannel.value)); offset += 1;
             globalView.setUint8(offset, parseInt(form.activeBank.value)); offset += 1;
             globalView.setUint8(offset, parseInt(form.brightness.value)); offset += 1;
             globalView.setUint8(offset, parseInt(form.autoCalEnabled.value)); offset += 1;
-            globalView.setInt16(offset, parseInt(form.autoCalMaxValue.value), true); offset += 2;
+            globalView.setInt16(offset, parseInt(form.autoCalMaxValue.value), true);
 
-
-            // Bank Settings
-            const bankBufferSize = 2 + TOTAL_ASSIGNABLE_INPUTS + (NUM_ANALOG_POTS * (POT_LABEL_LENGTH + 1)) + (NUM_DIGITAL_MIDI_BUTTONS * (POT_LABEL_LENGTH + 1)) + (NUM_ANALOG_POTS * 4);
+            // Bank Settings: 1+1+12+40+20+16+16 = 106 bytes
+            const bankBufferSize = 106;
             const bankBuffer = new ArrayBuffer(bankBufferSize);
             const bankView = new DataView(bankBuffer);
             const encoder = new TextEncoder();
@@ -370,7 +368,7 @@
             const potLabels = form.potLabels.value.split(',');
             for(let i=0; i<NUM_ANALOG_POTS; i++) {
                 const label = (potLabels[i] || "").padEnd(POT_LABEL_LENGTH + 1, '\0');
-                const encoded = encoder.encode(label);
+                const encoded = encoder.encode(label.substring(0, POT_LABEL_LENGTH + 1));
                 encoded.forEach((byte, j) => bankView.setUint8(offset + j, byte));
                 offset += POT_LABEL_LENGTH + 1;
             }
@@ -378,14 +376,23 @@
             const buttonLabels = form.buttonLabels.value.split(',');
              for(let i=0; i<NUM_DIGITAL_MIDI_BUTTONS; i++) {
                 const label = (buttonLabels[i] || "").padEnd(POT_LABEL_LENGTH + 1, '\0');
-                const encoded = encoder.encode(label);
+                const encoded = encoder.encode(label.substring(0, POT_LABEL_LENGTH + 1));
                 encoded.forEach((byte, j) => bankView.setUint8(offset + j, byte));
                 offset += POT_LABEL_LENGTH + 1;
             }
 
-            // Note: potMinRaw and potMaxRaw are not editable in this UI, 
-            // so we are not packing them. The device-side code will need to handle this.
-            // For a complete solution, you would add fields for these and pack them here.
+            // Preserve the potMinRaw and potMaxRaw values from the last read
+            if (cachedBankSettingsDataView) {
+                log("Using cached pot calibration data for write.", 'info');
+                const calDataOffset = 1 + 1 + TOTAL_ASSIGNABLE_INPUTS + (NUM_ANALOG_POTS * (POT_LABEL_LENGTH + 1)) + (NUM_DIGITAL_MIDI_BUTTONS * (POT_LABEL_LENGTH + 1));
+                const calDataLength = (NUM_ANALOG_POTS * 2) + (NUM_ANALOG_POTS * 2); // 32 bytes for min/max arrays
+                for(let i = 0; i < calDataLength; i++) {
+                    bankView.setUint8(offset + i, cachedBankSettingsDataView.getUint8(calDataOffset + i));
+                }
+            } else {
+                log("No cached calibration data found. Please 'Read Settings' first before writing.", 'error');
+                throw new Error("Cached calibration data is missing.");
+            }
 
             return { globalBuffer, bankBuffer };
         }
