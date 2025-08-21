@@ -1,232 +1,71 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-gray-900">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Serial Device Control</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>WebUSB LED Control</title>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .log-container::-webkit-scrollbar {
-            width: 8px;
-        }
-        .log-container::-webkit-scrollbar-track {
-            background: #1f2937;
-        }
-        .log-container::-webkit-scrollbar-thumb {
-            background: #4b5563;
-            border-radius: 4px;
-        }
-        .log-container::-webkit-scrollbar-thumb:hover {
-            background: #6b7280;
-        }
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
+        button { font-size: 20px; padding: 10px 20px; margin: 10px; cursor: pointer; }
     </style>
 </head>
-<body class="h-full flex items-center justify-center text-gray-200 p-4">
-
-    <div class="w-full max-w-2xl bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 flex flex-col gap-6">
-        <!-- Header -->
-        <div class="text-center">
-            <h1 class="text-3xl font-bold text-white">Web Serial Device Control</h1>
-            <p id="status" class="text-sm text-red-400 mt-2 font-medium">Status: Disconnected</p>
-        </div>
-
-        <!-- Connection Button -->
-        <div class="flex justify-center">
-            <button id="connectButton" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75">
-                Connect to Device
-            </button>
-        </div>
-
-        <!-- Controls -->
-        <div id="controls" class="hidden grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button id="ledOnButton" class="control-button bg-green-600 hover:bg-green-500">LED ON</button>
-            <button id="ledOffButton" class="control-button bg-red-600 hover:bg-red-500">LED OFF</button>
-            <button id="readSettingsButton" class="control-button bg-blue-600 hover:bg-blue-500">Read Settings</button>
-            <button id="factoryResetButton" class="control-button bg-yellow-600 hover:bg-yellow-500 text-gray-900">Factory Reset</button>
-        </div>
-
-        <!-- Log Output -->
-        <div class="flex flex-col gap-2">
-            <div class="flex justify-between items-center">
-                 <h2 class="text-lg font-semibold text-white">Device Log</h2>
-                 <button id="clearLogButton" class="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium py-1 px-3 rounded-md transition-colors">Clear Log</button>
-            </div>
-            <pre id="log" class="log-container bg-gray-900 text-sm p-4 rounded-lg h-64 overflow-y-auto whitespace-pre-wrap break-words"></pre>
-        </div>
-    </div>
+<body>
+    <h1>WebUSB LED Control 💡</h1>
+    <button id="connectButton">Connect to Device</button>
+    <p>
+        <button id="ledOnButton" disabled>Turn LED ON</button>
+        <button id="ledOffButton" disabled>Turn LED OFF</button>
+    </p>
 
     <script>
-        // --- DOM Element References ---
         const connectButton = document.getElementById('connectButton');
-        const statusDisplay = document.getElementById('status');
-        const controlsDiv = document.getElementById('controls');
         const ledOnButton = document.getElementById('ledOnButton');
         const ledOffButton = document.getElementById('ledOffButton');
-        const readSettingsButton = document.getElementById('readSettingsButton');
-        const factoryResetButton = document.getElementById('factoryResetButton');
-        const logContainer = document.getElementById('log');
-        const clearLogButton = document.getElementById('clearLogButton');
 
-        // --- Web Serial State Variables ---
-        let port;
-        let reader;
-        let writer;
-        let isConnected = false;
-        const textDecoder = new TextDecoder();
-        const textEncoder = new TextEncoder();
+        let device;
 
-        // --- Event Listeners ---
-        connectButton.addEventListener('click', handleConnectClick);
-        ledOnButton.addEventListener('click', () => sendCommand('LED_ON'));
-        ledOffButton.addEventListener('click', () => sendCommand('LED_OFF'));
-        readSettingsButton.addEventListener('click', () => sendCommand('READ_SETTINGS'));
-        factoryResetButton.addEventListener('click', () => {
-            if (confirm('Are you sure you want to perform a factory reset? This cannot be undone.')) {
-                sendCommand('FACTORY_RESET\n');
-            }
-        });
-        clearLogButton.addEventListener('click', () => {
-            logContainer.textContent = '';
-            log('Log cleared.');
-        });
-        
-        async function handleConnectClick() {
-            if (isConnected) {
-                await disconnect();
-            } else {
-                await connect();
-            }
-        }
-
-        async function connect() {
-            if (!('serial' in navigator)) {
-                alert('Web Serial API not supported in this browser. Please use Chrome or Edge.');
-                return;
-            }
-
+        connectButton.addEventListener('click', async () => {
             try {
-                log('Requesting serial port...');
-                port = await navigator.serial.requestPort({ 
-                    filters: [{ usbVendorId: 0x000a }] 
-                });
+                // Request the device from the user.
+                device = await navigator.usb.requestDevice({ filters: [{}] });
+                await device.open();
+                await device.selectConfiguration(1);
+                // The interface number should match your device's configuration.
+                // It's often 0 for the first vendor-specific interface.
+                await device.claimInterface(0); 
 
-                log('Opening port...');
-                await port.open({ baudRate: 115200 });
-
-                writer = port.writable.getWriter();
-                reader = port.readable.getReader();
-                
-                updateUIForConnection();
-                log('Port opened and ready.');
-                
-                // Listen for data from the device
-                readLoop();
+                // Enable the control buttons after successful connection.
+                connectButton.disabled = true;
+                ledOnButton.disabled = false;
+                ledOffButton.disabled = false;
+                console.log("Device connected!");
 
             } catch (error) {
-                log(`ERROR: ${error.message}`);
-                console.error(error);
+                console.error("There was an error connecting to the device:", error);
             }
-        }
+        });
 
-        async function disconnect() {
-            if (!port) return;
-            try {
-                // Signal the read loop to stop
-                await reader.cancel(); 
-                // The readLoop will handle closing the reader itself.
-
-                log('Closing port writer...');
-                await writer.close();
-                
-                log('Closing port...');
-                await port.close();
-
-            } catch (error) {
-                log(`ERROR during disconnect: ${error.message}`);
-                console.error(error);
-            } finally {
-                port = null;
-                writer = null;
-                reader = null;
-                updateUIForDisconnection();
-            }
-        }
-
-        async function sendCommand(command) {
-            if (!writer) {
-                log('ERROR: Not connected.');
+        async function sendData(data) {
+            if (!device) {
+                alert("Device not connected!");
                 return;
             }
             try {
-                const data = textEncoder.encode(command);
-                await writer.write(data);
+                // The endpoint number should match your device's configuration for OUT transfers.
+                // It's often 1, 2, 3, etc. Check your device descriptors if needed.
+                const endpointNumber = 1; 
+                const dataToSend = new TextEncoder().encode(data);
+                await device.transferOut(endpointNumber, dataToSend);
             } catch (error) {
-                log(`ERROR sending command: ${error.message}`);
-                console.error(error);
+                console.error("Error sending data:", error);
             }
         }
 
-        async function readLoop() {
-            try {
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) {
-                        // The reader has been cancelled.
-                        break;
-                    }
-                    const text = textDecoder.decode(value);
-                    log(text, 'device');
-                }
-            } catch (error) {
-               log(`ERROR during read: ${error.message}`);
-               console.error(error);
-            } finally {
-                reader.releaseLock();
-            }
-        }
-
-        function updateUIForConnection() {
-            isConnected = true;
-            statusDisplay.textContent = 'Status: Connected';
-            statusDisplay.classList.remove('text-red-400');
-            statusDisplay.classList.add('text-green-400');
-            connectButton.textContent = 'Disconnect';
-            connectButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
-            connectButton.classList.add('bg-red-600', 'hover:bg-red-500');
-            controlsDiv.classList.remove('hidden');
-            controlsDiv.classList.add('grid');
-        }
-
-        function updateUIForDisconnection() {
-            isConnected = false;
-            statusDisplay.textContent = 'Status: Disconnected';
-            statusDisplay.classList.remove('text-green-400');
-            statusDisplay.classList.add('text-red-400');
-            connectButton.textContent = 'Connect to Device';
-            connectButton.classList.remove('bg-red-600', 'hover:bg-red-500');
-            connectButton.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
-            controlsDiv.classList.add('hidden');
-            controlsDiv.classList.remove('grid');
-            log('Device disconnected.');
-        }
-
-        function log(message, source = 'app') {
-            const prefix = source === 'device' ? '<< ' : '>> ';
-            logContainer.textContent += prefix + message;
-            // Auto-scroll to the bottom
-            logContainer.scrollTop = logContainer.scrollHeight;
-        }
-        
-        document.querySelectorAll('.control-button').forEach(button => {
-            button.classList.add('text-white', 'font-bold', 'py-3', 'px-4', 'rounded-lg', 'transition-all', 'duration-300', 'ease-in-out', 'focus:outline-none', 'focus:ring-2', 'focus:ring-opacity-75', 'focus:ring-offset-2', 'focus:ring-offset-gray-800');
+        ledOnButton.addEventListener('click', () => {
+            sendData('1');
         });
 
+        ledOffButton.addEventListener('click', () => {
+            sendData('0');
+        });
     </script>
 </body>
 </html>
