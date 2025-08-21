@@ -174,9 +174,8 @@
         connectButton.addEventListener('click', async () => {
             log("Requesting device...");
             try {
-                // Adafruit Vendor ID (0x00a is not a standard USB Vendor ID. Using 0x239A for Adafruit)
-                // If your device's Vendor ID is truly 0x000a, keep it. Otherwise, use 0x239A for Adafruit.
-                const filters = [{ vendorId: 0x000a }]; // Updated Vendor ID for Adafruit
+                // Changed Vendor ID to 0x000a as requested for custom testing.
+                const filters = [{ vendorId: 0x000a }]; 
                 device = await navigator.usb.requestDevice({ filters });
                 
                 log(`Device selected: ${device.manufacturerName} ${device.productName}`);
@@ -200,7 +199,7 @@
                             }
                             if (ep.direction === 'in') {
                                 endpointIn = ep.endpointNumber;
-                                log(`Found IN endpoint: ${endpointIn}`);
+                                log(`Found IN endpoint: ${inendpointNumber}`);
                             }
                         }
                         // Assuming the first matching interface is the correct one
