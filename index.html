@@ -1,395 +1,326 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebUSB Device Control</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <title>WebUSB MIDI Controller</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #111827;
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
         }
-        .luxury-title {
-            font-family: 'Cormorant Garamond', serif;
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        .btn {
-            @apply px-6 py-2 rounded-md text-sm font-semibold shadow-sm transition-all duration-200;
+        h1, h2 {
+            color: #444;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
         }
-        .btn-primary {
-            @apply bg-amber-500 text-gray-900 hover:bg-amber-400 disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed;
+        button {
+            font-size: 16px;
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background-color: #e7e7e7;
         }
-        .btn-secondary {
-             @apply bg-gray-700 text-white hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed;
+        button:hover {
+            background-color: #ddd;
         }
-        .input-field {
-            @apply block w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200;
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
         }
-        .label {
-            @apply block text-sm font-medium text-gray-300 mb-1;
+        #connectButton {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
         }
-        .card {
-            @apply bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-lg p-6 shadow-lg;
+        #disconnectButton {
+            background-color: #f44336;
+            color: white;
+            border: none;
         }
-        #log {
-            height: 200px;
-            background-color: #000;
-            border: 1px solid #374151;
+        .controls, .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .setting-card {
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #eee;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="number"], input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 8px 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+        #log-container { 
+            margin-top: 20px;
+        }
+        #log { 
+            background-color: #222; 
+            color: #0f0; 
+            font-family: monospace; 
+            white-space: pre-wrap; 
+            padding: 15px; 
+            height: 200px; 
+            overflow-y: scroll; 
+            border-radius: 5px; 
         }
     </style>
 </head>
-<body class="text-gray-200">
-
-    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+<body>
+    <div class="container">
+        <h1>WebUSB MIDI Controller Interface</h1>
         
-        <header class="text-center mb-8">
-            <h1 class="luxury-title text-5xl font-bold text-amber-400">Device Configuration Interface</h1>
-            <p class="text-gray-400 mt-2">Manage your device settings directly via WebUSB</p>
-        </header>
+        <div class="connection-controls">
+            <button id="connectButton">Connect to Device</button>
+            <button id="disconnectButton" disabled>Disconnect</button>
+            <button id="refreshButton" disabled>Refresh Settings</button>
+        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
-            <!-- Control & Log Column -->
-            <div class="md:col-span-1 flex flex-col gap-8">
-                <div class="card">
-                    <h2 class="text-2xl font-semibold mb-4 luxury-title text-white">Connection</h2>
-                    <button id="connectButton" class="btn btn-primary w-full">Connect to Device</button>
+        <div id="main-controls" style="display: none;">
+            <h2>Global Settings</h2>
+            <div class="controls">
+                <div class="setting-card">
+                    <label for="activeBank">Active Bank</label>
+                    <input type="number" id="activeBank" min="0" max="11" readonly>
                 </div>
-
-                <div class="card flex-grow flex flex-col">
-                    <h2 class="text-2xl font-semibold mb-4 luxury-title text-white">Log</h2>
-                    <div id="log" class="w-full bg-black rounded-md p-3 text-xs font-mono text-green-400 overflow-y-auto flex-grow"></div>
+                <div class="setting-card">
+                    <label for="brightness">Brightness (3-255)</label>
+                    <input type="number" id="brightness" min="3" max="255">
+                    <button class="update-btn" data-action="brightness">Update</button>
+                </div>
+                <div class="setting-card">
+                    <label for="midiChannel">MIDI Channel (1-16)</label>
+                    <input type="number" id="midiChannel" min="1" max="16">
+                    <button class="update-btn" data-action="midi_ch">Update</button>
                 </div>
             </div>
 
-            <!-- Settings Column -->
-            <div class="md:col-span-2 card">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-3xl font-semibold luxury-title text-white">Settings</h2>
-                    <div class="flex gap-4">
-                        <button id="readButton" class="btn btn-secondary" disabled>Read Settings</button>
-                        <button id="writeButton" class="btn btn-primary" disabled>Write Settings</button>
-                    </div>
-                </div>
-
-                <form id="settingsForm">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Global Settings -->
-                        <div class="space-y-4 p-4 border border-gray-700 rounded-md">
-                            <h3 class="text-xl font-semibold luxury-title text-amber-400 border-b border-gray-700 pb-2">Global</h3>
-                            <div>
-                                <label for="esbChannel" class="label">ESB Channel</label>
-                                <input type="number" id="esbChannel" class="input-field">
-                            </div>
-                            <div>
-                                <label for="activeBank" class="label">Active Bank</label>
-                                <input type="number" id="activeBank" class="input-field">
-                            </div>
-                            <div>
-                                <label for="brightness" class="label">Brightness</label>
-                                <input type="number" id="brightness" class="input-field">
-                            </div>
-                             <div>
-                                <label for="autoCalEnabled" class="label">Auto Calibration</label>
-                                <select id="autoCalEnabled" class="input-field">
-                                    <option value="1">Enabled</option>
-                                    <option value="0">Disabled</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="autoCalMaxValue" class="label">Auto-Cal Max Value</label>
-                                <input type="number" id="autoCalMaxValue" class="input-field">
-                            </div>
-                        </div>
-
-                        <!-- Bank Settings -->
-                        <div class="space-y-4 p-4 border border-gray-700 rounded-md">
-                            <h3 class="text-xl font-semibold luxury-title text-amber-400 border-b border-gray-700 pb-2">Current Bank</h3>
-                            <div>
-                                <label for="midiChannel" class="label">MIDI Channel</label>
-                                <input type="number" id="midiChannel" class="input-field">
-                            </div>
-                            <div>
-                                <label for="buttonMode" class="label">Button Mode</label>
-                                 <select id="buttonMode" class="input-field">
-                                    <option value="0">Momentary</option>
-                                    <option value="1">Toggle</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="assignableCCs" class="label">Assignable CCs (comma-separated)</label>
-                                <input type="text" id="assignableCCs" class="input-field">
-                            </div>
-                             <div>
-                                <label for="potLabels" class="label">Pot Labels (4 chars each, comma-sep)</label>
-                                <input type="text" id="potLabels" class="input-field">
-                            </div>
-                            <div>
-                                <label for="buttonLabels" class="label">Button Labels (4 chars each, comma-sep)</label>
-                                <input type="text" id="buttonLabels" class="input-field">
-                            </div>
-                        </div>
-                    </div>
-                </form>
+            <h2>Input Assignments (Bank-Specific)</h2>
+            <div id="assignments-grid" class="settings-grid">
+                <!-- JS will populate this -->
             </div>
+        </div>
+
+        <div id="log-container">
+            <h3>Log</h3>
+            <pre id="log"></pre>
         </div>
     </div>
 
     <script>
         const connectButton = document.getElementById('connectButton');
-        const readButton = document.getElementById('readButton');
-        const writeButton = document.getElementById('writeButton');
+        const disconnectButton = document.getElementById('disconnectButton');
+        const refreshButton = document.getElementById('refreshButton');
         const logElement = document.getElementById('log');
-        const form = document.getElementById('settingsForm');
+        const mainControls = document.getElementById('main-controls');
 
         let device;
         let interfaceNumber;
-        let endpointOut;
-        let endpointIn;
-        let cachedBankSettingsDataView = null;
+        let endpointIn, endpointOut;
+        let textDecoder = new TextDecoder();
+        let textEncoder = new TextEncoder();
+        let keepReading = false;
 
-        const SIZEOF_GLOBAL_SETTINGS = 6;
-        const SIZEOF_BANK_SETTINGS = 106;
-        const TOTAL_ASSIGNABLE_INPUTS = 12;
-        const NUM_ANALOG_POTS = 8;
-        const NUM_DIGITAL_MIDI_BUTTONS = 4;
-        const POT_LABEL_LENGTH = 4;
-
-        function log(message, type = 'info') {
-            const colorMap = {
-                info: 'text-gray-400',
-                success: 'text-green-400',
-                error: 'text-red-400',
-                tx: 'text-amber-400',
-                rx: 'text-sky-400'
-            };
-            const prefixMap = {
-                info: '[INFO]',
-                success: '[OK]',
-                error: '[ERROR]',
-                tx: '[SENT]',
-                rx: '[RECV]'
-            };
-            
+        function log(message) {
             console.log(message);
-            const line = document.createElement('div');
-            line.innerHTML = `<span class="${colorMap[type]}">${prefixMap[type]}</span> ${message}`;
-            logElement.appendChild(line);
+            logElement.textContent += `> ${message}\n`;
             logElement.scrollTop = logElement.scrollHeight;
         }
 
         connectButton.addEventListener('click', async () => {
             log("Requesting device...");
             try {
-                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x000a }] });
-                log(`Device selected: ${device.manufacturerName} ${device.productName}`);
+                // Adafruit Vendor ID
+                const filters = [{ vendorId: 0x239A }];
+                device = await navigator.usb.requestDevice({ filters });
                 
+                log(`Device selected: ${device.manufacturerName} ${device.productName}`);
                 await device.open();
                 log("Device opened.");
+
                 await device.selectConfiguration(1);
                 log("Configuration selected.");
 
-                for (const iface of device.configuration.interfaces) {
-                    if (iface.alternate.interfaceClass === 0xFF) {
+                const interfaces = device.configuration.interfaces;
+                for (const iface of interfaces) {
+                    if (iface.alternate.interfaceClass === 0xFF) { // Vendor-Specific
                         interfaceNumber = iface.interfaceNumber;
-                        log(`Found WebUSB interface: ${interfaceNumber}`);
-                        
-                        for(const ep of iface.alternate.endpoints) {
-                            if (ep.direction === 'out') endpointOut = ep.endpointNumber;
-                            if (ep.direction === 'in') endpointIn = ep.endpointNumber;
+                        log(`Found vendor-specific interface: ${interfaceNumber}`);
+                        for (const ep of iface.alternate.endpoints) {
+                            if (ep.direction === 'out') {
+                                endpointOut = ep.endpointNumber;
+                                log(`Found OUT endpoint: ${endpointOut}`);
+                            }
+                            if (ep.direction === 'in') {
+                                endpointIn = ep.endpointNumber;
+                                log(`Found IN endpoint: ${endpointIn}`);
+                            }
                         }
                         break;
                     }
                 }
 
-                if (interfaceNumber === undefined || endpointOut === undefined || endpointIn === undefined) {
-                    throw new Error("Could not find all required WebUSB endpoints.");
+                if (!interfaceNumber || !endpointIn || !endpointOut) {
+                    throw new Error("Could not find required interface and endpoints.");
                 }
 
                 await device.claimInterface(interfaceNumber);
-                log("Interface claimed.");
+                log(`Interface ${interfaceNumber} claimed.`);
 
-                log("Device connected successfully!", 'success');
                 connectButton.disabled = true;
-                connectButton.textContent = "Connected";
-                readButton.disabled = false;
-                writeButton.disabled = false;
-                
-                listenForData();
+                disconnectButton.disabled = false;
+                refreshButton.disabled = false;
+                mainControls.style.display = 'block';
+
+                keepReading = true;
+                readLoop();
+
+                await sendCommand("get_settings");
 
             } catch (error) {
-                log(`Connection failed: ${error.message}`, 'error');
+                log(`❌ ERROR: ${error.message}`);
+                console.error(error);
             }
         });
-
-        async function listenForData() {
+        
+        disconnectButton.addEventListener('click', async () => {
             if (!device) return;
+            keepReading = false;
             try {
-                let result = await device.transferIn(endpointIn, 64); // Listen for small packets
-                const decoder = new TextDecoder();
-                const text = decoder.decode(result.data);
-                if (text.trim().length > 0) {
-                    log(`Received: ${text}`, 'rx');
-                    if (text.includes("SETTINGS_UPDATED")) {
-                        log("Device confirmed settings update.", 'success');
+                await device.releaseInterface(interfaceNumber);
+                await device.close();
+                log("Device disconnected.");
+            } catch (error) {
+                log(`❌ ERROR disconnecting: ${error.message}`);
+            }
+            device = null;
+            connectButton.disabled = false;
+            disconnectButton.disabled = true;
+            refreshButton.disabled = true;
+            mainControls.style.display = 'none';
+        });
+
+        refreshButton.addEventListener('click', () => {
+            sendCommand("get_settings");
+        });
+
+        async function sendCommand(command) {
+            if (!device) {
+                log("Not connected.");
+                return;
+            }
+            try {
+                log(`Sending: ${command}`);
+                await device.transferOut(endpointOut, textEncoder.encode(command + '\n'));
+            } catch (error) {
+                log(`❌ ERROR sending command: ${error.message}`);
+            }
+        }
+
+        async function readLoop() {
+            let incomingData = "";
+            while (keepReading) {
+                try {
+                    let result = await device.transferIn(endpointIn, 64);
+                    if (result.data) {
+                        incomingData += textDecoder.decode(result.data, {stream: true});
+                        // Process complete JSON objects
+                        let lastBraceIndex;
+                        while ((lastBraceIndex = incomingData.indexOf('}')) !== -1) {
+                            const jsonString = incomingData.substring(0, lastBraceIndex + 1);
+                            incomingData = incomingData.substring(lastBraceIndex + 1);
+                            
+                            try {
+                                const settings = JSON.parse(jsonString);
+                                log("Received settings object.");
+                                populateUI(settings);
+                            } catch (e) {
+                                // If parsing fails, it might be a simple log message
+                                log(`Device: ${jsonString.trim()}`);
+                            }
+                        }
                     }
+                } catch (error) {
+                    if (error.message.includes("The device was disconnected")) {
+                        log("Device appears to have been disconnected.");
+                        await disconnectButton.click();
+                    } else {
+                       log(`❌ Read loop error: ${error.message}`);
+                    }
+                    keepReading = false;
                 }
-                listenForData();
-            } catch (error) {
-                if (!error.message.includes("The device was disconnected")) {
-                   log(`Error receiving data: ${error.message}`, 'error');
-                } else {
-                   log('Device disconnected.');
-                }
             }
-        }
-
-        readButton.addEventListener('click', async () => {
-            if (!device) return;
-            try {
-                log("Sending 'Read' command (R)...", 'tx');
-                await device.transferOut(endpointOut, new Uint8Array([0x52])); // 'R'
-                
-                log("Waiting for combined settings data...", 'rx');
-                const combinedData = await device.transferIn(endpointIn, SIZEOF_GLOBAL_SETTINGS + SIZEOF_BANK_SETTINGS);
-
-                if (combinedData.status !== 'ok') {
-                    throw new Error("USB transfer failed.");
-                }
-
-                log(`Received ${combinedData.data.byteLength} bytes. Parsing...`, 'rx');
-                
-                const globalSettingsData = new DataView(combinedData.data.buffer.slice(0, SIZEOF_GLOBAL_SETTINGS));
-                const bankSettingsData = new DataView(combinedData.data.buffer.slice(SIZEOF_GLOBAL_SETTINGS));
-
-                parseAndDisplaySettings(globalSettingsData, bankSettingsData);
-
-            } catch (error) {
-                log(`Error reading settings: ${error.message}`, 'error');
-            }
-        });
-        
-        writeButton.addEventListener('click', async () => {
-            if (!device) return;
-            try {
-                log("Packing settings data...", 'info');
-                const { globalBuffer, bankBuffer } = packSettings();
-                
-                const combinedBuffer = new Uint8Array(globalBuffer.byteLength + bankBuffer.byteLength);
-                combinedBuffer.set(new Uint8Array(globalBuffer), 0);
-                combinedBuffer.set(new Uint8Array(bankBuffer), globalBuffer.byteLength);
-
-                log("Sending 'Write' command (W)...", 'tx');
-                await device.transferOut(endpointOut, new Uint8Array([0x57])); // 'W'
-
-                log(`Sending combined settings payload (${combinedBuffer.byteLength} bytes)...`, 'tx');
-                await device.transferOut(endpointOut, combinedBuffer);
-                
-                log("Settings data sent. Waiting for confirmation...", 'info');
-
-            } catch (error)
-            {
-                log(`Error writing settings: ${error.message}`, 'error');
-            }
-        });
-
-        function parseAndDisplaySettings(globalDataView, bankDataView) {
-            cachedBankSettingsDataView = bankDataView;
-
-            form.esbChannel.value = globalDataView.getUint8(0);
-            form.activeBank.value = globalDataView.getUint8(1);
-            form.brightness.value = globalDataView.getUint8(2);
-            form.autoCalEnabled.value = globalDataView.getUint8(3);
-            form.autoCalMaxValue.value = globalDataView.getInt16(4, true);
-
-            let offset = 0;
-            form.midiChannel.value = bankDataView.getUint8(offset); offset += 1;
-            form.buttonMode.value = bankDataView.getUint8(offset); offset += 1;
-            
-            const ccs = [];
-            for(let i = 0; i < TOTAL_ASSIGNABLE_INPUTS; i++) {
-                ccs.push(bankDataView.getUint8(offset + i));
-            }
-            form.assignableCCs.value = ccs.join(',');
-            offset += TOTAL_ASSIGNABLE_INPUTS;
-
-            const decoder = new TextDecoder();
-            const potLabels = [];
-            for(let i = 0; i < NUM_ANALOG_POTS; i++) {
-                const labelBuffer = bankDataView.buffer.slice(offset, offset + POT_LABEL_LENGTH + 1);
-                potLabels.push(decoder.decode(labelBuffer).replace(/\0/g, ''));
-                offset += POT_LABEL_LENGTH + 1;
-            }
-            form.potLabels.value = potLabels.join(',');
-
-            const buttonLabels = [];
-            for(let i = 0; i < NUM_DIGITAL_MIDI_BUTTONS; i++) {
-                const labelBuffer = bankDataView.buffer.slice(offset, offset + POT_LABEL_LENGTH + 1);
-                buttonLabels.push(decoder.decode(labelBuffer).replace(/\0/g, ''));
-                offset += POT_LABEL_LENGTH + 1;
-            }
-            form.buttonLabels.value = buttonLabels.join(',');
-            
-            log("Settings parsed and displayed.", 'success');
         }
         
-        function packSettings() {
-            const globalBuffer = new ArrayBuffer(SIZEOF_GLOBAL_SETTINGS);
-            const globalView = new DataView(globalBuffer);
-            let offset = 0;
-            globalView.setUint8(offset, parseInt(form.esbChannel.value)); offset += 1;
-            globalView.setUint8(offset, parseInt(form.activeBank.value)); offset += 1;
-            globalView.setUint8(offset, parseInt(form.brightness.value)); offset += 1;
-            globalView.setUint8(offset, parseInt(form.autoCalEnabled.value)); offset += 1;
-            globalView.setInt16(offset, parseInt(form.autoCalMaxValue.value), true);
+        function populateUI(settings) {
+            document.getElementById('activeBank').value = settings.activeBank;
+            document.getElementById('brightness').value = settings.brightness;
+            document.getElementById('midiChannel').value = settings.midiChannel;
 
-            const bankBuffer = new ArrayBuffer(SIZEOF_BANK_SETTINGS);
-            const bankView = new DataView(bankBuffer);
-            const encoder = new TextEncoder();
-            offset = 0;
+            const grid = document.getElementById('assignments-grid');
+            grid.innerHTML = ''; // Clear previous entries
 
-            bankView.setUint8(offset, parseInt(form.midiChannel.value)); offset += 1;
-            bankView.setUint8(offset, parseInt(form.buttonMode.value)); offset += 1;
-
-            const ccs = form.assignableCCs.value.split(',').map(s => parseInt(s.trim()));
-            for(let i=0; i<TOTAL_ASSIGNABLE_INPUTS; i++) {
-                bankView.setUint8(offset + i, ccs[i] || 0);
+            for (let i = 0; i < 12; i++) {
+                const type = i < 8 ? 'Pot' : 'Btn';
+                const num = i < 8 ? i + 1 : i - 7;
+                
+                const card = document.createElement('div');
+                card.className = 'setting-card';
+                card.innerHTML = `
+                    <label for="label-${i}">${type} ${num} Label</label>
+                    <input type="text" id="label-${i}" value="${settings.labels[i]}" maxlength="4">
+                    <label for="cc-${i}">${type} ${num} CC</label>
+                    <input type="number" id="cc-${i}" value="${settings.ccs[i]}" min="0" max="127">
+                    <button class="update-btn" data-action="input" data-index="${i}">Update</button>
+                `;
+                grid.appendChild(card);
             }
-            offset += TOTAL_ASSIGNABLE_INPUTS;
-
-            const potLabels = form.potLabels.value.split(',');
-            for(let i=0; i<NUM_ANALOG_POTS; i++) {
-                const label = (potLabels[i] || "").padEnd(POT_LABEL_LENGTH + 1, '\0');
-                const encoded = encoder.encode(label.substring(0, POT_LABEL_LENGTH + 1));
-                encoded.forEach((byte, j) => bankView.setUint8(offset + j, byte));
-                offset += POT_LABEL_LENGTH + 1;
-            }
-
-            const buttonLabels = form.buttonLabels.value.split(',');
-             for(let i=0; i<NUM_DIGITAL_MIDI_BUTTONS; i++) {
-                const label = (buttonLabels[i] || "").padEnd(POT_LABEL_LENGTH + 1, '\0');
-                const encoded = encoder.encode(label.substring(0, POT_LABEL_LENGTH + 1));
-                encoded.forEach((byte, j) => bankView.setUint8(offset + j, byte));
-                offset += POT_LABEL_LENGTH + 1;
-            }
-
-            if (cachedBankSettingsDataView) {
-                log("Using cached pot calibration data for write.", 'info');
-                const calDataOffset = 1 + 1 + TOTAL_ASSIGNABLE_INPUTS + (NUM_ANALOG_POTS * (POT_LABEL_LENGTH + 1)) + (NUM_DIGITAL_MIDI_BUTTONS * (POT_LABEL_LENGTH + 1));
-                const calDataLength = (NUM_ANALOG_POTS * 2) + (NUM_ANALOG_POTS * 2);
-                for(let i = 0; i < calDataLength; i++) {
-                    bankView.setUint8(offset + i, cachedBankSettingsDataView.getUint8(calDataOffset + i));
-                }
-            } else {
-                log("No cached calibration data found. Please 'Read Settings' first before writing.", 'error');
-                throw new Error("Cached calibration data is missing.");
-            }
-
-            return { globalBuffer, bankBuffer };
         }
+
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('update-btn')) {
+                const action = e.target.dataset.action;
+                if (action === 'brightness') {
+                    const value = document.getElementById('brightness').value;
+                    sendCommand(`set_brightness=${value}`);
+                } else if (action === 'midi_ch') {
+                    const value = document.getElementById('midiChannel').value;
+                    sendCommand(`set_midi_ch=${value}`);
+                } else if (action === 'input') {
+                    const index = e.target.dataset.index;
+                    const cc = document.getElementById(`cc-${index}`).value;
+                    const label = document.getElementById(`label-${index}`).value;
+                    sendCommand(`set_cc=${index},${cc}`);
+                    // A small delay to prevent commands from overlapping
+                    setTimeout(() => {
+                         sendCommand(`set_label=${index},${label}`);
+                    }, 100);
+                }
+            }
+        });
 
     </script>
 </body>
