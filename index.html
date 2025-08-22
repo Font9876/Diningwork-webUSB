@@ -4,20 +4,26 @@
     <meta charset="UTF-8">
     <title>WebUSB MIDI Controller</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Tailwind CSS CDN for easy styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter for a modern look -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Apply Inter font family to the body */
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
+        /* Rotate CC bars to appear vertical, filling from bottom up */
         .cc-bar-container {
             transform: rotate(180deg);
         }
+        /* Smooth transition for CC bar height changes */
         .cc-bar {
             transition: height 0.05s ease-out;
         }
+        /* Button indicator visual feedback */
         .btn-indicator {
             transition: background-color 0.1s ease, box-shadow 0.1s ease;
         }
@@ -25,6 +31,7 @@
             background-color: #2dd4bf; /* teal-400 */
             box-shadow: 0 0 10px #2dd4bf;
         }
+        /* Custom scrollbar styling for a darker theme */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -38,13 +45,14 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #6b7280; /* gray-500 */
         }
+        /* Active state for bank selection buttons */
         .bank-btn.active {
             background-color: #38b2ac; /* teal-500 */
             color: white;
             font-weight: bold;
             box-shadow: 0 0 15px rgba(56, 178, 172, 0.5);
         }
-        /* Custom styles for range sliders */
+        /* Custom styles for range sliders to match the theme */
         input[type=range] {
             -webkit-appearance: none;
             background: transparent;
@@ -73,10 +81,12 @@
         <header class="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b border-gray-700">
             <h1 class="text-2xl font-bold text-white mb-4 sm:mb-0">MIDI Controller Interface</h1>
             <div class="flex items-center space-x-4">
+                <!-- Bluetooth status display -->
                 <div id="ble-status" class="text-right text-xs hidden">
                     <p class="text-gray-400">BLUETOOTH</p>
                     <p id="ble-peer-name" class="font-semibold text-green-400">Disconnected</p>
                 </div>
+                <!-- Connection control buttons -->
                 <div class="connection-controls text-center space-x-2">
                     <button id="connectButton" class="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition-transform transform hover:scale-105">Connect</button>
                     <button id="disconnectButton" disabled class="px-5 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition-transform transform hover:scale-105 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:transform-none">Disconnect</button>
@@ -85,35 +95,43 @@
         </header>
 
         <main class="grid grid-cols-1 lg:grid-cols-5 gap-8">
-            <!-- Left Column: Settings -->
+            <!-- Left Column: Settings and Controls -->
             <div id="main-controls" class="lg:col-span-3 space-y-6" style="display: none;">
                 
+                <!-- Bank Selection Section -->
                 <section class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
                     <h2 class="text-lg font-semibold mb-3 text-cyan-300">Bank Select</h2>
                     <div id="bank-selection-grid" class="grid grid-cols-6 gap-2">
-                        <!-- JS will populate banks -->
+                        <!-- Bank buttons will be dynamically populated by JavaScript -->
                     </div>
                 </section>
 
+                <!-- Global & Bank Settings Section -->
                 <section class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
                     <h2 class="text-lg font-semibold mb-3 text-cyan-300">Global & Bank Settings</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        <!-- Brightness Control -->
                         <div class="space-y-1">
                             <div class="flex justify-between items-center">
                                 <label for="brightness" class="block text-sm font-medium text-gray-400">Brightness</label>
                                 <span id="brightness-value" class="font-mono text-cyan-300"></span>
                             </div>
+                            <!-- 'input' event for real-time updates, 'data-action' for command mapping -->
                             <input type="range" id="brightness" min="3" max="255" class="w-full" data-action="brightness">
                         </div>
+                        <!-- MIDI Channel Control -->
                         <div class="space-y-1">
                             <div class="flex justify-between items-center">
                                 <label for="midiChannel" class="block text-sm font-medium text-gray-400">MIDI Channel</label>
                                 <span id="midiChannel-value" class="font-mono text-cyan-300"></span>
                             </div>
+                            <!-- 'change' event for update on release, 'data-action' for command mapping -->
                             <input type="range" id="midiChannel" min="1" max="16" class="w-full update-on-release" data-action="midi_ch">
                         </div>
+                        <!-- Button Mode Selection -->
                         <div>
                             <label for="buttonMode" class="block text-sm font-medium text-gray-400">Button Mode</label>
+                            <!-- 'change' event for update on selection, 'data-action' for command mapping -->
                             <select id="buttonMode" class="mt-1 block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center update-on-release" data-action="button_mode">
                                 <option value="0">Momentary</option>
                                 <option value="1">Toggle</option>
@@ -122,11 +140,14 @@
                     </div>
                 </section>
 
+                <!-- Device Setup Section -->
                 <section class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
                     <h2 class="text-lg font-semibold mb-3 text-cyan-300">Device Setup</h2>
                      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <!-- ESB Channel Selection -->
                         <div>
                             <label for="esbChannel" class="block text-sm font-medium text-gray-400">ESB Channel</label>
+                            <!-- 'change' event for update on selection, 'data-action' for command mapping -->
                             <select id="esbChannel" class="mt-1 block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center update-on-release" data-action="esb_ch">
                                 <option value="5">5</option>
                                 <option value="10">10</option>
@@ -134,21 +155,26 @@
                                 <option value="20">20</option>
                             </select>
                         </div>
+                        <!-- BLE Toggle Button -->
                         <div>
                              <label class="block text-sm font-medium text-gray-400">Bluetooth</label>
-                             <button id="bleToggleButton" class="mt-1 w-full px-4 py-2 text-white font-semibold rounded-lg shadow-md" data-action="toggle_ble">Enable</button>
+                             <!-- 'click' event to toggle BLE state -->
+                             <button id="bleToggleButton" class="mt-1 w-full px-4 py-2 text-white font-semibold rounded-lg shadow-md bg-green-600 hover:bg-green-500" data-action="toggle_ble">Enable</button>
                         </div>
+                        <!-- Calibration Button -->
                         <div>
                              <label class="block text-sm font-medium text-gray-400">Calibration</label>
+                             <!-- 'click' event to start calibration -->
                              <button id="startCalButton" class="mt-1 w-full px-4 py-2 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-500" data-action="start_cal">Start EasyCal</button>
                         </div>
                     </div>
                 </section>
 
+                <!-- Input Assignments Section -->
                 <section class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
                     <h2 class="text-lg font-semibold mb-3 text-cyan-300">Input Assignments (Bank-Specific)</h2>
                     <div id="assignments-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                        <!-- JS will populate this -->
+                        <!-- Assignment cards will be dynamically populated by JavaScript -->
                     </div>
                 </section>
             </div>
@@ -162,9 +188,10 @@
                         <p id="last-cc-sent" class="font-mono text-lg text-white">-</p>
                     </div>
                 </div>
-                <!-- MODIFICATION: Increased height of the container for longer bars -->
+                <!-- CC Potentiometer Visualizers (longer bars) -->
                 <div id="cc-container" class="grid grid-cols-1 gap-4 mt-4">
                     <div id="cc-pots-container" class="grid grid-cols-8 gap-3 h-96 items-end"></div>
+                    <!-- CC Button Indicators -->
                     <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-24 items-center mt-4"></div>
                 </div>
             </div>
@@ -190,37 +217,61 @@
         let keepReading = false;
         const textEncoder = new TextEncoder();
         const textDecoder = new TextDecoder();
-        let ccMap = {}; 
-        let currentSettingsCache = {};
+        let ccMap = {}; // Maps CC number to its input index (0-11)
+        let currentSettingsCache = {}; // Cache for the last received settings from the device
 
-        // --- Core Functions ---
+        // --- Utility Functions ---
+        /**
+         * @brief Logs messages to the console with a system tag.
+         * @param {string} msg The message to log.
+         */
         const log = (msg) => console.log(`[SYS] ${msg}`);
 
+        /**
+         * @brief Sends a command string to the connected USB device.
+         * @param {string} command The command string to send.
+         */
         const sendCommand = async (command) => {
-            if (!device) return;
+            if (!device) {
+                console.warn("No device connected to send command.");
+                return;
+            }
             log(`Sending: ${command}`);
             try {
+                // Transfer the command string as a byte array over the OUT endpoint
                 await device.transferOut(endpointOut, textEncoder.encode(command + '\n'));
             } catch (error) {
-                console.error("Send command error:", error);
+                console.error("Failed to send command:", error);
+                // Attempt to disconnect if an error occurs during transfer
+                if (error.message.includes("disconnected")) {
+                    log("Device disconnected during command send.");
+                    if (!disconnectButton.disabled) await disconnectButton.click();
+                }
             }
         };
 
+        /**
+         * @brief Populates the UI elements with settings received from the device.
+         * @param {object} settings The settings object received from the Arduino.
+         */
         const populateUI = (settings) => {
-            currentSettingsCache = settings; // Cache the latest settings
+            currentSettingsCache = settings; // Update the local settings cache
+
+            // Update Bank Selection Grid
             const bankGrid = document.getElementById('bank-selection-grid');
-            bankGrid.innerHTML = '';
+            bankGrid.innerHTML = ''; // Clear existing buttons
             for(let i = 0; i < 12; i++) {
                 const bankBtn = document.createElement('button');
-                bankBtn.className = 'bank-btn p-2 text-xs font-semibold rounded-md bg-gray-900 hover:bg-gray-600 transition-colors';
+                bankBtn.className = 'bank-btn px-3 py-2 text-sm font-semibold rounded-lg bg-gray-900 hover:bg-gray-600 transition-colors';
                 bankBtn.textContent = `B${i+1}`;
-                bankBtn.dataset.bank = i;
+                bankBtn.dataset.bank = i; // Store bank index in a data attribute
                 if(i === settings.activeBank) {
-                    bankBtn.classList.add('active');
+                    bankBtn.classList.add('active'); // Highlight the active bank
                 }
                 bankGrid.appendChild(bankBtn);
             }
 
+            // Update Global & Bank Settings Sliders/Selects
             brightnessSlider.value = settings.brightness;
             brightnessValueEl.textContent = settings.brightness;
             midiChannelSlider.value = settings.midiChannel;
@@ -228,61 +279,64 @@
             document.getElementById('buttonMode').value = settings.buttonMode;
             document.getElementById('esbChannel').value = settings.esbChannel;
             
+            // Update BLE Toggle Button and Status
             const bleButton = document.getElementById('bleToggleButton');
             bleButton.textContent = settings.bleOn ? 'Disable BLE' : 'Enable BLE';
-            bleButton.classList.toggle('bg-red-600', settings.bleOn);
+            bleButton.classList.toggle('bg-red-600', settings.bleOn); // Red if BLE is on
             bleButton.classList.toggle('hover:bg-red-500', settings.bleOn);
-            bleButton.classList.toggle('bg-green-600', !settings.bleOn);
+            bleButton.classList.toggle('bg-green-600', !settings.bleOn); // Green if BLE is off
             bleButton.classList.toggle('hover:bg-green-500', !settings.bleOn);
 
-
-            if (settings.bleOn && settings.blePeerName && settings.blePeerName.length > 0) {
+            if (settings.bleOn) {
                 bleStatusEl.classList.remove('hidden');
-                blePeerNameEl.textContent = settings.blePeerName;
-                blePeerNameEl.classList.add('text-green-400');
-            } else if (settings.bleOn) {
-                bleStatusEl.classList.remove('hidden');
-                blePeerNameEl.textContent = 'Advertising...';
-                blePeerNameEl.classList.remove('text-green-400');
+                blePeerNameEl.textContent = settings.blePeerName && settings.blePeerName.length > 0 ? settings.blePeerName : 'Advertising...';
+                blePeerNameEl.classList.toggle('text-green-400', settings.blePeerName && settings.blePeerName.length > 0);
+                blePeerNameEl.classList.toggle('text-yellow-400', !(settings.blePeerName && settings.blePeerName.length > 0)); // Yellow for advertising
             } else {
                 bleStatusEl.classList.add('hidden');
             }
 
+            // Update Input Assignments (Labels and CCs)
             const assignmentsGrid = document.getElementById('assignments-grid');
             const ccPotsContainer = document.getElementById('cc-pots-container');
             const ccBtnsContainer = document.getElementById('cc-btns-container');
-            assignmentsGrid.innerHTML = '';
-            ccPotsContainer.innerHTML = '';
-            ccBtnsContainer.innerHTML = '';
-            ccMap = {};
+            assignmentsGrid.innerHTML = ''; // Clear existing assignments
+            ccPotsContainer.innerHTML = ''; // Clear existing pot visualizers
+            ccBtnsContainer.innerHTML = ''; // Clear existing button visualizers
+            ccMap = {}; // Reset the CC to index map
 
             for (let i = 0; i < 12; i++) {
                 const isPot = i < 8;
                 const type = isPot ? 'Pot' : 'Btn';
                 const num = isPot ? i + 1 : i - 7;
                 const cc = settings.ccs[i];
-                ccMap[cc] = i;
+                ccMap[cc] = i; // Store the mapping for quick lookup
 
+                // Create assignment card for editing labels and CCs
                 const card = document.createElement('div');
                 card.className = 'bg-gray-800 p-3 rounded-md border border-gray-700';
                 card.innerHTML = `
                     <label class="block text-sm font-bold text-gray-300">${settings.labels[i] || (type + ' ' + num)}</label>
                     <div class="flex gap-2 mt-1">
+                        <!-- Label input field -->
                         <input type="text" value="${settings.labels[i]}" maxlength="4" placeholder="Label" class="w-1/2 bg-gray-900 border-gray-600 rounded-md text-xs p-1 focus:ring-blue-500 focus:border-blue-500 update-on-change" data-action="label" data-index="${i}">
+                        <!-- CC number input field -->
                         <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="w-1/2 bg-gray-900 border-gray-600 rounded-md text-xs p-1 text-center font-mono focus:ring-blue-500 focus:border-blue-500 update-on-release" data-action="cc" data-index="${i}">
                     </div>
                 `;
                 assignmentsGrid.appendChild(card);
 
+                // Create real-time visualizers
                 if (isPot) {
                     const barWrapper = document.createElement('div');
                     barWrapper.className = 'flex flex-col items-center h-full justify-end';
-                    // MODIFICATION: Added a span for the numeric value on top of the bar
                     barWrapper.innerHTML = `
+                        <!-- Numeric value displayed on top of the bar -->
                         <span id="cc-val-${i}" class="text-xs mb-1 text-cyan-300 font-mono">0</span>
                         <div class="cc-bar-container bg-gray-900 h-full w-4 rounded-full overflow-hidden flex items-start border border-gray-600">
                             <div id="cc-bar-${i}" class="cc-bar bg-cyan-400 w-full" style="height: 0%;"></div>
                         </div>
+                        <!-- CC number displayed below the bar -->
                         <span class="text-xs mt-2 text-gray-400 font-mono">${cc}</span>
                     `;
                     ccPotsContainer.appendChild(barWrapper);
@@ -290,82 +344,117 @@
                     const btnWrapper = document.createElement('div');
                     btnWrapper.className = 'flex flex-col items-center justify-center';
                     btnWrapper.innerHTML = `
+                        <!-- Button indicator circle -->
                         <div id="cc-btn-${i}" class="btn-indicator bg-gray-900 h-12 w-12 rounded-full border-2 border-gray-600"></div>
+                        <!-- CC number displayed below the button -->
                         <span class="text-xs mt-2 text-gray-400 font-mono">${cc}</span>
                     `;
                     ccBtnsContainer.appendChild(btnWrapper);
                 }
             }
-        };
-
-        const updateCCVisualizer = (cc, value) => {
-            const index = ccMap[cc];
-            lastCcSentEl.textContent = `${cc}:${value}`;
-            if (index === undefined) return;
-            
-            if (index < 8) { // It's a pot
-                const bar = document.getElementById(`cc-bar-${index}`);
-                const valLabel = document.getElementById(`cc-val-${index}`);
-                if (bar) bar.style.height = `${(value / 127) * 100}%`;
-                if (valLabel) valLabel.textContent = value;
-            } else { // It's a button
-                const btn = document.getElementById(`cc-btn-${index}`);
-                if (btn) btn.classList.toggle('active', value > 64);
+            // After populating, send initial values to visualizer
+            // This ensures all CCs display their current state on connection
+            if (settings.currentCcValues) {
+                for (const ccNum in settings.currentCcValues) {
+                    updateCCVisualizer(parseInt(ccNum), settings.currentCcValues[ccNum]);
+                }
             }
         };
 
+        /**
+         * @brief Updates the real-time CC visualizer based on incoming MIDI data.
+         * @param {number} cc The CC number.
+         * @param {number} value The CC value (0-127).
+         */
+        const updateCCVisualizer = (cc, value) => {
+            const index = ccMap[cc]; // Get the input index from the CC number
+            lastCcSentEl.textContent = `${cc}:${value}`; // Update last sent CC display
+            if (index === undefined) return; // If CC not mapped, ignore
+
+            if (index < 8) { // It's a potentiometer
+                const bar = document.getElementById(`cc-bar-${index}`);
+                const valLabel = document.getElementById(`cc-val-${index}`);
+                if (bar) bar.style.height = `${(value / 127) * 100}%`; // Adjust bar height
+                if (valLabel) valLabel.textContent = value; // Update numeric value
+            } else { // It's a button
+                const btn = document.getElementById(`cc-btn-${index}`);
+                if (btn) btn.classList.toggle('active', value > 64); // Toggle 'active' class based on value
+            }
+        };
+
+        /**
+         * @brief Main read loop for receiving data from the USB device.
+         * Continuously reads data and processes incoming messages.
+         */
         async function readLoop() {
-            let incomingData = "";
+            let incomingData = ""; // Buffer for incoming data
             while (keepReading) {
                 try {
+                    // Read data from the IN endpoint
                     let result = await device.transferIn(endpointIn, 512);
                     if (result.status === 'ok' && result.data.byteLength > 0) {
+                        // Decode incoming data and append to buffer
                         incomingData += textDecoder.decode(result.data, { stream: true });
                         let newlineIndex;
+                        // Process complete lines (terminated by newline)
                         while ((newlineIndex = incomingData.indexOf('\n')) !== -1) {
                             const line = incomingData.slice(0, newlineIndex).trim();
                             incomingData = incomingData.slice(newlineIndex + 1);
 
+                            // Handle different types of incoming messages
                             if (line.startsWith('{')) {
                                 try {
+                                    // Parse JSON settings object
                                     const settings = JSON.parse(line);
                                     log("Received settings object.");
-                                    populateUI(settings);
-                                } catch (e) { console.error("JSON Parse Error:", e, "Data:", line); }
+                                    populateUI(settings); // Update UI with new settings
+                                } catch (e) {
+                                    console.error("JSON Parse Error:", e, "Data:", line);
+                                }
                             } else if (line.startsWith('cc:')) {
+                                // Parse real-time CC updates
                                 const parts = line.substring(3).split(',');
                                 if (parts.length === 2) {
                                     updateCCVisualizer(parseInt(parts[0], 10), parseInt(parts[1], 10));
                                 }
                             } else if (line.startsWith('bank_changed:')) {
-                                // MODIFICATION: When bank changes on device, request new settings to redraw UI completely.
+                                // Device notified a bank change, request updated settings
                                 log("Bank changed on device. Requesting new settings.");
-                                setTimeout(() => sendCommand('get_settings'), 100); // Give device a moment
+                                // Small delay to ensure device is ready to send new settings
+                                setTimeout(() => sendCommand('get_settings'), 100); 
                             }
                         }
                     }
                 } catch (error) {
+                    // Handle disconnection or other read errors
                     if (error.message.includes("disconnected")) {
                         log("Device disconnected.");
-                        if (!disconnectButton.disabled) await disconnectButton.click();
-                    } else { console.error(`Read loop error: ${error.message}`); }
-                    keepReading = false;
+                        if (!disconnectButton.disabled) await disconnectButton.click(); // Simulate disconnect click
+                    } else {
+                        console.error(`Read loop error: ${error.message}`);
+                    }
+                    keepReading = false; // Stop reading on error
                 }
             }
         }
 
+        // --- Event Listeners ---
+        // Connect Button Click Handler
         connectButton.addEventListener('click', async () => {
-             log("Requesting device...");
+            log("Requesting device...");
             try {
-                // The vendorId (0x239A) is for Adafruit devices.
-                // You can remove this or change it if your device is different.
+                // Request a USB device with a specific vendor ID (0x000a for your device)
                 device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x000a }] });
-                await device.open();
+                await device.open(); // Open the device
+
+                // Select configuration (usually 1)
                 if (device.configuration === null) await device.selectConfiguration(1);
 
+                // Find the correct interface and endpoints
                 for (const iface of device.configuration.interfaces) {
                     for (const alt of iface.alternates) {
-                        if (alt.interfaceClass === 0xFF) { // Vendor-specific class
+                        // Look for a vendor-specific interface (class 0xFF)
+                        if (alt.interfaceClass === 0xFF) { 
                             interfaceNumber = iface.interfaceNumber;
                             for (const ep of alt.endpoints) {
                                 if (ep.direction === 'out') endpointOut = ep.endpointNumber;
@@ -376,88 +465,104 @@
                 }
                 if (interfaceNumber === undefined) throw new Error("Vendor-specific interface not found.");
 
-                await device.claimInterface(interfaceNumber);
+                await device.claimInterface(interfaceNumber); // Claim the interface
+                // Send a control transfer to set the interface (specific to WebUSB serial)
                 await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x01, index: interfaceNumber });
                 
                 log("Device connected.");
                 connectButton.disabled = true;
                 disconnectButton.disabled = false;
-                mainControls.style.display = 'block';
-                visualizer.style.display = 'block';
+                mainControls.style.display = 'block'; // Show controls
+                visualizer.style.display = 'block'; // Show visualizer
 
                 keepReading = true;
-                readLoop();
+                readLoop(); // Start reading data from the device
                 
-                // Request settings and current values upon connection
+                // Request initial settings and current values from the device
                 await sendCommand("get_settings");
 
             } catch (error) {
                 console.error("Connection failed:", error);
+                // Reset UI state on connection failure
+                connectButton.disabled = false;
+                disconnectButton.disabled = true;
+                mainControls.style.display = 'none';
+                visualizer.style.display = 'none';
             }
         });
 
+        // Disconnect Button Click Handler
         disconnectButton.addEventListener('click', async () => {
             if (!device) return;
-            keepReading = false;
+            keepReading = false; // Stop the read loop
             try {
+                // Send a control transfer to clear the interface (specific to WebUSB serial)
                 await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x00, index: interfaceNumber });
-                await device.releaseInterface(interfaceNumber);
-                await device.close();
-            } catch (error) { console.error("Disconnect error:", error); }
-            device = null;
+                await device.releaseInterface(interfaceNumber); // Release the interface
+                await device.close(); // Close the device
+            } catch (error) { 
+                console.error("Disconnect error:", error); 
+            }
+            device = null; // Clear device object
             connectButton.disabled = false;
             disconnectButton.disabled = true;
-            mainControls.style.display = 'none';
-            visualizer.style.display = 'none';
+            mainControls.style.display = 'none'; // Hide controls
+            visualizer.style.display = 'none'; // Hide visualizer
             log("Disconnected.");
         });
 
-        // MODIFICATION: Changed logic to separate real-time updates from "on release" updates.
-        // 'input' is for real-time feedback (like brightness).
+        // Event listener for input elements that should update in real-time (e.g., brightness slider)
         document.addEventListener('input', (e) => {
             const target = e.target;
             if (target.id === 'brightness') {
                 brightnessValueEl.textContent = target.value;
                 sendCommand(`set_brightness=${target.value}`);
             } else if (target.id === 'midiChannel') {
-                 midiChannelValueEl.textContent = target.value;
+                // MIDI Channel slider updates its display in real-time, but sends command on 'change'
+                midiChannelValueEl.textContent = target.value;
             }
         });
         
-        // 'change' is for updates that should happen after the user finishes interacting (e.g., releasing a slider).
+        // Event listener for input elements that should send commands on release/change
         document.addEventListener('change', (e) => {
             const target = e.target;
+            // Check if the element has 'update-on-release' or 'update-on-change' class
             if (target.classList.contains('update-on-release') || target.classList.contains('update-on-change')) {
-                const action = target.dataset.action;
+                const action = target.dataset.action; // Get the action from data-action attribute
                 const value = target.value;
-                const index = target.dataset.index;
+                const index = target.dataset.index; // Get the index for indexed controls (CC, label)
                 
                 let command = `set_${action}=`;
                 if (index) {
-                    command += `${index},`;
+                    command += `${index},`; // Append index if present
                 }
-                command += value;
+                command += value; // Append the value
                 
                 sendCommand(command);
                 
-                // If we changed a CC or label, refresh the settings to ensure UI consistency
+                // If a CC or label was changed, request updated settings from the device
+                // This ensures the UI is fully synchronized, especially for labels that might be trimmed on device
                 if (action === 'cc' || action === 'label') {
-                    setTimeout(() => sendCommand('get_settings'), 200);
+                    setTimeout(() => sendCommand('get_settings'), 200); 
                 }
             }
         });
 
+        // Event listener for buttons (bank selection, BLE toggle, calibration)
         document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('bank-btn')) {
-                sendCommand(`set_bank=${e.target.dataset.bank}`);
+            const target = e.target;
+            if (target.classList.contains('bank-btn')) {
+                // Send command to set the active bank
+                sendCommand(`set_bank=${target.dataset.bank}`);
                 // The device will send a 'bank_changed' message back, which triggers a settings refresh.
-            } else if (e.target.id === 'bleToggleButton') {
+            } else if (target.id === 'bleToggleButton') {
+                // Send command to toggle BLE state
                 sendCommand('toggle_ble');
-            } else if (e.target.id === 'startCalButton') {
+            } else if (target.id === 'startCalButton') {
+                // Send command to start calibration
                 sendCommand('start_cal');
-                // Replaced alert with a more modern, non-blocking notification if needed
-                // For now, we assume the user will look at the device screen.
-                log("Calibration command sent. Follow device instructions.");
+                // For now, assume the user will look at the device screen for calibration instructions.
+                log("Calibration command sent. Follow device instructions on the device screen.");
             }
         });
     </script>
