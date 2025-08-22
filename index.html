@@ -187,14 +187,14 @@
     <div class="flex flex-col lg:flex-row w-full max-w-screen-2xl bg-gray-800 rounded-3xl shadow-3xl overflow-hidden border border-gray-700">
 
         <!-- Left Panel: Header, Connection, Settings -->
-        <aside class="w-full lg:w-3/5 bg-gray-800 p-5 sm:p-7 lg:p-8 flex flex-col justify-between">
+        <aside class="w-full lg:w-4/5 bg-gray-800 p-4 sm:p-6 lg:p-7 flex flex-col justify-between">
             <div>
                 <!-- Header and Connection Controls -->
-                <header class="pb-5 mb-5 border-b border-gray-700">
+                <header class="pb-4 mb-4 border-b border-gray-700">
                     <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight">
-                        <span class="text-teal-400">MIDI</span> Hub
+                        <span class="text-teal-400">Plate</span> 1
                     </h1>
-                    <p class="text-gray-400 text-sm mb-5">Unified control for your MIDI devices.</p>
+                    <p class="text-gray-400 text-sm mb-4">สนุก เหนื่อย ง่วง.</p>
 
                     <div class="flex flex-wrap gap-3 sm:gap-4 items-center">
                         <button id="connectButton" class="flex-1 px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base">Connect Device</button>
@@ -209,19 +209,19 @@
                 </header>
 
                 <!-- Main Controls - hidden until connected -->
-                <div id="main-controls" class="space-y-6" style="display: none;">
+                <div id="main-controls" class="space-y-5" style="display: none;">
 
                     <!-- Bank Select Section -->
-                    <section class="bg-gray-900/40 p-5 rounded-xl border border-gray-700 shadow-lg">
-                        <h2 class="text-xl font-bold mb-4 text-teal-300">Bank Selection</h2>
+                    <section class="bg-gray-900/40 p-4 rounded-xl border border-gray-700 shadow-lg">
+                        <h2 class="text-xl font-bold mb-3 text-teal-300">Bank Selection</h2>
                         <div id="bank-selection-grid" class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-6 gap-3">
                             <!-- Bank buttons populated by JS -->
                         </div>
                     </section>
 
                     <!-- Global & Device Settings Section -->
-                    <section class="bg-gray-900/40 p-5 rounded-xl border border-gray-700 shadow-lg">
-                        <h2 class="text-xl font-bold mb-4 text-teal-300">Device Settings</h2>
+                    <section class="bg-gray-900/40 p-4 rounded-xl border border-gray-700 shadow-lg">
+                        <h2 class="text-xl font-bold mb-3 text-teal-300">Device Settings</h2>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <!-- Brightness Slider -->
                             <div class="space-y-2">
@@ -271,8 +271,8 @@
                     </section>
 
                     <!-- Input Assignments Section -->
-                    <section class="bg-gray-900/40 p-5 rounded-xl border border-gray-700 shadow-lg">
-                        <h2 class="text-xl font-bold mb-4 text-teal-300">Input Assignments (Current Bank)</h2>
+                    <section class="bg-gray-900/40 p-4 rounded-xl border border-gray-700 shadow-lg">
+                        <h2 class="text-xl font-bold mb-3 text-teal-300">Input Assignments (Current Bank)</h2>
                         <div id="assignments-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             <!-- Input assignment cards populated by JS -->
                         </div>
@@ -282,9 +282,9 @@
         </aside>
 
         <!-- Right Panel: Visualizer & Logs -->
-        <main class="w-full lg:w-2/5 bg-gray-900 p-5 sm:p-7 lg:p-8 flex flex-col border-l border-gray-700">
+        <main class="w-full lg:w-1/5 bg-gray-900 p-4 sm:p-6 lg:p-7 flex flex-col border-l border-gray-700">
             <!-- Real-time CC Monitor Header -->
-            <div id="monitor-header" class="flex justify-between items-baseline pb-5 mb-5 border-b border-gray-800" style="display: none;">
+            <div id="monitor-header" class="flex justify-between items-baseline pb-4 mb-4 border-b border-gray-800" style="display: none;">
                 <h2 class="text-2xl font-bold text-teal-300">Real-time CC Monitor</h2>
                 <div class="text-right">
                     <p class="text-sm text-gray-400 uppercase font-medium">Last MIDI Value</p>
@@ -293,13 +293,13 @@
             </div>
 
             <!-- CC Visualizer Containers -->
-            <div id="visualizer" class="flex-grow flex flex-col justify-end min-h-[150px]" style="display: none;">
-                <div id="cc-pots-container" class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-6 flex-grow items-end pb-2"></div>
-                <div id="cc-btns-container" class="grid grid-cols-2 sm:grid-cols-4 gap-4 h-20 items-end pt-4"></div>
+            <div id="visualizer" class="flex-grow flex flex-col justify-end min-h-[90px]" style="display: none;">
+                <div id="cc-pots-container" class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-6 flex-grow items-end pb-1"></div>
+                <div id="cc-btns-container" class="grid grid-cols-2 sm:grid-cols-4 gap-4 h-12 items-end pt-2"></div>
             </div>
 
             <!-- Log Area -->
-            <div id="log-area" class="mt-8 p-3 rounded-xl border border-gray-700 shadow-inner">
+            <div id="log-area" class="mt-6 p-3 rounded-xl border border-gray-700 shadow-inner">
                 <p class="text-white font-semibold mb-2 text-base">Activity Log:</p>
                 <!-- Log messages appended here -->
             </div>
