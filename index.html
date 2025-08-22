@@ -167,18 +167,24 @@
 
         .assignment-input-group {
             display: flex;
-            flex-direction: column; /* Stack inputs vertically */
+            flex-direction: column; /* Default to column for small screens */
             gap: 0.5rem; /* Space between stacked inputs */
             margin-top: 0.5rem; /* Space below label */
         }
-
-        .assignment-input-group input {
-            width: 100%; /* Full width for stacked inputs */
+        /* Make inputs row on small screens and above */
+        @media (min-width: 640px) {
+            .assignment-input-group {
+                flex-direction: row; /* Row for small screens and above */
+                gap: 0.75rem; /* Slightly more gap for row layout */
+            }
+            .assignment-input-group input {
+                width: 50%; /* Each input takes half width in row layout */
+            }
         }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
-    <div class="flex flex-col lg:flex-row w-full max-w-7xl bg-gray-800 rounded-3xl shadow-3xl overflow-hidden border border-gray-700">
+    <div class="flex flex-col lg:flex-row w-full max-w-screen-2xl bg-gray-800 rounded-3xl shadow-3xl overflow-hidden border border-gray-700">
 
         <!-- Left Panel: Header, Connection, Settings -->
         <aside class="w-full lg:w-1/2 bg-gray-800 p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
@@ -186,9 +192,9 @@
                 <!-- Header and Connection Controls -->
                 <header class="pb-6 mb-6 border-b border-gray-700">
                     <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight">
-                        <span class="text-teal-400">MIDI</span> Hub
+                        <span class="text-teal-400">Plate</span> 1
                     </h1>
-                    <p class="text-gray-400 text-sm mb-6">Unified control for your MIDI devices.</p>
+                    <p class="text-gray-400 text-sm mb-6">เหนื่อยไอส้าดดดด.</p>
 
                     <div class="flex flex-wrap gap-3 sm:gap-4 items-center">
                         <button id="connectButton" class="flex-1 px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base">Connect Device</button>
@@ -287,8 +293,8 @@
             </div>
 
             <!-- CC Visualizer Containers -->
-            <div id="visualizer" class="flex-grow flex flex-col justify-end min-h-[400px]" style="display: none;">
-                <div id="cc-pots-container" class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-6 flex-grow items-end pb-8"></div>
+            <div id="visualizer" class="flex-grow flex flex-col justify-end min-h-[300px]" style="display: none;">
+                <div id="cc-pots-container" class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-6 flex-grow items-end pb-4"></div>
                 <div id="cc-btns-container" class="grid grid-cols-2 sm:grid-cols-4 gap-4 h-28 items-end pt-4"></div>
             </div>
 
