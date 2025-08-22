@@ -12,13 +12,13 @@
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
-        /* MODIFICATION: Adjusted for longer CC bars */
+        /* Rotates the container for vertical bars, then individual bars are rotated back */
         .cc-bar-container {
-            transform: rotate(180deg);
-            height: 100%; /* Ensure it takes full height of its flex parent */
+            transform: rotate(180deg); /* Rotate the container to make bars fill upwards */
         }
         .cc-bar {
             transition: height 0.05s ease-out;
+            transform: rotate(180deg); /* Rotate individual bars back to appear upright */
         }
         .btn-indicator {
             transition: background-color 0.1s ease, box-shadow 0.1s ease;
@@ -66,11 +66,6 @@
             width: 1.25rem;
             border-radius: 50%;
             border: 2px solid #fff;
-        }
-        /* MODIFICATION: Ensure CC pots container takes full height */
-        #cc-pots-container {
-            height: calc(100% - 80px); /* Adjusted to give space for title and last sent CC */
-            align-items: flex-end; /* Align bars to the bottom */
         }
     </style>
 </head>
@@ -161,7 +156,7 @@
             </div>
             
             <!-- Right Column: CC Visualizer -->
-            <div id="visualizer" class="lg:col-span-2 bg-gray-700/50 p-4 rounded-lg border border-gray-600 flex flex-col" style="display: none;">
+            <div id="visualizer" class="lg:col-span-2 bg-gray-700/50 p-4 rounded-lg border border-gray-600" style="display: none;">
                 <div class="flex justify-between items-baseline">
                     <h2 class="text-lg font-semibold text-cyan-300">Real-time CC Monitor</h2>
                     <div class="text-right">
@@ -170,9 +165,8 @@
                     </div>
                 </div>
                 <!-- MODIFICATION: Increased height of the container for longer bars -->
-                <div id="cc-container" class="flex-grow grid grid-cols-1 gap-4 mt-4">
-                    <!-- MODIFICATION: Changed to flex for vertical bars and added space for numbers -->
-                    <div id="cc-pots-container" class="grid grid-cols-8 gap-3 h-full items-end"></div>
+                <div id="cc-container" class="grid grid-cols-1 gap-4 mt-4">
+                    <div id="cc-pots-container" class="grid grid-cols-8 gap-3 h-[400px] items-end"></div> <!-- Increased height to 400px -->
                     <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-24 items-center mt-4"></div>
                 </div>
             </div>
@@ -205,10 +199,7 @@
         const log = (msg) => console.log(`[SYS] ${msg}`);
 
         const sendCommand = async (command) => {
-            if (!device || !endpointOut) {
-                console.warn("Device not connected or endpoint not available for sending command:", command);
-                return;
-            }
+            if (!device) return;
             log(`Sending: ${command}`);
             try {
                 await device.transferOut(endpointOut, textEncoder.encode(command + '\n'));
@@ -307,20 +298,12 @@
                     ccBtnsContainer.appendChild(btnWrapper);
                 }
             }
-
-            // MODIFICATION: Update CC visualizer with initial values after populating UI
-            if (settings.currentCcValues) {
-                for (const ccVal of settings.currentCcValues) {
-                    updateCCVisualizer(ccVal.cc, ccVal.value);
-                }
-            }
         };
 
         const updateCCVisualizer = (cc, value) => {
-            const index = currentSettingsCache.ccs.indexOf(cc); // Use cached settings to find index
-            if (index === -1) return; // CC not found in current bank's assignments
-
+            const index = ccMap[cc];
             lastCcSentEl.textContent = `${cc}:${value}`;
+            if (index === undefined) return;
             
             if (index < 8) { // It's a pot
                 const bar = document.getElementById(`cc-bar-${index}`);
@@ -461,7 +444,6 @@
                 
                 // If we changed a CC or label, refresh the settings to ensure UI consistency
                 if (action === 'cc' || action === 'label') {
-                    // MODIFICATION: Added a slight delay before requesting settings to allow MCU to process
                     setTimeout(() => sendCommand('get_settings'), 200);
                 }
             }
