@@ -24,6 +24,8 @@
             border-radius: 9999px 9999px 0 0;
             overflow: hidden;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.4); /* Inner shadow for depth */
+            /* Add transition for border/shadow on hover */
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
 
         /* Removed height transition for instantaneous updates (user request) */
@@ -34,13 +36,20 @@
 
         /* Styling for the button press indicators */
         .btn-indicator {
-            transition: background-color 0.1s ease, box-shadow 0.1s ease;
+            transition: background-color 0.1s ease, box-shadow 0.1s ease, border-color 0.15s ease;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3); /* Subtle initial shadow */
         }
 
         .btn-indicator.active {
             background-color: #2dd4bf; /* Teal 400 */
             box-shadow: 0 0 20px rgba(45, 212, 191, 0.8), 0 0 10px rgba(45, 212, 191, 0.5); /* Stronger, multi-layer glow */
+        }
+
+        /* Hover highlight for visualizer elements */
+        .visualizer-item:hover .cc-bar-container,
+        .visualizer-item:hover .btn-indicator {
+            border-color: #14b8a6; /* Teal 500 */
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.5), inset 0 2px 4px rgba(0,0,0,0.4); /* Add a subtle glow */
         }
 
         /* Custom scrollbar for log area */
@@ -401,37 +410,62 @@
 
                 // Assignment Card
                 const card = document.createElement('div');
-                card.className = 'bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-lg';
+                // Increased padding for larger input assignments box
+                card.className = 'bg-gray-800 p-5 rounded-xl border border-gray-700 shadow-lg';
                 card.innerHTML = `
-                    <label class="block text-sm font-semibold text-gray-300 mb-2">${label}</label>
-                    <div class="flex gap-3">
-                        <input type="text" value="${label}" maxlength="4" placeholder="Label" class="w-1/2 bg-gray-900 border border-gray-700 rounded-md text-sm p-2 focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-change" data-action="label" data-index="${i}">
-                        <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="w-1/2 bg-gray-900 border border-gray-700 rounded-md text-sm p-2 text-center font-mono focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-release" data-action="cc" data-index="${i}">
+                    <label class="block text-base font-semibold text-gray-300 mb-2">${label}</label>
+                    <div class="flex gap-4"> <!-- Increased gap for inputs -->
+                        <input type="text" value="${label}" maxlength="4" placeholder="Label" class="w-1/2 bg-gray-900 border border-gray-700 rounded-md text-base p-3 focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-change" data-action="label" data-index="${i}">
+                        <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="w-1/2 bg-gray-900 border border-gray-700 rounded-md text-base p-3 text-center font-mono focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-release" data-action="cc" data-index="${i}">
                     </div>
                 `;
                 assignmentsGrid.appendChild(card);
 
+                // Add mouse wheel listener to the CC input field
+                const ccInput = card.querySelector(`input[data-action="cc"][data-index="${i}"]`);
+                if (ccInput) {
+                    ccInput.addEventListener('wheel', (e) => {
+                        e.preventDefault(); // Prevent page scrolling
+                        let currentValue = parseInt(e.target.value);
+                        let newValue = currentValue;
+                        if (e.deltaY < 0) { // Scroll up
+                            newValue = Math.min(127, currentValue + 1);
+                        } else if (e.deltaY > 0) { // Scroll down
+                            newValue = Math.max(0, currentValue - 1);
+                        }
+                        if (newValue !== currentValue) {
+                            e.target.value = newValue;
+                            // Manually dispatch change event to trigger sendCommand
+                            e.target.dispatchEvent(new Event('change'));
+                        }
+                    });
+                }
+
+
                 // Visualizer Elements
                 if (isPot) {
                     const barWrapper = document.createElement('div');
-                    barWrapper.className = 'relative flex flex-col items-center h-full group'; // Added group for hover effects
+                    // Added visualizer-item class for common hover styling
+                    barWrapper.className = 'visualizer-item relative flex flex-col items-center h-full group';
                     barWrapper.innerHTML = `
-                        <span id="cc-val-${i}" class="text-xs text-teal-300 font-mono mb-1 transition-opacity duration-200 group-hover:opacity-100 opacity-0">${settings.currentPotValues ? settings.currentPotValues[i] : 0}</span>
+                        <!-- Static pot value and name -->
+                        <span id="cc-val-${i}" class="text-sm text-teal-300 font-mono mb-1 font-semibold">${settings.currentPotValues ? settings.currentPotValues[i] : 0}</span>
                         <div class="cc-bar-container bg-gray-900 h-full w-full rounded-full flex items-start border border-gray-700 shadow-inner overflow-hidden">
                             <div id="cc-bar-${i}" class="cc-bar bg-gradient-to-t from-teal-500 to-cyan-400 w-full" style="height: ${settings.currentPotValues ? (settings.currentPotValues[i] / 127) * 100 : 0}%;"></div>
                         </div>
-                        <span class="text-xs text-gray-400 font-mono mt-1">${cc}</span>
-                        <span class="absolute bottom-0 text-sm font-semibold text-white -mb-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200">${label}</span>
+                        <span class="text-sm text-gray-400 font-mono mt-1 font-semibold">${cc}</span>
+                        <span class="absolute bottom-0 text-base font-semibold text-white -mb-8">${label}</span>
                     `;
                     ccPotsContainer.appendChild(barWrapper);
                 } else {
                     const btnWrapper = document.createElement('div');
-                    btnWrapper.className = 'relative flex flex-col items-center h-full justify-end group';
+                    // Added visualizer-item class for common hover styling
+                    btnWrapper.className = 'visualizer-item relative flex flex-col items-center h-full justify-end group';
                     btnWrapper.innerHTML = `
                         <div id="cc-btn-${i}" class="btn-indicator bg-gray-900 h-16 w-16 rounded-full border-2 border-gray-700 mb-2 shadow-lg flex items-center justify-center">
-                            <span class="text-white text-xs font-mono">${cc}</span>
+                            <span class="text-white text-base font-mono font-semibold">${cc}</span>
                         </div>
-                        <span class="absolute bottom-0 text-sm font-semibold text-white -mb-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200">${label}</span>
+                        <span class="absolute bottom-0 text-base font-semibold text-white -mb-8">${label}</span>
                     `;
                     ccBtnsContainer.appendChild(btnWrapper);
                     // Initialize button state
