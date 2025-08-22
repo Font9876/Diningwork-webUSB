@@ -169,7 +169,7 @@
             
             <!-- Right Column: CC Visualizer -->
             <div id="visualizer" class="lg:col-span-2 bg-gray-700/50 p-4 rounded-lg border border-gray-600" style="display: none;">
-                <!-- MODIFIED: Wrapped monitor text in a div that will be shown/hidden -->
+                <!-- MODIFIED: Monitor header will be shown/hidden by JS -->
                 <div id="monitor-header" class="flex justify-between items-baseline mb-4">
                     <h2 class="text-lg font-semibold text-cyan-300">Real-time CC Monitor</h2>
                     <div class="text-right">
@@ -177,12 +177,13 @@
                         <p id="last-cc-sent" class="font-mono text-lg text-white">-</p>
                     </div>
                 </div>
+                <!-- MODIFIED: Adjusted container heights and spacing -->
                 <div id="cc-container" class="grid grid-cols-1 gap-4 mt-4">
-                    <div id="cc-pots-container" class="grid grid-cols-8 gap-4 h-[400px] items-end pb-8"></div>
-                    <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-24 items-end pt-8"></div>
+                    <div id="cc-pots-container" class="grid grid-cols-8 gap-4 h-[450px] items-end"></div>
+                    <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-24 items-end pt-4"></div>
                 </div>
-                <!-- Log area added -->
-                <div id="log-area" class="mt-4 p-2 rounded-md border border-gray-700 text-gray-400">
+                <!-- Log area moved down -->
+                <div id="log-area" class="mt-8 p-2 rounded-md border border-gray-700 text-gray-400">
                     <p class="text-white font-semibold mb-1">Logs:</p>
                     <!-- Log messages will be appended here -->
                 </div>
@@ -196,7 +197,7 @@
         const disconnectButton = document.getElementById('disconnectButton');
         const mainControls = document.getElementById('main-controls');
         const visualizer = document.getElementById('visualizer');
-        const monitorHeader = document.getElementById('monitor-header'); // NEW: Monitor header element
+        const monitorHeader = document.getElementById('monitor-header'); 
         const lastCcSentEl = document.getElementById('last-cc-sent');
         const brightnessSlider = document.getElementById('brightness');
         const brightnessValueEl = document.getElementById('brightness-value');
