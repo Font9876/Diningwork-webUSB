@@ -14,10 +14,15 @@
         }
         .cc-bar-container {
             transform: rotate(180deg);
+            /* MODIFIED: Added rounded-t-full to ensure the top of the bar is rounded when filled */
+            border-radius: 9999px 9999px 0 0;
+            overflow: hidden; /* Ensure content respects border-radius */
         }
         .cc-bar {
             /* Removed transition for instant updates */
             /* transition: height 0.05s ease-out; */
+            /* MODIFIED: Added rounded-t-full to ensure the top of the filled bar is rounded */
+            border-radius: 9999px 9999px 0 0;
         }
         .btn-indicator {
             transition: background-color 0.1s ease, box-shadow 0.1s ease;
@@ -66,7 +71,7 @@
             border-radius: 50%;
             border: 2px solid #fff;
         }
-        /* MODIFIED: Custom styles for log area */
+        /* Custom styles for log area */
         #log-area {
             height: 100px; /* Fixed height for the log area */
             overflow-y: auto; /* Enable scrolling if content overflows */
@@ -178,10 +183,10 @@
                     </div>
                 </div>
                 <div id="cc-container" class="grid grid-cols-1 gap-4 mt-4">
-                    <!-- MODIFIED: Adjusted h-[500px] to h-[400px] to make space for logs -->
-                    <div id="cc-pots-container" class="grid grid-cols-8 gap-4 h-[400px] items-end"></div>
-                    <!-- MODIFIED: Adjusted h-48 to h-24 and added mt-4 to move buttons up and create space -->
-                    <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-24 items-end mt-4"></div>
+                    <!-- MODIFIED: Adjusted h-[400px] to h-[400px] (kept same) to make space for logs -->
+                    <div id="cc-pots-container" class="grid grid-cols-8 gap-4 h-[400px] items-end pb-8"></div>
+                    <!-- MODIFIED: Adjusted h-24 to h-24 (kept same) and added pt-8 to move buttons up and create space -->
+                    <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-24 items-end pt-8"></div>
                 </div>
                 <!-- NEW: Log area added -->
                 <div id="log-area" class="mt-4 p-2 rounded-md border border-gray-700 text-gray-400">
@@ -306,27 +311,27 @@
 
                 if (isPot) {
                     const barWrapper = document.createElement('div');
-                    // MODIFIED: Added relative positioning for absolute child elements
-                    barWrapper.className = 'relative flex flex-col items-center h-full justify-end'; 
+                    // MODIFIED: Added relative positioning for absolute child elements, removed justify-end
+                    barWrapper.className = 'relative flex flex-col items-center h-full'; 
                     barWrapper.innerHTML = `
-                        <!-- MODIFIED: Absolute positioning for value, adjusted top/transform -->
-                        <span id="cc-val-${i}" class="absolute top-0 text-xs text-cyan-300 font-mono transform -translate-y-full">0</span>
-                        <div class="cc-bar-container bg-gray-900 h-full w-full rounded-full overflow-hidden flex items-start border border-gray-600">
+                        <!-- MODIFIED: Positioned value above the bar, added margin-bottom -->
+                        <span id="cc-val-${i}" class="text-xs text-cyan-300 font-mono mb-1">0</span>
+                        <div class="cc-bar-container bg-gray-900 h-full w-full rounded-full flex items-start border border-gray-600">
                             <div id="cc-bar-${i}" class="cc-bar bg-cyan-400 w-full" style="height: 0%;"></div>
                         </div>
-                        <!-- MODIFIED: Absolute positioning for CC label, adjusted bottom/transform -->
-                        <span class="absolute bottom-0 text-xs text-gray-400 font-mono transform translate-y-full">${cc}</span>
+                        <!-- MODIFIED: Positioned CC label below the bar, added margin-top -->
+                        <span class="text-xs text-gray-400 font-mono mt-1">${cc}</span>
                     `;
                     ccPotsContainer.appendChild(barWrapper);
                 } else {
                     const btnWrapper = document.createElement('div');
-                    // MODIFIED: Added relative positioning for absolute child elements
+                    // MODIFIED: Added relative positioning, changed justify-end to items-end for vertical alignment
                     btnWrapper.className = 'relative flex flex-col items-center h-full justify-end'; 
                     btnWrapper.innerHTML = `
-                        <!-- MODIFIED: Absolute positioning for button indicator, adjusted bottom/transform -->
-                        <div id="cc-btn-${i}" class="absolute bottom-0 btn-indicator bg-gray-900 h-12 w-12 rounded-full border-2 border-gray-600 transform translate-y-1/2"></div>
-                        <!-- MODIFIED: Absolute positioning for CC label, adjusted bottom/transform -->
-                        <span class="absolute bottom-0 text-xs mt-2 text-gray-400 font-mono transform translate-y-full">${cc}</span>
+                        <!-- MODIFIED: Indicator with margin-bottom for spacing from label -->
+                        <div id="cc-btn-${i}" class="btn-indicator bg-gray-900 h-12 w-12 rounded-full border-2 border-gray-600 mb-2"></div>
+                        <!-- MODIFIED: CC label -->
+                        <span class="text-xs text-gray-400 font-mono">${cc}</span>
                     `;
                     ccBtnsContainer.appendChild(btnWrapper);
                 }
