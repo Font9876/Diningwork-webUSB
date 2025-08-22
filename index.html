@@ -2,43 +2,45 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Professional MIDI Controller</title>
+    <title>MIDI Control Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Tailwind CSS CDN for utility classes -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts - Inter for a clean, modern look -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Apply Inter font family and a slightly darker body background */
+        /* Apply Inter font family and a sophisticated dark background */
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #1a202c; /* Darker blue-gray */
+            background-color: #0f172a; /* Slate 900 */
             color: #e2e8f0; /* Light gray text for contrast */
         }
 
         /* Custom styles for the CC bar visualizer */
         .cc-bar-container {
-            transform: rotate(180deg);
+            transform: rotate(180deg); /* Keep the vertical orientation */
             border-radius: 9999px 9999px 0 0;
             overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4); /* Inner shadow for depth */
         }
 
+        /* Removed height transition for instantaneous updates (user request) */
         .cc-bar {
             border-radius: 9999px 9999px 0 0;
-            /* Smooth transition for height changes */
-            transition: height 0.15s ease-out;
+            /* transition: height 0.05s linear; */ /* Removed for instant response */
         }
 
         /* Styling for the button press indicators */
         .btn-indicator {
             transition: background-color 0.1s ease, box-shadow 0.1s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); /* Subtle initial shadow */
         }
 
         .btn-indicator.active {
-            background-color: #2dd4bf; /* teal-400 */
-            box-shadow: 0 0 15px rgba(45, 212, 191, 0.7); /* Stronger, more vibrant glow */
+            background-color: #2dd4bf; /* Teal 400 */
+            box-shadow: 0 0 20px rgba(45, 212, 191, 0.8), 0 0 10px rgba(45, 212, 191, 0.5); /* Stronger, multi-layer glow */
         }
 
         /* Custom scrollbar for log area */
@@ -47,25 +49,29 @@
         }
 
         ::-webkit-scrollbar-track {
-            background: #2d3748; /* dark gray */
+            background: #1e293b; /* Slate 800 */
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #4a5568; /* medium gray */
+            background: #475569; /* Slate 600 */
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #6b7280; /* light gray */
+            background: #64748b; /* Slate 500 */
         }
 
         /* Active state for bank buttons */
+        .bank-btn {
+            transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
         .bank-btn.active {
-            background-color: #319795; /* teal-600 */
+            background-color: #14b8a6; /* Teal 500 */
             color: white;
-            font-weight: 600; /* Semi-bold */
-            box-shadow: 0 0 20px rgba(49, 151, 149, 0.6); /* More pronounced shadow */
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(20, 184, 166, 0.6); /* More pronounced shadow */
             transform: translateY(-2px); /* Slight lift on active */
         }
 
@@ -78,158 +84,196 @@
         }
 
         input[type=range]::-webkit-slider-runnable-track {
-            background: #4a5568; /* Medium gray for track */
-            height: 6px; /* Slightly thicker track */
-            border-radius: 3px;
+            background: #334155; /* Slate 700 */
+            height: 8px; /* Thicker track */
+            border-radius: 4px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); /* Inner shadow for depth */
         }
 
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            margin-top: -5px; /* Adjust to center thumb on track */
-            background-color: #4fd1c5; /* Brighter teal for thumb */
-            height: 16px;
-            width: 16px;
+            margin-top: -6px; /* Adjust to center thumb on track */
+            background-color: #22d3ee; /* Cyan 400 */
+            height: 20px;
+            width: 20px;
             border-radius: 50%;
-            border: 2px solid #e2e8f0; /* White border for emphasis */
-            box-shadow: 0 0 5px rgba(79, 209, 197, 0.8);
-            transition: background-color 0.15s ease, box-shadow 0.15s ease;
+            border: 3px solid #f8fafc; /* White border for emphasis */
+            box-shadow: 0 0 8px rgba(34, 211, 238, 0.9);
+            transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
         }
 
         input[type=range]:active::-webkit-slider-thumb {
             cursor: grabbing;
-            background-color: #2dd4bf; /* Darker teal on active */
-            box-shadow: 0 0 10px rgba(45, 212, 191, 0.9);
+            background-color: #06b6d4; /* Cyan 600 on active */
+            box-shadow: 0 0 12px rgba(6, 182, 212, 1);
+            transform: scale(1.1);
         }
 
         /* Enhanced log area styling */
         #log-area {
-            height: 120px; /* Slightly taller log area */
+            height: 150px; /* Taller log area */
+            max-height: 150px; /* Ensure max height */
             overflow-y: auto;
-            font-size: 0.8rem; /* Slightly larger font for readability */
-            line-height: 1.4;
-            background-color: #2d3748; /* Darker background for logs */
-            border: 1px solid #4a5568; /* More distinct border */
-            color: #a0aec0; /* Lighter gray for log text */
+            font-size: 0.875rem; /* Larger font for readability */
+            line-height: 1.5;
+            background-color: #1e293b; /* Slate 800 for logs */
+            border: 1px solid #334155; /* More distinct border */
+            color: #94a3b8; /* Lighter slate for log text */
+            scroll-behavior: smooth; /* Smooth scrolling for new logs */
         }
 
         #log-area p {
-            margin-bottom: 0.35rem; /* More spacing between log lines */
+            margin-bottom: 0.5rem;
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+
+        /* Input field styling */
+        input[type="text"], input[type="number"], select {
+            background-color: #1e293b; /* Slate 800 */
+            border: 1px solid #334155; /* Slate 700 */
+            color: #cbd5e1; /* Slate 300 */
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            border-color: #38bdf8; /* Sky 400 */
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.3); /* Focus ring */
+        }
+
+        /* Utility for visually hidden but accessible elements */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
-    <div class="container mx-auto max-w-7xl w-full bg-gray-800 p-6 sm:p-8 rounded-2xl shadow-2xl border border-gray-700">
+<body class="flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
+    <div class="flex flex-col lg:flex-row w-full max-w-7xl bg-gray-800 rounded-3xl shadow-3xl overflow-hidden border border-gray-700">
 
-        <!-- Header Section -->
-        <header class="flex flex-col sm:flex-row justify-between items-center mb-8 pb-4 border-b border-gray-700">
-            <h1 class="text-3xl font-extrabold text-white mb-4 sm:mb-0 tracking-tight">MIDI Command Center</h1>
-            <div class="flex items-center space-x-4">
-                <!-- BLE Status Indicator -->
-                <div id="ble-status" class="text-right text-xs hidden">
-                    <p class="text-gray-400 uppercase font-medium">Bluetooth</p>
-                    <p id="ble-peer-name" class="font-semibold text-green-400 animate-pulse">Disconnected</p>
-                </div>
-                <!-- Connection Controls -->
-                <div class="connection-controls text-center space-x-3">
-                    <button id="connectButton" class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105 active:scale-95">Connect Device</button>
-                    <button id="disconnectButton" disabled class="px-6 py-2.5 bg-gray-600 text-white font-semibold rounded-xl shadow-lg hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-500 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">Disconnect</button>
+        <!-- Left Panel: Header, Connection, Settings -->
+        <aside class="w-full lg:w-2/5 bg-gray-800 p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
+            <div>
+                <!-- Header and Connection Controls -->
+                <header class="pb-6 mb-6 border-b border-gray-700">
+                    <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight">
+                        <span class="text-teal-400">MIDI</span> Hub
+                    </h1>
+                    <p class="text-gray-400 text-sm mb-6">Unified control for your MIDI devices.</p>
+
+                    <div class="flex flex-wrap gap-3 sm:gap-4 items-center">
+                        <button id="connectButton" class="flex-1 px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base">Connect Device</button>
+                        <button id="disconnectButton" disabled class="flex-1 px-6 py-3 bg-gray-600 text-white font-semibold rounded-xl shadow-lg hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-500 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base">Disconnect</button>
+                    </div>
+
+                    <!-- BLE Status Indicator -->
+                    <div id="ble-status" class="mt-4 text-center text-sm hidden">
+                        <p class="text-gray-400 uppercase font-medium">Bluetooth</p>
+                        <p id="ble-peer-name" class="font-semibold text-green-400 animate-pulse text-lg">Disconnected</p>
+                    </div>
+                </header>
+
+                <!-- Main Controls - hidden until connected -->
+                <div id="main-controls" class="space-y-8" style="display: none;">
+
+                    <!-- Bank Select Section -->
+                    <section class="bg-gray-900/40 p-5 rounded-xl border border-gray-700 shadow-lg">
+                        <h2 class="text-xl font-bold mb-4 text-teal-300">Bank Selection</h2>
+                        <div id="bank-selection-grid" class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                            <!-- Bank buttons populated by JS -->
+                        </div>
+                    </section>
+
+                    <!-- Global & Device Settings Section -->
+                    <section class="bg-gray-900/40 p-5 rounded-xl border border-gray-700 shadow-lg">
+                        <h2 class="text-xl font-bold mb-4 text-teal-300">Device Settings</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <!-- Brightness Slider -->
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <label for="brightness" class="block text-sm font-medium text-gray-400">Display Brightness</label>
+                                    <span id="brightness-value" class="font-mono text-cyan-300 text-sm font-semibold"></span>
+                                </div>
+                                <input type="range" id="brightness" min="3" max="255" class="w-full update-on-release" data-action="brightness">
+                            </div>
+                            <!-- MIDI Channel Slider -->
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <label for="midiChannel" class="block text-sm font-medium text-gray-400">MIDI Channel</label>
+                                    <span id="midiChannel-value" class="font-mono text-cyan-300 text-sm font-semibold"></span>
+                                </div>
+                                <input type="range" id="midiChannel" min="1" max="16" class="w-full update-on-release" data-action="midi_ch">
+                            </div>
+                            <!-- Button Mode Select -->
+                            <div class="space-y-2">
+                                <label for="buttonMode" class="block text-sm font-medium text-gray-400">Button Mode</label>
+                                <select id="buttonMode" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release appearance-none cursor-pointer" data-action="button_mode">
+                                    <option value="0">Momentary</option>
+                                    <option value="1">Toggle</option>
+                                </select>
+                            </div>
+                            <!-- ESB Channel Select -->
+                            <div class="space-y-2">
+                                <label for="esbChannel" class="block text-sm font-medium text-gray-400">ESB Channel</label>
+                                <select id="esbChannel" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release appearance-none cursor-pointer" data-action="esb_ch">
+                                    <option value="5">5</option>
+                                    <option value="10">10</option>
+                                    <option value="15">15</option>
+                                    <option value="20">20</option>
+                                </select>
+                            </div>
+                            <!-- Bluetooth Toggle Button -->
+                            <div class="space-y-2 flex flex-col justify-end">
+                                <label class="block text-sm font-medium text-gray-400 sr-only">Bluetooth Status</label>
+                                <button id="bleToggleButton" class="w-full px-5 py-2.5 text-white font-semibold rounded-lg shadow-md transition-colors duration-200 mt-auto" data-action="toggle_ble">Enable BLE</button>
+                            </div>
+                            <!-- Calibration Button -->
+                            <div class="space-y-2 flex flex-col justify-end">
+                                <label class="block text-sm font-medium text-gray-400 sr-only">Device Calibration</label>
+                                <button id="startCalButton" class="w-full px-5 py-2.5 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-75 transition-colors duration-200 mt-auto">Start EasyCal</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Input Assignments Section -->
+                    <section class="bg-gray-900/40 p-5 rounded-xl border border-gray-700 shadow-lg">
+                        <h2 class="text-xl font-bold mb-4 text-teal-300">Input Assignments (Current Bank)</h2>
+                        <div id="assignments-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                            <!-- Input assignment cards populated by JS -->
+                        </div>
+                    </section>
                 </div>
             </div>
-        </header>
+        </aside>
 
-        <!-- Main Content Area -->
-        <main class="grid grid-cols-1 lg:grid-cols-5 gap-8">
-            <!-- Left Column: Settings and Controls -->
-            <div id="main-controls" class="lg:col-span-3 space-y-7" style="display: none;">
-
-                <!-- Bank Select Section -->
-                <section class="bg-gray-700/40 p-5 rounded-xl border border-gray-700 shadow-xl">
-                    <h2 class="text-xl font-bold mb-4 text-teal-300">Bank Select</h2>
-                    <div id="bank-selection-grid" class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-                        <!-- Bank buttons populated by JS -->
-                    </div>
-                </section>
-
-                <!-- Global & Bank Settings Section -->
-                <section class="bg-gray-700/40 p-5 rounded-xl border border-gray-700 shadow-xl">
-                    <h2 class="text-xl font-bold mb-4 text-teal-300">Global & Device Settings</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <!-- Brightness Slider -->
-                        <div class="space-y-2">
-                            <div class="flex justify-between items-center">
-                                <label for="brightness" class="block text-sm font-medium text-gray-400">Display Brightness</label>
-                                <span id="brightness-value" class="font-mono text-teal-300 text-sm"></span>
-                            </div>
-                            <input type="range" id="brightness" min="3" max="255" class="w-full update-on-release" data-action="brightness">
-                        </div>
-                        <!-- MIDI Channel Slider -->
-                        <div class="space-y-2">
-                            <div class="flex justify-between items-center">
-                                <label for="midiChannel" class="block text-sm font-medium text-gray-400">MIDI Channel</label>
-                                <span id="midiChannel-value" class="font-mono text-teal-300 text-sm"></span>
-                            </div>
-                            <input type="range" id="midiChannel" min="1" max="16" class="w-full update-on-release" data-action="midi_ch">
-                        </div>
-                        <!-- Button Mode Select -->
-                        <div class="space-y-2">
-                            <label for="buttonMode" class="block text-sm font-medium text-gray-400">Button Mode</label>
-                            <select id="buttonMode" class="mt-1 block w-full bg-gray-900 border border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2 px-3 text-sm update-on-release appearance-none" data-action="button_mode">
-                                <option value="0">Momentary</option>
-                                <option value="1">Toggle</option>
-                            </select>
-                        </div>
-                        <!-- ESB Channel Select -->
-                        <div class="space-y-2">
-                            <label for="esbChannel" class="block text-sm font-medium text-gray-400">ESB Channel</label>
-                            <select id="esbChannel" class="mt-1 block w-full bg-gray-900 border border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2 px-3 text-sm update-on-release appearance-none" data-action="esb_ch">
-                                <option value="5">5</option>
-                                <option value="10">10</option>
-                                <option value="15">15</option>
-                                <option value="20">20</option>
-                            </select>
-                        </div>
-                        <!-- Bluetooth Toggle Button -->
-                        <div class="space-y-2 flex flex-col justify-end">
-                            <label class="block text-sm font-medium text-gray-400">Bluetooth Status</label>
-                            <button id="bleToggleButton" class="w-full px-5 py-2.5 text-white font-semibold rounded-lg shadow-md transition-colors duration-200" data-action="toggle_ble">Enable BLE</button>
-                        </div>
-                        <!-- Calibration Button -->
-                        <div class="space-y-2 flex flex-col justify-end">
-                            <label class="block text-sm font-medium text-gray-400">Device Calibration</label>
-                            <button id="startCalButton" class="w-full px-5 py-2.5 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-75 transition-colors duration-200">Start EasyCal</button>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Input Assignments Section -->
-                <section class="bg-gray-700/40 p-5 rounded-xl border border-gray-700 shadow-xl">
-                    <h2 class="text-xl font-bold mb-4 text-teal-300">Input Assignments (Bank-Specific)</h2>
-                    <div id="assignments-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                        <!-- Input assignment cards populated by JS -->
-                    </div>
-                </section>
+        <!-- Right Panel: Visualizer & Logs -->
+        <main class="w-full lg:w-3/5 bg-gray-900 p-6 sm:p-8 lg:p-10 flex flex-col border-l border-gray-700">
+            <!-- Real-time CC Monitor Header -->
+            <div id="monitor-header" class="flex justify-between items-baseline pb-6 mb-6 border-b border-gray-800" style="display: none;">
+                <h2 class="text-2xl font-bold text-teal-300">Real-time CC Monitor</h2>
+                <div class="text-right">
+                    <p class="text-sm text-gray-400 uppercase font-medium">Last MIDI Value</p>
+                    <p id="last-cc-sent" class="font-mono text-3xl text-white font-extrabold">-</p>
+                </div>
             </div>
 
-            <!-- Right Column: CC Visualizer & Logs -->
-            <div id="visualizer" class="lg:col-span-2 bg-gray-700/40 p-5 rounded-xl border border-gray-700 shadow-xl" style="display: none;">
-                <!-- Real-time CC Monitor Header -->
-                <div id="monitor-header" class="flex justify-between items-baseline mb-5" style="display: none;">
-                    <h2 class="text-xl font-bold text-teal-300">Real-time CC Monitor</h2>
-                    <div class="text-right">
-                        <p class="text-xs text-gray-400 uppercase font-medium">Last Sent</p>
-                        <p id="last-cc-sent" class="font-mono text-2xl text-white">-</p>
-                    </div>
-                </div>
-                <!-- CC Visualizer Containers -->
-                <div id="cc-container" class="space-y-6">
-                    <div id="cc-pots-container" class="grid grid-cols-4 sm:grid-cols-8 gap-3 h-[450px] items-end"></div>
-                    <div id="cc-btns-container" class="grid grid-cols-2 sm:grid-cols-4 gap-3 h-28 items-end pt-4"></div>
-                </div>
-                <!-- Log Area -->
-                <div id="log-area" class="mt-8 p-3 rounded-md border border-gray-700 text-gray-400">
-                    <p class="text-white font-semibold mb-2 text-base">Activity Log:</p>
-                    <!-- Log messages appended here -->
-                </div>
+            <!-- CC Visualizer Containers -->
+            <div id="visualizer" class="flex-grow flex flex-col justify-end min-h-[400px]" style="display: none;">
+                <div id="cc-pots-container" class="grid grid-cols-4 sm:grid-cols-8 gap-4 flex-grow items-end pb-8"></div>
+                <div id="cc-btns-container" class="grid grid-cols-2 sm:grid-cols-4 gap-4 h-32 items-end pt-4"></div>
+            </div>
+
+            <!-- Log Area -->
+            <div id="log-area" class="mt-8 p-3 rounded-xl border border-gray-700 shadow-inner">
+                <p class="text-white font-semibold mb-2 text-base">Activity Log:</p>
+                <!-- Log messages appended here -->
             </div>
         </main>
     </div>
@@ -293,7 +337,7 @@
             bankGrid.innerHTML = ''; // Clear existing buttons
             for (let i = 0; i < 12; i++) {
                 const bankBtn = document.createElement('button');
-                bankBtn.className = 'bank-btn p-3 text-sm font-semibold rounded-lg bg-gray-900 hover:bg-gray-700 transition-colors duration-150 transform hover:scale-105 active:scale-95';
+                bankBtn.className = 'bank-btn p-3 text-sm font-semibold rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors duration-150 transform hover:scale-105 active:scale-95 shadow';
                 bankBtn.textContent = `Bank ${i + 1}`;
                 bankBtn.dataset.bank = i;
                 if (i === settings.activeBank) {
@@ -361,8 +405,8 @@
                 card.innerHTML = `
                     <label class="block text-sm font-semibold text-gray-300 mb-2">${label}</label>
                     <div class="flex gap-3">
-                        <input type="text" value="${label}" maxlength="4" placeholder="Label" class="w-1/2 bg-gray-900 border border-gray-600 rounded-md text-sm p-2 focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-change" data-action="label" data-index="${i}">
-                        <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="w-1/2 bg-gray-900 border border-gray-600 rounded-md text-sm p-2 text-center font-mono focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-release" data-action="cc" data-index="${i}">
+                        <input type="text" value="${label}" maxlength="4" placeholder="Label" class="w-1/2 bg-gray-900 border border-gray-700 rounded-md text-sm p-2 focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-change" data-action="label" data-index="${i}">
+                        <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="w-1/2 bg-gray-900 border border-gray-700 rounded-md text-sm p-2 text-center font-mono focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-release" data-action="cc" data-index="${i}">
                     </div>
                 `;
                 assignmentsGrid.appendChild(card);
@@ -507,7 +551,7 @@
                 log("Device connected successfully!");
                 disconnectButton.disabled = false;
                 mainControls.style.display = 'block';
-                visualizer.style.display = 'block';
+                visualizer.style.display = 'flex'; /* Changed to flex for better visualizer layout */
                 monitorHeader.style.display = 'flex'; // Show monitor header
 
                 keepReading = true;
