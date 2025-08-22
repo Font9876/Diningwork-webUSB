@@ -12,13 +12,11 @@
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
-        /* Rotates the container for vertical bars, then individual bars are rotated back */
         .cc-bar-container {
-            transform: rotate(180deg); /* Rotate the container to make bars fill upwards */
+            transform: rotate(180deg);
         }
         .cc-bar {
             transition: height 0.05s ease-out;
-            transform: rotate(180deg); /* Rotate individual bars back to appear upright */
         }
         .btn-indicator {
             transition: background-color 0.1s ease, box-shadow 0.1s ease;
@@ -166,7 +164,7 @@
                 </div>
                 <!-- MODIFICATION: Increased height of the container for longer bars -->
                 <div id="cc-container" class="grid grid-cols-1 gap-4 mt-4">
-                    <div id="cc-pots-container" class="grid grid-cols-8 gap-3 h-[400px] items-end"></div> <!-- Increased height to 400px -->
+                    <div id="cc-pots-container" class="grid grid-cols-8 gap-3 h-96 items-end"></div>
                     <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-24 items-center mt-4"></div>
                 </div>
             </div>
