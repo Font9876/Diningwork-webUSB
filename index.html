@@ -155,6 +155,26 @@
         button {
             cursor: pointer;
         }
+
+        /* Specific adjustments for input assignment cards */
+        .assignment-card-label {
+            min-height: 1.5rem; /* Ensure enough height for label */
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center label text */
+            text-align: center;
+        }
+
+        .assignment-input-group {
+            display: flex;
+            flex-direction: column; /* Stack inputs vertically */
+            gap: 0.5rem; /* Space between stacked inputs */
+            margin-top: 0.5rem; /* Space below label */
+        }
+
+        .assignment-input-group input {
+            width: 100%; /* Full width for stacked inputs */
+        }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
@@ -166,9 +186,9 @@
                 <!-- Header and Connection Controls -->
                 <header class="pb-6 mb-6 border-b border-gray-700">
                     <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight">
-                        <span class="text-teal-400">Plate</span> 1
+                        <span class="text-teal-400">MIDI</span> Hub
                     </h1>
-                    <p class="text-gray-400 text-sm mb-6">Settings never been easier for Plate 1.</p>
+                    <p class="text-gray-400 text-sm mb-6">Unified control for your MIDI devices.</p>
 
                     <div class="flex flex-wrap gap-3 sm:gap-4 items-center">
                         <button id="connectButton" class="flex-1 px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base">Connect Device</button>
@@ -404,13 +424,13 @@
 
                 // Assignment Card
                 const card = document.createElement('div');
-                // Increased padding and adjusted text sizes for better readability
-                card.className = 'bg-gray-800 p-5 rounded-xl border border-gray-700 shadow-lg';
+                // Adjusted padding and increased input heights for better readability
+                card.className = 'bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-lg flex flex-col justify-between';
                 card.innerHTML = `
-                    <label class="block text-base font-semibold text-gray-300 mb-2">${label}</label>
-                    <div class="flex gap-4">
-                        <input type="text" value="${label}" maxlength="4" placeholder="Label" class="w-1/2 bg-gray-900 border border-gray-700 rounded-md text-base p-3 focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-change" data-action="label" data-index="${i}">
-                        <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="w-1/2 bg-gray-900 border border-gray-700 rounded-md text-base p-3 text-center font-mono focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-release" data-action="cc" data-index="${i}">
+                    <label class="block text-base font-semibold text-gray-300 mb-2 assignment-card-label">${label}</label>
+                    <div class="assignment-input-group">
+                        <input type="text" value="${label}" maxlength="4" placeholder="Label" class="bg-gray-900 border border-gray-700 rounded-md text-base p-2.5 focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-change" data-action="label" data-index="${i}">
+                        <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="bg-gray-900 border border-gray-700 rounded-md text-base p-2.5 text-center font-mono focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-release" data-action="cc" data-index="${i}">
                     </div>
                 `;
                 assignmentsGrid.appendChild(card);
