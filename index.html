@@ -129,7 +129,8 @@
                      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <label for="esbChannel" class="block text-sm font-medium text-gray-400">ESB Channel</label>
-                            <select id="esbChannel" class="mt-1 block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center update-on-release" data-action="esb_ch">
+                            <!-- MODIFIED: Added py-2 for height consistency -->
+                            <select id="esbChannel" class="mt-1 block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center update-on-release py-2" data-action="esb_ch">
                                 <option value="5">5</option>
                                 <option value="10">10</option>
                                 <option value="15">15</option>
@@ -164,12 +165,11 @@
                         <p id="last-cc-sent" class="font-mono text-lg text-white">-</p>
                     </div>
                 </div>
-                <!-- MODIFICATION: Increased height of the container for longer bars -->
                 <div id="cc-container" class="grid grid-cols-1 gap-4 mt-4">
-                    <!-- MODIFIED: Increased height from h-96 to h-[500px] for taller bars -->
+                    <!-- MODIFIED: Main container for potentiometer bars - increased height for longer bars -->
                     <div id="cc-pots-container" class="grid grid-cols-8 gap-4 h-[500px] items-end"></div>
-                    <!-- MODIFIED: Adjusted h-24 to h-32 to give more vertical space for button indicators -->
-                    <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-32 items-center mt-4"></div>
+                    <!-- MODIFIED: Container for button indicators - increased height for better vertical alignment -->
+                    <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-48 items-end"></div>
                 </div>
             </div>
         </main>
