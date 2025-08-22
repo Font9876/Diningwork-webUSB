@@ -7,18 +7,21 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            font-size: 0.875rem; /* Base font size, will scale with rem */
         }
         .cc-bar-container {
             transform: rotate(180deg);
+            /* MODIFIED: Added rounded-t-full to ensure the top of the bar is rounded when filled */
             border-radius: 9999px 9999px 0 0;
-            overflow: hidden;
+            overflow: hidden; /* Ensure content respects border-radius */
         }
         .cc-bar {
+            /* Removed transition for instant updates */
+            /* transition: height 0.05s ease-out; */
+            /* MODIFIED: Added rounded-t-full to ensure the top of the filled bar is rounded */
             border-radius: 9999px 9999px 0 0;
         }
         .btn-indicator {
@@ -47,6 +50,7 @@
             font-weight: bold;
             box-shadow: 0 0 15px rgba(56, 178, 172, 0.5);
         }
+        /* Custom styles for range sliders */
         input[type=range] {
             -webkit-appearance: none;
             background: transparent;
@@ -67,6 +71,7 @@
             border-radius: 50%;
             border: 2px solid #fff;
         }
+        /* Custom styles for log area */
         #log-area {
             height: 100px; /* Fixed height for the log area */
             overflow-y: auto; /* Enable scrolling if content overflows */
@@ -78,22 +83,11 @@
         #log-area p {
             margin-bottom: 0.25rem;
         }
-
-        /* NEW responsive styles */
-        @media (min-width: 1024px) {
-            .container.max-w-7xl {
-                max-width: 90vw;
-            }
-        }
-        .cc-pots-container {
-            height: 50vh; /* Make height responsive */
-            min-height: 250px;
-        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
-    <div class="container mx-auto w-full bg-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-700 max-w-7xl">
-
+    <div class="container mx-auto max-w-7xl w-full bg-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-700">
+        
         <header class="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b border-gray-700">
             <h1 class="text-2xl font-bold text-white mb-4 sm:mb-0">MIDI Controller Interface</h1>
             <div class="flex items-center space-x-4">
@@ -109,22 +103,25 @@
         </header>
 
         <main class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            <!-- Left Column: Settings -->
             <div id="main-controls" class="lg:col-span-3 space-y-6" style="display: none;">
-
+                
                 <section class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
                     <h2 class="text-lg font-semibold mb-3 text-cyan-300">Bank Select</h2>
                     <div id="bank-selection-grid" class="grid grid-cols-6 gap-2">
-                        </div>
+                        <!-- JS will populate banks -->
+                    </div>
                 </section>
 
                 <section class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
-                    <h2 class="text-lg font-semibold mb-3 text-cyan-300">Global &amp; Bank Settings</h2>
+                    <h2 class="text-lg font-semibold mb-3 text-cyan-300">Global & Bank Settings</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
                         <div class="space-y-1">
                             <div class="flex justify-between items-center">
                                 <label for="brightness" class="block text-sm font-medium text-gray-400">Brightness</label>
                                 <span id="brightness-value" class="font-mono text-cyan-300"></span>
                             </div>
+                            <!-- MODIFIED: Added 'update-on-release' class -->
                             <input type="range" id="brightness" min="3" max="255" class="w-full update-on-release" data-action="brightness">
                         </div>
                         <div class="space-y-1">
@@ -146,9 +143,10 @@
 
                 <section class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
                     <h2 class="text-lg font-semibold mb-3 text-cyan-300">Device Setup</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <label for="esbChannel" class="block text-sm font-medium text-gray-400">ESB Channel</label>
+                            <!-- MODIFIED: Added py-2 for height consistency -->
                             <select id="esbChannel" class="mt-1 block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center update-on-release py-2" data-action="esb_ch">
                                 <option value="5">5</option>
                                 <option value="10">10</option>
@@ -157,12 +155,12 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-400">Bluetooth</label>
-                            <button id="bleToggleButton" class="mt-1 w-full px-4 py-2 text-white font-semibold rounded-lg shadow-md" data-action="toggle_ble">Enable</button>
+                             <label class="block text-sm font-medium text-gray-400">Bluetooth</label>
+                             <button id="bleToggleButton" class="mt-1 w-full px-4 py-2 text-white font-semibold rounded-lg shadow-md" data-action="toggle_ble">Enable</button>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-400">Calibration</label>
-                            <button id="startCalButton" class="mt-1 w-full px-4 py-2 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-500" data-action="start_cal">Start EasyCal</button>
+                             <label class="block text-sm font-medium text-gray-400">Calibration</label>
+                             <button id="startCalButton" class="mt-1 w-full px-4 py-2 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-500" data-action="start_cal">Start EasyCal</button>
                         </div>
                     </div>
                 </section>
@@ -170,10 +168,12 @@
                 <section class="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
                     <h2 class="text-lg font-semibold mb-3 text-cyan-300">Input Assignments (Bank-Specific)</h2>
                     <div id="assignments-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                        </div>
+                        <!-- JS will populate this -->
+                    </div>
                 </section>
             </div>
-
+            
+            <!-- Right Column: CC Visualizer -->
             <div id="visualizer" class="lg:col-span-2 bg-gray-700/50 p-4 rounded-lg border border-gray-600">
                 <div class="flex justify-between items-baseline">
                     <h2 class="text-lg font-semibold text-cyan-300">Real-time CC Monitor</h2>
@@ -182,13 +182,17 @@
                         <p id="last-cc-sent" class="font-mono text-lg text-white">-</p>
                     </div>
                 </div>
-                <div id="cc-container" class="grid grid-cols-1 gap-4 mt-4 h-full">
-                    <div id="cc-pots-container" class="grid grid-cols-8 gap-4 cc-pots-container items-end pb-8"></div>
+                <div id="cc-container" class="grid grid-cols-1 gap-4 mt-4">
+                    <!-- MODIFIED: Adjusted h-[400px] to h-[400px] (kept same) to make space for logs -->
+                    <div id="cc-pots-container" class="grid grid-cols-8 gap-4 h-[400px] items-end pb-8"></div>
+                    <!-- MODIFIED: Adjusted h-24 to h-24 (kept same) and added pt-8 to move buttons up and create space -->
                     <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-24 items-end pt-8"></div>
                 </div>
+                <!-- NEW: Log area added -->
                 <div id="log-area" class="mt-4 p-2 rounded-md border border-gray-700 text-gray-400">
                     <p class="text-white font-semibold mb-1">Logs:</p>
-                    </div>
+                    <!-- Log messages will be appended here -->
+                </div>
             </div>
         </main>
     </div>
@@ -206,23 +210,24 @@
         const midiChannelValueEl = document.getElementById('midiChannel-value');
         const bleStatusEl = document.getElementById('ble-status');
         const blePeerNameEl = document.getElementById('ble-peer-name');
-        const logArea = document.getElementById('log-area');
-
+        const logArea = document.getElementById('log-area'); // NEW: Log area element
+        
         // --- WebUSB State ---
         let device, interfaceNumber, endpointIn, endpointOut;
         let keepReading = false;
         const textEncoder = new TextEncoder();
         const textDecoder = new TextDecoder();
-        let ccMap = {};
+        let ccMap = {}; 
         let currentSettingsCache = {};
 
         // --- Core Functions ---
+        // MODIFIED: Added log message to the log area
         const log = (msg) => {
             console.log(`[SYS] ${msg}`);
             const p = document.createElement('p');
             p.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
             logArea.appendChild(p);
-            logArea.scrollTop = logArea.scrollHeight;
+            logArea.scrollTop = logArea.scrollHeight; // Auto-scroll to bottom
         };
 
         const sendCommand = async (command) => {
@@ -232,12 +237,12 @@
                 await device.transferOut(endpointOut, textEncoder.encode(command + '\n'));
             } catch (error) {
                 console.error("Send command error:", error);
-                log(`Error sending command: ${error.message}`);
+                log(`Error sending command: ${error.message}`); // Log errors to UI
             }
         };
 
         const populateUI = (settings) => {
-            currentSettingsCache = settings;
+            currentSettingsCache = settings; // Cache the latest settings
             const bankGrid = document.getElementById('bank-selection-grid');
             bankGrid.innerHTML = '';
             for(let i = 0; i < 12; i++) {
@@ -257,7 +262,7 @@
             midiChannelValueEl.textContent = settings.midiChannel;
             document.getElementById('buttonMode').value = settings.buttonMode;
             document.getElementById('esbChannel').value = settings.esbChannel;
-
+            
             const bleButton = document.getElementById('bleToggleButton');
             bleButton.textContent = settings.bleOn ? 'Disable BLE' : 'Enable BLE';
             bleButton.classList.toggle('bg-red-600', settings.bleOn);
@@ -306,20 +311,26 @@
 
                 if (isPot) {
                     const barWrapper = document.createElement('div');
-                    barWrapper.className = 'relative flex flex-col items-center h-full';
+                    // MODIFIED: Added relative positioning for absolute child elements, removed justify-end
+                    barWrapper.className = 'relative flex flex-col items-center h-full'; 
                     barWrapper.innerHTML = `
+                        <!-- MODIFIED: Positioned value above the bar, added margin-bottom -->
                         <span id="cc-val-${i}" class="text-xs text-cyan-300 font-mono mb-1">0</span>
                         <div class="cc-bar-container bg-gray-900 h-full w-full rounded-full flex items-start border border-gray-600">
                             <div id="cc-bar-${i}" class="cc-bar bg-cyan-400 w-full" style="height: 0%;"></div>
                         </div>
+                        <!-- MODIFIED: Positioned CC label below the bar, added margin-top -->
                         <span class="text-xs text-gray-400 font-mono mt-1">${cc}</span>
                     `;
                     ccPotsContainer.appendChild(barWrapper);
                 } else {
                     const btnWrapper = document.createElement('div');
-                    btnWrapper.className = 'relative flex flex-col items-center h-full justify-end';
+                    // MODIFIED: Added relative positioning, changed justify-end to items-end for vertical alignment
+                    btnWrapper.className = 'relative flex flex-col items-center h-full justify-end'; 
                     btnWrapper.innerHTML = `
+                        <!-- MODIFIED: Indicator with margin-bottom for spacing from label -->
                         <div id="cc-btn-${i}" class="btn-indicator bg-gray-900 h-12 w-12 rounded-full border-2 border-gray-600 mb-2"></div>
+                        <!-- MODIFIED: CC label -->
                         <span class="text-xs text-gray-400 font-mono">${cc}</span>
                     `;
                     ccBtnsContainer.appendChild(btnWrapper);
@@ -331,7 +342,7 @@
             const index = ccMap[cc];
             lastCcSentEl.textContent = `${cc}:${value}`;
             if (index === undefined) return;
-
+            
             if (index < 8) { // It's a pot
                 const bar = document.getElementById(`cc-bar-${index}`);
                 const valLabel = document.getElementById(`cc-val-${index}`);
@@ -360,9 +371,9 @@
                                     const settings = JSON.parse(line);
                                     log("Received settings object.");
                                     populateUI(settings);
-                                } catch (e) {
-                                    console.error("JSON Parse Error:", e, "Data:", line);
-                                    log(`JSON Parse Error: ${e.message} Data: ${line}`);
+                                } catch (e) { 
+                                    console.error("JSON Parse Error:", e, "Data:", line); 
+                                    log(`JSON Parse Error: ${e.message} Data: ${line}`); // Log errors to UI
                                 }
                             } else if (line.startsWith('cc:')) {
                                 const parts = line.substring(3).split(',');
@@ -370,8 +381,9 @@
                                     updateCCVisualizer(parseInt(parts[0], 10), parseInt(parts[1], 10));
                                 }
                             } else if (line.startsWith('bank_changed:')) {
+                                // MODIFICATION: When bank changes on device, request new settings to redraw UI completely.
                                 log("Bank changed on device. Requesting new settings.");
-                                setTimeout(() => sendCommand('get_settings'), 100);
+                                setTimeout(() => sendCommand('get_settings'), 100); // Give device a moment
                             }
                         }
                     }
@@ -379,9 +391,9 @@
                     if (error.message.includes("disconnected")) {
                         log("Device disconnected.");
                         if (!disconnectButton.disabled) await disconnectButton.click();
-                    } else {
-                        console.error(`Read loop error: ${error.message}`);
-                        log(`Read loop error: ${error.message}`);
+                    } else { 
+                        console.error(`Read loop error: ${error.message}`); 
+                        log(`Read loop error: ${error.message}`); // Log errors to UI
                     }
                     keepReading = false;
                 }
@@ -389,15 +401,17 @@
         }
 
         connectButton.addEventListener('click', async () => {
-            log("Requesting device...");
+             log("Requesting device...");
             try {
+                // The vendorId (0x239A) is for Adafruit devices.
+                // You can remove this or change it if your device is different.
                 device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x000a }] });
                 await device.open();
                 if (device.configuration === null) await device.selectConfiguration(1);
 
                 for (const iface of device.configuration.interfaces) {
                     for (const alt of iface.alternates) {
-                        if (alt.interfaceClass === 0xFF) {
+                        if (alt.interfaceClass === 0xFF) { // Vendor-specific class
                             interfaceNumber = iface.interfaceNumber;
                             for (const ep of alt.endpoints) {
                                 if (ep.direction === 'out') endpointOut = ep.endpointNumber;
@@ -410,7 +424,7 @@
 
                 await device.claimInterface(interfaceNumber);
                 await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x01, index: interfaceNumber });
-
+                
                 log("Device connected.");
                 connectButton.disabled = true;
                 disconnectButton.disabled = false;
@@ -419,12 +433,13 @@
 
                 keepReading = true;
                 readLoop();
-
+                
+                // Request settings and current values upon connection
                 await sendCommand("get_settings");
 
             } catch (error) {
                 console.error("Connection failed:", error);
-                log(`Connection failed: ${error.message}`);
+                log(`Connection failed: ${error.message}`); // Log errors to UI
             }
         });
 
@@ -435,9 +450,9 @@
                 await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x00, index: interfaceNumber });
                 await device.releaseInterface(interfaceNumber);
                 await device.close();
-            } catch (error) {
-                console.error("Disconnect error:", error);
-                log(`Disconnect error: ${error.message}`);
+            } catch (error) { 
+                console.error("Disconnect error:", error); 
+                log(`Disconnect error: ${error.message}`); // Log errors to UI
             }
             device = null;
             connectButton.disabled = false;
@@ -450,27 +465,31 @@
         document.addEventListener('input', (e) => {
             const target = e.target;
             if (target.id === 'brightness') {
+                // MODIFIED: Only update the display value here, do NOT send the command yet.
                 brightnessValueEl.textContent = target.value;
             } else if (target.id === 'midiChannel') {
-                midiChannelValueEl.textContent = target.value;
+                 midiChannelValueEl.textContent = target.value;
             }
         });
-
+        
         document.addEventListener('change', (e) => {
             const target = e.target;
+            // MODIFIED: The 'update-on-release' class now handles brightness as well.
             if (target.classList.contains('update-on-release') || target.classList.contains('update-on-change')) {
                 const action = target.dataset.action;
                 const value = target.value;
                 const index = target.dataset.index;
-
+                
                 let command = `set_${action}=`;
                 if (index) {
                     command += `${index},`;
                 }
                 command += value;
-
+                
+                // This sendCommand will now be triggered for brightness when the slider is released.
                 sendCommand(command);
-
+                
+                // If we changed a CC or label, refresh the settings to ensure UI consistency
                 if (action === 'cc' || action === 'label') {
                     setTimeout(() => sendCommand('get_settings'), 200);
                 }
@@ -480,13 +499,17 @@
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('bank-btn')) {
                 sendCommand(`set_bank=${e.target.dataset.bank}`);
+                // The device will send a 'bank_changed' message back, which triggers a settings refresh.
             } else if (e.target.id === 'bleToggleButton') {
                 sendCommand('toggle_ble');
             } else if (e.target.id === 'startCalButton') {
                 sendCommand('start_cal');
+                // Replaced alert with a more modern, non-blocking notification if needed
+                // For now, we assume the user will look at the device screen.
                 log("Calibration command sent. Follow device instructions.");
             }
         });
     </script>
 </body>
 </html>
+
