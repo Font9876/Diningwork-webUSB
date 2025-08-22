@@ -104,7 +104,8 @@
                                 <label for="brightness" class="block text-sm font-medium text-gray-400">Brightness</label>
                                 <span id="brightness-value" class="font-mono text-cyan-300"></span>
                             </div>
-                            <input type="range" id="brightness" min="3" max="255" class="w-full" data-action="brightness">
+                            <!-- MODIFIED: Added 'update-on-release' class -->
+                            <input type="range" id="brightness" min="3" max="255" class="w-full update-on-release" data-action="brightness">
                         </div>
                         <div class="space-y-1">
                             <div class="flex justify-between items-center">
@@ -165,8 +166,10 @@
                 </div>
                 <!-- MODIFICATION: Increased height of the container for longer bars -->
                 <div id="cc-container" class="grid grid-cols-1 gap-4 mt-4">
-                    <div id="cc-pots-container" class="grid grid-cols-8 gap-4 h-96 items-end"></div>
-                    <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-24 items-center mt-4"></div>
+                    <!-- MODIFIED: Increased height from h-96 to h-[500px] for taller bars -->
+                    <div id="cc-pots-container" class="grid grid-cols-8 gap-4 h-[500px] items-end"></div>
+                    <!-- MODIFIED: Adjusted h-24 to h-32 to give more vertical space for button indicators -->
+                    <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-32 items-center mt-4"></div>
                 </div>
             </div>
         </main>
@@ -278,7 +281,6 @@
                 if (isPot) {
                     const barWrapper = document.createElement('div');
                     barWrapper.className = 'flex flex-col items-center h-full justify-end';
-                    // MODIFIED: Changed w-4 to w-full to make the bar fill its grid column
                     barWrapper.innerHTML = `
                         <span id="cc-val-${i}" class="text-xs mb-1 text-cyan-300 font-mono">0</span>
                         <div class="cc-bar-container bg-gray-900 h-full w-full rounded-full overflow-hidden flex items-start border border-gray-600">
@@ -289,7 +291,8 @@
                     ccPotsContainer.appendChild(barWrapper);
                 } else {
                     const btnWrapper = document.createElement('div');
-                    btnWrapper.className = 'flex flex-col items-center justify-center';
+                    // MODIFIED: Changed justify-center to justify-end to align button indicators at the bottom
+                    btnWrapper.className = 'flex flex-col items-center justify-end'; 
                     btnWrapper.innerHTML = `
                         <div id="cc-btn-${i}" class="btn-indicator bg-gray-900 h-12 w-12 rounded-full border-2 border-gray-600"></div>
                         <span class="text-xs mt-2 text-gray-400 font-mono">${cc}</span>
@@ -413,21 +416,19 @@
             log("Disconnected.");
         });
 
-        // MODIFICATION: Changed logic to separate real-time updates from "on release" updates.
-        // 'input' is for real-time feedback (like brightness).
         document.addEventListener('input', (e) => {
             const target = e.target;
             if (target.id === 'brightness') {
+                // MODIFIED: Only update the display value here, do NOT send the command yet.
                 brightnessValueEl.textContent = target.value;
-                sendCommand(`set_brightness=${target.value}`);
             } else if (target.id === 'midiChannel') {
                  midiChannelValueEl.textContent = target.value;
             }
         });
         
-        // 'change' is for updates that should happen after the user finishes interacting (e.g., releasing a slider).
         document.addEventListener('change', (e) => {
             const target = e.target;
+            // MODIFIED: The 'update-on-release' class now handles brightness as well.
             if (target.classList.contains('update-on-release') || target.classList.contains('update-on-change')) {
                 const action = target.dataset.action;
                 const value = target.value;
@@ -439,6 +440,7 @@
                 }
                 command += value;
                 
+                // This sendCommand will now be triggered for brightness when the slider is released.
                 sendCommand(command);
                 
                 // If we changed a CC or label, refresh the settings to ensure UI consistency
