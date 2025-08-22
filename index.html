@@ -16,7 +16,7 @@
             transform: rotate(180deg);
         }
         .cc-bar {
-            /* MODIFIED: Removed transition for instant updates */
+            /* Removed transition for instant updates */
             /* transition: height 0.05s ease-out; */
         }
         .btn-indicator {
@@ -165,7 +165,7 @@
                 </div>
                 <!-- MODIFICATION: Increased height of the container for longer bars -->
                 <div id="cc-container" class="grid grid-cols-1 gap-4 mt-4">
-                    <div id="cc-pots-container" class="grid grid-cols-8 gap-3 h-96 items-end"></div>
+                    <div id="cc-pots-container" class="grid grid-cols-8 gap-4 h-96 items-end"></div>
                     <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-24 items-center mt-4"></div>
                 </div>
             </div>
@@ -278,10 +278,10 @@
                 if (isPot) {
                     const barWrapper = document.createElement('div');
                     barWrapper.className = 'flex flex-col items-center h-full justify-end';
-                    // MODIFICATION: Added a span for the numeric value on top of the bar
+                    // MODIFIED: Changed w-4 to w-full to make the bar fill its grid column
                     barWrapper.innerHTML = `
                         <span id="cc-val-${i}" class="text-xs mb-1 text-cyan-300 font-mono">0</span>
-                        <div class="cc-bar-container bg-gray-900 h-full w-4 rounded-full overflow-hidden flex items-start border border-gray-600">
+                        <div class="cc-bar-container bg-gray-900 h-full w-full rounded-full overflow-hidden flex items-start border border-gray-600">
                             <div id="cc-bar-${i}" class="cc-bar bg-cyan-400 w-full" style="height: 0%;"></div>
                         </div>
                         <span class="text-xs mt-2 text-gray-400 font-mono">${cc}</span>
