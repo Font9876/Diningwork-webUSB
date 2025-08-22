@@ -16,6 +16,7 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #0f172a; /* Slate 900 */
             color: #e2e8f0; /* Light gray text for contrast */
+            cursor: default; /* Default cursor for the body */
         }
 
         /* Custom styles for the CC bar visualizer */
@@ -24,14 +25,12 @@
             border-radius: 9999px 9999px 0 0;
             overflow: hidden;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.4); /* Inner shadow for depth */
-            /* Add transition for border/shadow on hover */
             transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
 
         /* Removed height transition for instantaneous updates (user request) */
         .cc-bar {
             border-radius: 9999px 9999px 0 0;
-            /* transition: height 0.05s linear; */ /* Removed for instant response */
         }
 
         /* Styling for the button press indicators */
@@ -74,6 +73,7 @@
         /* Active state for bank buttons */
         .bank-btn {
             transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+            cursor: pointer; /* Pointer cursor for bank buttons */
         }
 
         .bank-btn.active {
@@ -88,7 +88,7 @@
         input[type=range] {
             -webkit-appearance: none;
             background: transparent;
-            cursor: grab;
+            cursor: grab; /* Grab cursor for sliders */
             width: 100%;
         }
 
@@ -143,6 +143,7 @@
             border: 1px solid #334155; /* Slate 700 */
             color: #cbd5e1; /* Slate 300 */
             transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            cursor: text; /* Text cursor for input fields */
         }
 
         input[type="text"]:focus, input[type="number"]:focus, select:focus {
@@ -150,17 +151,9 @@
             box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.3); /* Focus ring */
         }
 
-        /* Utility for visually hidden but accessible elements */
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border-width: 0;
+        /* Cursor for general buttons */
+        button {
+            cursor: pointer;
         }
     </style>
 </head>
@@ -173,9 +166,9 @@
                 <!-- Header and Connection Controls -->
                 <header class="pb-6 mb-6 border-b border-gray-700">
                     <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight">
-                        <span class="text-teal-400">MIDI</span> Hub
+                        <span class="text-teal-400">Plate</span> 1
                     </h1>
-                    <p class="text-gray-400 text-sm mb-6">Unified control for your MIDI devices.</p>
+                    <p class="text-gray-400 text-sm mb-6">Settings never been easier for Plate 1.</p>
 
                     <div class="flex flex-wrap gap-3 sm:gap-4 items-center">
                         <button id="connectButton" class="flex-1 px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base">Connect Device</button>
@@ -275,8 +268,8 @@
 
             <!-- CC Visualizer Containers -->
             <div id="visualizer" class="flex-grow flex flex-col justify-end min-h-[400px]" style="display: none;">
-                <div id="cc-pots-container" class="grid grid-cols-4 sm:grid-cols-8 gap-4 flex-grow items-end pb-8"></div>
-                <div id="cc-btns-container" class="grid grid-cols-2 sm:grid-cols-4 gap-4 h-32 items-end pt-4"></div>
+                <div id="cc-pots-container" class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-6 flex-grow items-end pb-8"></div>
+                <div id="cc-btns-container" class="grid grid-cols-2 sm:grid-cols-4 gap-4 h-28 items-end pt-4"></div>
             </div>
 
             <!-- Log Area -->
@@ -347,7 +340,8 @@
             for (let i = 0; i < 12; i++) {
                 const bankBtn = document.createElement('button');
                 bankBtn.className = 'bank-btn p-3 text-sm font-semibold rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors duration-150 transform hover:scale-105 active:scale-95 shadow';
-                bankBtn.textContent = `Bank ${i + 1}`;
+                // Bank buttons now display just the number
+                bankBtn.textContent = `${i + 1}`;
                 bankBtn.dataset.bank = i;
                 if (i === settings.activeBank) {
                     bankBtn.classList.add('active');
@@ -410,11 +404,11 @@
 
                 // Assignment Card
                 const card = document.createElement('div');
-                // Increased padding for larger input assignments box
+                // Increased padding and adjusted text sizes for better readability
                 card.className = 'bg-gray-800 p-5 rounded-xl border border-gray-700 shadow-lg';
                 card.innerHTML = `
                     <label class="block text-base font-semibold text-gray-300 mb-2">${label}</label>
-                    <div class="flex gap-4"> <!-- Increased gap for inputs -->
+                    <div class="flex gap-4">
                         <input type="text" value="${label}" maxlength="4" placeholder="Label" class="w-1/2 bg-gray-900 border border-gray-700 rounded-md text-base p-3 focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-change" data-action="label" data-index="${i}">
                         <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="w-1/2 bg-gray-900 border border-gray-700 rounded-md text-base p-3 text-center font-mono focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-release" data-action="cc" data-index="${i}">
                     </div>
