@@ -66,6 +66,18 @@
             border-radius: 50%;
             border: 2px solid #fff;
         }
+        /* MODIFIED: Custom styles for log area */
+        #log-area {
+            height: 100px; /* Fixed height for the log area */
+            overflow-y: auto; /* Enable scrolling if content overflows */
+            font-size: 0.75rem; /* Smaller font size for logs */
+            line-height: 1.2;
+            background-color: #1f2937; /* Darker background for logs */
+            border-top: 1px solid #4b5563;
+        }
+        #log-area p {
+            margin-bottom: 0.25rem;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
@@ -157,7 +169,7 @@
             </div>
             
             <!-- Right Column: CC Visualizer -->
-            <div id="visualizer" class="lg:col-span-2 bg-gray-700/50 p-4 rounded-lg border border-gray-600" style="display: none;">
+            <div id="visualizer" class="lg:col-span-2 bg-gray-700/50 p-4 rounded-lg border border-gray-600">
                 <div class="flex justify-between items-baseline">
                     <h2 class="text-lg font-semibold text-cyan-300">Real-time CC Monitor</h2>
                     <div class="text-right">
@@ -166,10 +178,15 @@
                     </div>
                 </div>
                 <div id="cc-container" class="grid grid-cols-1 gap-4 mt-4">
-                    <!-- MODIFIED: Main container for potentiometer bars - increased height for longer bars -->
-                    <div id="cc-pots-container" class="grid grid-cols-8 gap-4 h-[500px] items-end"></div>
-                    <!-- MODIFIED: Container for button indicators - increased height for better vertical alignment -->
-                    <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-48 items-end"></div>
+                    <!-- MODIFIED: Adjusted h-[500px] to h-[400px] to make space for logs -->
+                    <div id="cc-pots-container" class="grid grid-cols-8 gap-4 h-[400px] items-end"></div>
+                    <!-- MODIFIED: Adjusted h-48 to h-24 and added mt-4 to move buttons up and create space -->
+                    <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-24 items-end mt-4"></div>
+                </div>
+                <!-- NEW: Log area added -->
+                <div id="log-area" class="mt-4 p-2 rounded-md border border-gray-700 text-gray-400">
+                    <p class="text-white font-semibold mb-1">Logs:</p>
+                    <!-- Log messages will be appended here -->
                 </div>
             </div>
         </main>
@@ -188,6 +205,7 @@
         const midiChannelValueEl = document.getElementById('midiChannel-value');
         const bleStatusEl = document.getElementById('ble-status');
         const blePeerNameEl = document.getElementById('ble-peer-name');
+        const logArea = document.getElementById('log-area'); // NEW: Log area element
         
         // --- WebUSB State ---
         let device, interfaceNumber, endpointIn, endpointOut;
@@ -198,7 +216,14 @@
         let currentSettingsCache = {};
 
         // --- Core Functions ---
-        const log = (msg) => console.log(`[SYS] ${msg}`);
+        // MODIFIED: Added log message to the log area
+        const log = (msg) => {
+            console.log(`[SYS] ${msg}`);
+            const p = document.createElement('p');
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logArea.appendChild(p);
+            logArea.scrollTop = logArea.scrollHeight; // Auto-scroll to bottom
+        };
 
         const sendCommand = async (command) => {
             if (!device) return;
@@ -207,6 +232,7 @@
                 await device.transferOut(endpointOut, textEncoder.encode(command + '\n'));
             } catch (error) {
                 console.error("Send command error:", error);
+                log(`Error sending command: ${error.message}`); // Log errors to UI
             }
         };
 
@@ -280,22 +306,27 @@
 
                 if (isPot) {
                     const barWrapper = document.createElement('div');
-                    barWrapper.className = 'flex flex-col items-center h-full justify-end';
+                    // MODIFIED: Added relative positioning for absolute child elements
+                    barWrapper.className = 'relative flex flex-col items-center h-full justify-end'; 
                     barWrapper.innerHTML = `
-                        <span id="cc-val-${i}" class="text-xs mb-1 text-cyan-300 font-mono">0</span>
+                        <!-- MODIFIED: Absolute positioning for value, adjusted top/transform -->
+                        <span id="cc-val-${i}" class="absolute top-0 text-xs text-cyan-300 font-mono transform -translate-y-full">0</span>
                         <div class="cc-bar-container bg-gray-900 h-full w-full rounded-full overflow-hidden flex items-start border border-gray-600">
                             <div id="cc-bar-${i}" class="cc-bar bg-cyan-400 w-full" style="height: 0%;"></div>
                         </div>
-                        <span class="text-xs mt-2 text-gray-400 font-mono">${cc}</span>
+                        <!-- MODIFIED: Absolute positioning for CC label, adjusted bottom/transform -->
+                        <span class="absolute bottom-0 text-xs text-gray-400 font-mono transform translate-y-full">${cc}</span>
                     `;
                     ccPotsContainer.appendChild(barWrapper);
                 } else {
                     const btnWrapper = document.createElement('div');
-                    // MODIFIED: Changed justify-center to justify-end to align button indicators at the bottom
-                    btnWrapper.className = 'flex flex-col items-center justify-end'; 
+                    // MODIFIED: Added relative positioning for absolute child elements
+                    btnWrapper.className = 'relative flex flex-col items-center h-full justify-end'; 
                     btnWrapper.innerHTML = `
-                        <div id="cc-btn-${i}" class="btn-indicator bg-gray-900 h-12 w-12 rounded-full border-2 border-gray-600"></div>
-                        <span class="text-xs mt-2 text-gray-400 font-mono">${cc}</span>
+                        <!-- MODIFIED: Absolute positioning for button indicator, adjusted bottom/transform -->
+                        <div id="cc-btn-${i}" class="absolute bottom-0 btn-indicator bg-gray-900 h-12 w-12 rounded-full border-2 border-gray-600 transform translate-y-1/2"></div>
+                        <!-- MODIFIED: Absolute positioning for CC label, adjusted bottom/transform -->
+                        <span class="absolute bottom-0 text-xs mt-2 text-gray-400 font-mono transform translate-y-full">${cc}</span>
                     `;
                     ccBtnsContainer.appendChild(btnWrapper);
                 }
@@ -335,7 +366,10 @@
                                     const settings = JSON.parse(line);
                                     log("Received settings object.");
                                     populateUI(settings);
-                                } catch (e) { console.error("JSON Parse Error:", e, "Data:", line); }
+                                } catch (e) { 
+                                    console.error("JSON Parse Error:", e, "Data:", line); 
+                                    log(`JSON Parse Error: ${e.message} Data: ${line}`); // Log errors to UI
+                                }
                             } else if (line.startsWith('cc:')) {
                                 const parts = line.substring(3).split(',');
                                 if (parts.length === 2) {
@@ -352,7 +386,10 @@
                     if (error.message.includes("disconnected")) {
                         log("Device disconnected.");
                         if (!disconnectButton.disabled) await disconnectButton.click();
-                    } else { console.error(`Read loop error: ${error.message}`); }
+                    } else { 
+                        console.error(`Read loop error: ${error.message}`); 
+                        log(`Read loop error: ${error.message}`); // Log errors to UI
+                    }
                     keepReading = false;
                 }
             }
@@ -397,6 +434,7 @@
 
             } catch (error) {
                 console.error("Connection failed:", error);
+                log(`Connection failed: ${error.message}`); // Log errors to UI
             }
         });
 
@@ -407,7 +445,10 @@
                 await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x00, index: interfaceNumber });
                 await device.releaseInterface(interfaceNumber);
                 await device.close();
-            } catch (error) { console.error("Disconnect error:", error); }
+            } catch (error) { 
+                console.error("Disconnect error:", error); 
+                log(`Disconnect error: ${error.message}`); // Log errors to UI
+            }
             device = null;
             connectButton.disabled = false;
             disconnectButton.disabled = true;
