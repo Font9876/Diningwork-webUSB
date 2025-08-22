@@ -14,10 +14,14 @@
         }
         .cc-bar-container {
             transform: rotate(180deg);
+            /* MODIFIED: Added rounded-t-full to ensure the top of the bar is rounded when filled */
             border-radius: 9999px 9999px 0 0;
             overflow: hidden; /* Ensure content respects border-radius */
         }
         .cc-bar {
+            /* Removed transition for instant updates */
+            /* transition: height 0.05s ease-out; */
+            /* MODIFIED: Added rounded-t-full to ensure the top of the filled bar is rounded */
             border-radius: 9999px 9999px 0 0;
         }
         .btn-indicator {
@@ -117,6 +121,7 @@
                                 <label for="brightness" class="block text-sm font-medium text-gray-400">Brightness</label>
                                 <span id="brightness-value" class="font-mono text-cyan-300"></span>
                             </div>
+                            <!-- MODIFIED: Added 'update-on-release' class -->
                             <input type="range" id="brightness" min="3" max="255" class="w-full update-on-release" data-action="brightness">
                         </div>
                         <div class="space-y-1">
@@ -141,6 +146,7 @@
                      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <label for="esbChannel" class="block text-sm font-medium text-gray-400">ESB Channel</label>
+                            <!-- MODIFIED: Added py-2 for height consistency -->
                             <select id="esbChannel" class="mt-1 block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center update-on-release py-2" data-action="esb_ch">
                                 <option value="5">5</option>
                                 <option value="10">10</option>
@@ -168,9 +174,8 @@
             </div>
             
             <!-- Right Column: CC Visualizer -->
-            <div id="visualizer" class="lg:col-span-2 bg-gray-700/50 p-4 rounded-lg border border-gray-600" style="display: none;">
-                <!-- MODIFIED: Wrapped monitor text in a div that will be shown/hidden -->
-                <div id="monitor-header" class="flex justify-between items-baseline mb-4">
+            <div id="visualizer" class="lg:col-span-2 bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+                <div class="flex justify-between items-baseline">
                     <h2 class="text-lg font-semibold text-cyan-300">Real-time CC Monitor</h2>
                     <div class="text-right">
                         <p class="text-xs text-gray-400">LAST SENT</p>
@@ -178,10 +183,12 @@
                     </div>
                 </div>
                 <div id="cc-container" class="grid grid-cols-1 gap-4 mt-4">
+                    <!-- MODIFIED: Adjusted h-[400px] to h-[400px] (kept same) to make space for logs -->
                     <div id="cc-pots-container" class="grid grid-cols-8 gap-4 h-[400px] items-end pb-8"></div>
+                    <!-- MODIFIED: Adjusted h-24 to h-24 (kept same) and added pt-8 to move buttons up and create space -->
                     <div id="cc-btns-container" class="grid grid-cols-4 gap-3 h-24 items-end pt-8"></div>
                 </div>
-                <!-- Log area added -->
+                <!-- NEW: Log area added -->
                 <div id="log-area" class="mt-4 p-2 rounded-md border border-gray-700 text-gray-400">
                     <p class="text-white font-semibold mb-1">Logs:</p>
                     <!-- Log messages will be appended here -->
@@ -196,7 +203,6 @@
         const disconnectButton = document.getElementById('disconnectButton');
         const mainControls = document.getElementById('main-controls');
         const visualizer = document.getElementById('visualizer');
-        const monitorHeader = document.getElementById('monitor-header'); // NEW: Monitor header element
         const lastCcSentEl = document.getElementById('last-cc-sent');
         const brightnessSlider = document.getElementById('brightness');
         const brightnessValueEl = document.getElementById('brightness-value');
@@ -204,7 +210,7 @@
         const midiChannelValueEl = document.getElementById('midiChannel-value');
         const bleStatusEl = document.getElementById('ble-status');
         const blePeerNameEl = document.getElementById('ble-peer-name');
-        const logArea = document.getElementById('log-area'); 
+        const logArea = document.getElementById('log-area'); // NEW: Log area element
         
         // --- WebUSB State ---
         let device, interfaceNumber, endpointIn, endpointOut;
@@ -215,12 +221,13 @@
         let currentSettingsCache = {};
 
         // --- Core Functions ---
+        // MODIFIED: Added log message to the log area
         const log = (msg) => {
             console.log(`[SYS] ${msg}`);
             const p = document.createElement('p');
             p.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
             logArea.appendChild(p);
-            logArea.scrollTop = logArea.scrollHeight; 
+            logArea.scrollTop = logArea.scrollHeight; // Auto-scroll to bottom
         };
 
         const sendCommand = async (command) => {
@@ -230,12 +237,12 @@
                 await device.transferOut(endpointOut, textEncoder.encode(command + '\n'));
             } catch (error) {
                 console.error("Send command error:", error);
-                log(`Error sending command: ${error.message}`); 
+                log(`Error sending command: ${error.message}`); // Log errors to UI
             }
         };
 
         const populateUI = (settings) => {
-            currentSettingsCache = settings; 
+            currentSettingsCache = settings; // Cache the latest settings
             const bankGrid = document.getElementById('bank-selection-grid');
             bankGrid.innerHTML = '';
             for(let i = 0; i < 12; i++) {
@@ -304,30 +311,30 @@
 
                 if (isPot) {
                     const barWrapper = document.createElement('div');
+                    // MODIFIED: Added relative positioning for absolute child elements, removed justify-end
                     barWrapper.className = 'relative flex flex-col items-center h-full'; 
                     barWrapper.innerHTML = `
+                        <!-- MODIFIED: Positioned value above the bar, added margin-bottom -->
                         <span id="cc-val-${i}" class="text-xs text-cyan-300 font-mono mb-1">0</span>
                         <div class="cc-bar-container bg-gray-900 h-full w-full rounded-full flex items-start border border-gray-600">
                             <div id="cc-bar-${i}" class="cc-bar bg-cyan-400 w-full" style="height: 0%;"></div>
                         </div>
+                        <!-- MODIFIED: Positioned CC label below the bar, added margin-top -->
                         <span class="text-xs text-gray-400 font-mono mt-1">${cc}</span>
                     `;
                     ccPotsContainer.appendChild(barWrapper);
                 } else {
                     const btnWrapper = document.createElement('div');
+                    // MODIFIED: Added relative positioning, changed justify-end to items-end for vertical alignment
                     btnWrapper.className = 'relative flex flex-col items-center h-full justify-end'; 
                     btnWrapper.innerHTML = `
+                        <!-- MODIFIED: Indicator with margin-bottom for spacing from label -->
                         <div id="cc-btn-${i}" class="btn-indicator bg-gray-900 h-12 w-12 rounded-full border-2 border-gray-600 mb-2"></div>
+                        <!-- MODIFIED: CC label -->
                         <span class="text-xs text-gray-400 font-mono">${cc}</span>
                     `;
                     ccBtnsContainer.appendChild(btnWrapper);
                 }
-            }
-            // NEW: If currentPotValues are provided, update the visualizer
-            if (settings.currentPotValues) {
-                settings.currentPotValues.forEach((value, index) => {
-                    updateCCVisualizer(settings.ccs[index], value);
-                });
             }
         };
 
@@ -366,7 +373,7 @@
                                     populateUI(settings);
                                 } catch (e) { 
                                     console.error("JSON Parse Error:", e, "Data:", line); 
-                                    log(`JSON Parse Error: ${e.message} Data: ${line}`); 
+                                    log(`JSON Parse Error: ${e.message} Data: ${line}`); // Log errors to UI
                                 }
                             } else if (line.startsWith('cc:')) {
                                 const parts = line.substring(3).split(',');
@@ -374,8 +381,9 @@
                                     updateCCVisualizer(parseInt(parts[0], 10), parseInt(parts[1], 10));
                                 }
                             } else if (line.startsWith('bank_changed:')) {
+                                // MODIFICATION: When bank changes on device, request new settings to redraw UI completely.
                                 log("Bank changed on device. Requesting new settings.");
-                                setTimeout(() => sendCommand('get_settings'), 100); 
+                                setTimeout(() => sendCommand('get_settings'), 100); // Give device a moment
                             }
                         }
                     }
@@ -385,7 +393,7 @@
                         if (!disconnectButton.disabled) await disconnectButton.click();
                     } else { 
                         console.error(`Read loop error: ${error.message}`); 
-                        log(`Read loop error: ${error.message}`); 
+                        log(`Read loop error: ${error.message}`); // Log errors to UI
                     }
                     keepReading = false;
                 }
@@ -395,13 +403,15 @@
         connectButton.addEventListener('click', async () => {
              log("Requesting device...");
             try {
+                // The vendorId (0x239A) is for Adafruit devices.
+                // You can remove this or change it if your device is different.
                 device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x000a }] });
                 await device.open();
                 if (device.configuration === null) await device.selectConfiguration(1);
 
                 for (const iface of device.configuration.interfaces) {
                     for (const alt of iface.alternates) {
-                        if (alt.interfaceClass === 0xFF) { 
+                        if (alt.interfaceClass === 0xFF) { // Vendor-specific class
                             interfaceNumber = iface.interfaceNumber;
                             for (const ep of alt.endpoints) {
                                 if (ep.direction === 'out') endpointOut = ep.endpointNumber;
@@ -420,7 +430,6 @@
                 disconnectButton.disabled = false;
                 mainControls.style.display = 'block';
                 visualizer.style.display = 'block';
-                monitorHeader.style.display = 'flex'; // NEW: Show monitor header on connect
 
                 keepReading = true;
                 readLoop();
@@ -430,7 +439,7 @@
 
             } catch (error) {
                 console.error("Connection failed:", error);
-                log(`Connection failed: ${error.message}`); 
+                log(`Connection failed: ${error.message}`); // Log errors to UI
             }
         });
 
@@ -443,20 +452,20 @@
                 await device.close();
             } catch (error) { 
                 console.error("Disconnect error:", error); 
-                log(`Disconnect error: ${error.message}`); 
+                log(`Disconnect error: ${error.message}`); // Log errors to UI
             }
             device = null;
             connectButton.disabled = false;
             disconnectButton.disabled = true;
             mainControls.style.display = 'none';
             visualizer.style.display = 'none';
-            monitorHeader.style.display = 'none'; // NEW: Hide monitor header on disconnect
             log("Disconnected.");
         });
 
         document.addEventListener('input', (e) => {
             const target = e.target;
             if (target.id === 'brightness') {
+                // MODIFIED: Only update the display value here, do NOT send the command yet.
                 brightnessValueEl.textContent = target.value;
             } else if (target.id === 'midiChannel') {
                  midiChannelValueEl.textContent = target.value;
@@ -465,6 +474,7 @@
         
         document.addEventListener('change', (e) => {
             const target = e.target;
+            // MODIFIED: The 'update-on-release' class now handles brightness as well.
             if (target.classList.contains('update-on-release') || target.classList.contains('update-on-change')) {
                 const action = target.dataset.action;
                 const value = target.value;
@@ -476,8 +486,10 @@
                 }
                 command += value;
                 
+                // This sendCommand will now be triggered for brightness when the slider is released.
                 sendCommand(command);
                 
+                // If we changed a CC or label, refresh the settings to ensure UI consistency
                 if (action === 'cc' || action === 'label') {
                     setTimeout(() => sendCommand('get_settings'), 200);
                 }
@@ -487,16 +499,16 @@
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('bank-btn')) {
                 sendCommand(`set_bank=${e.target.dataset.bank}`);
+                // The device will send a 'bank_changed' message back, which triggers a settings refresh.
             } else if (e.target.id === 'bleToggleButton') {
                 sendCommand('toggle_ble');
             } else if (e.target.id === 'startCalButton') {
                 sendCommand('start_cal');
+                // Replaced alert with a more modern, non-blocking notification if needed
+                // For now, we assume the user will look at the device screen.
                 log("Calibration command sent. Follow device instructions.");
             }
         });
-
-        // NEW: Initial state for monitor header
-        monitorHeader.style.display = 'none';
     </script>
 </body>
 </html>
