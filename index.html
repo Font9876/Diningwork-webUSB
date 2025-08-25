@@ -4,306 +4,274 @@
     <meta charset="UTF-8">
     <title>MIDI Control Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Tailwind CSS CDN for utility classes -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts - Inter for a clean, modern look -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
     <style>
         /* Apply Inter font family and a sophisticated dark background */
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #0f172a; /* Slate 900 */
+            /* NEW: Added a subtle gradient for depth */
+            background-image: radial-gradient(ellipse at top, #1e293b, #0f172a);
             color: #e2e8f0; /* Light gray text for contrast */
-            cursor: default; /* Default cursor for the body */
+            cursor: default;
+        }
+        
+        /* NEW: Added fade-in animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
         }
 
         /* Custom styles for the CC bar visualizer */
         .cc-bar-container {
-            transform: rotate(180deg); /* Keep the vertical orientation */
+            transform: rotate(180deg);
             border-radius: 9999px 9999px 0 0;
             overflow: hidden;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4); /* Inner shadow for depth */
-            transition: border-color 0.15s ease, box-shadow 0.15s ease;
-            width: 1rem; /* Make bars thinner */
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            width: 1rem; /* Thin bars */
         }
-
-        /* Removed height transition for instantaneous updates */
         .cc-bar {
             border-radius: 9999px 9999px 0 0;
+            /* REMOVED: height transition removed for instant response */
         }
 
         /* Styling for the button press indicators */
         .btn-indicator {
-            transition: background-color 0.1s ease, box-shadow 0.1s ease, border-color 0.15s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3); /* Subtle initial shadow */
+            transition: background-color 0.1s ease, box-shadow 0.1s ease, border-color 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
-
+        /* NEW: Refined active state with a softer glow */
         .btn-indicator.active {
             background-color: #2dd4bf; /* Teal 400 */
-            box-shadow: 0 0 20px rgba(45, 212, 191, 0.8), 0 0 10px rgba(45, 212, 191, 0.5); /* Stronger, multi-layer glow */
+            box-shadow: 0 0 15px rgba(45, 212, 191, 0.7), 0 0 8px rgba(45, 212, 191, 0.5);
         }
 
-        /* Hover highlight for visualizer elements */
+        /* NEW: Refined hover highlight for visualizer elements */
         .visualizer-item:hover .cc-bar-container,
         .visualizer-item:hover .btn-indicator {
             border-color: #14b8a6; /* Teal 500 */
-            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.5), inset 0 2px 4px rgba(0,0,0,0.4); /* Add a subtle glow */
+            box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.4), inset 0 2px 4px rgba(0,0,0,0.4);
         }
 
         /* Custom scrollbar for log area */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #1e293b; /* Slate 800 */
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #475569; /* Slate 600 */
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #64748b; /* Slate 500 */
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
         /* Active state for bank buttons */
         .bank-btn {
             transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-            cursor: pointer; /* Pointer cursor for bank buttons */
+            cursor: pointer;
         }
-
+        /* NEW: Refined active state for bank buttons */
         .bank-btn.active {
             background-color: #14b8a6; /* Teal 500 */
             color: white;
             font-weight: 600;
-            box-shadow: 0 4px 15px rgba(20, 184, 166, 0.6); /* More pronounced shadow */
-            transform: translateY(-2px); /* Slight lift on active */
+            box-shadow: 0 2px 10px rgba(20, 184, 166, 0.5);
+            transform: translateY(-2px);
         }
 
-        /* Range slider styling for better aesthetics */
-        input[type=range] {
-            -webkit-appearance: none;
-            background: transparent;
-            cursor: grab; /* Grab cursor for sliders */
-            width: 100%;
-        }
-
+        /* Range slider styling */
+        input[type=range] { -webkit-appearance: none; background: transparent; cursor: grab; width: 100%; }
         input[type=range]::-webkit-slider-runnable-track {
-            background: #334155; /* Slate 700 */
-            height: 8px; /* Thicker track */
-            border-radius: 4px;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); /* Inner shadow for depth */
+            background: #334155; height: 6px; border-radius: 3px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
         }
-
         input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            margin-top: -6px; /* Adjust to center thumb on track */
-            background-color: #22d3ee; /* Cyan 400 */
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            border: 3px solid #f8fafc; /* White border for emphasis */
-            box-shadow: 0 0 8px rgba(34, 211, 238, 0.9);
-            transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+            -webkit-appearance: none; margin-top: -7px; background-color: #22d3ee;
+            height: 20px; width: 20px; border-radius: 50%;
+            border: 3px solid #f8fafc;
+            box-shadow: 0 0 8px rgba(34, 211, 238, 0.7);
+            transition: all 0.15s ease;
         }
-
         input[type=range]:active::-webkit-slider-thumb {
-            cursor: grabbing;
-            background-color: #06b6d4; /* Cyan 600 on active */
+            cursor: grabbing; background-color: #06b6d4;
             box-shadow: 0 0 12px rgba(6, 182, 212, 1);
             transform: scale(1.1);
         }
 
         /* Enhanced log area styling */
         #log-area {
-            height: 100px; /* Reduced log area height */
-            max-height: 100px; /* Ensure max height */
-            overflow-y: auto;
-            font-size: 0.875rem; /* Larger font for readability */
-            line-height: 1.5;
-            background-color: #1e293b; /* Slate 800 for logs */
-            border: 1px solid #334155; /* More distinct border */
-            color: #94a3b8; /* Lighter slate for log text */
-            scroll-behavior: smooth; /* Smooth scrolling for new logs */
+            height: 120px; max-height: 120px; overflow-y: auto;
+            font-family: 'Space Mono', monospace; /* NEW: Monospace font */
+            font-size: 0.8rem; line-height: 1.6;
+            background-color: #020617; /* NEW: Darker bg for contrast */
+            border: 1px solid #334155; color: #94a3b8;
+            scroll-behavior: smooth;
         }
-
-        #log-area p {
-            margin-bottom: 0.5rem;
-            padding-left: 0.5rem;
-            padding-right: 0.5rem;
-        }
+        /* NEW: Alternating row colors for readability */
+        #log-area p:nth-child(even) { background-color: rgba(30, 41, 59, 0.5); }
+        #log-area p { margin-bottom: 0; padding: 0.25rem 0.75rem; }
 
         /* Input field styling */
         input[type="text"], input[type="number"], select {
-            background-color: #1e293b; /* Slate 800 */
-            border: 1px solid #334155; /* Slate 700 */
-            color: #cbd5e1; /* Slate 300 */
+            background-color: #1e293b; border: 1px solid #334155;
+            color: #cbd5e1;
             transition: border-color 0.15s ease, box-shadow 0.15s ease;
-            cursor: text; /* Text cursor for input fields */
+            cursor: text;
         }
-
+        /* NEW: Refined focus ring */
         input[type="text"]:focus, input[type="number"]:focus, select:focus {
-            border-color: #38bdf8; /* Sky 400 */
-            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.3); /* Focus ring */
-        }
-
-        /* Cursor for general buttons */
-        button {
-            cursor: pointer;
-        }
-
-        /* Specific adjustments for input assignment cards */
-        .assignment-card-label {
-            min-height: 1.5rem; /* Ensure enough height for label */
-            display: flex;
-            align-items: center;
-            justify-content: center; /* Center label text */
-            text-align: center;
-        }
-
-        .assignment-input-group {
-            display: flex;
-            flex-direction: column; /* Default to column for small screens */
-            gap: 0.5rem; /* Space between stacked inputs */
-            margin-top: 0.5rem; /* Space below label */
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.3);
+            outline: none;
         }
         
-        /* Make inputs row on small screens and above */
-        @media (min-width: 640px) {
-            .assignment-input-group {
-                flex-direction: row; /* Row for small screens and above */
-                gap: 0.75rem; /* Slightly more gap for row layout */
-            }
-            .assignment-input-group input {
-                width: 50%; /* Each input takes half width in row layout */
-            }
+        /* General button styling */
+        button { cursor: pointer; }
+
+        /* Custom styling for select dropdowns */
+        .custom-select {
+            position: relative;
+        }
+        .custom-select select {
+            appearance: none;
+            -webkit-appearance: none;
+            padding-right: 2.5rem; /* Space for arrow */
+        }
+        .custom-select::after {
+            content: ' ';
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0.5rem;
+            height: 0.5rem;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="%239ca3af"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>');
+            background-repeat: no-repeat;
+            pointer-events: none;
+            transition: transform 0.2s ease;
         }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
-    <div class="flex flex-col lg:flex-row w-full max-w-screen-2xl bg-gray-800 rounded-3xl shadow-3xl overflow-hidden border border-gray-700">
+    <div class="flex flex-col lg:flex-row w-full max-w-screen-2xl bg-slate-900/70 backdrop-blur-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-700/80">
 
-        <!-- Left Panel: Header, Connection, Settings -->
-        <aside class="w-full lg:w-1/2 bg-gray-800 p-4 sm:p-6 lg:p-7 flex flex-col justify-between">
+        <aside class="w-full lg:w-1/2 bg-slate-800/50 p-4 sm:p-6 lg:p-8 flex flex-col justify-between">
             <div>
-                <!-- Header and Connection Controls -->
-                <header class="pb-4 mb-4 border-b border-gray-700">
-                    <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tight">
+                <header class="pb-6 mb-6 border-b border-slate-700">
+                    <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tighter">
                         <span class="text-teal-400">Plate</span> 1
                     </h1>
-                    <p class="text-gray-400 text-sm mb-4">Automatic WebUSB MIDI Controller Interface.</p>
+                    <p class="text-slate-400 text-sm mb-6">MIDI Control Dashboard & Configuration</p>
 
                     <div class="flex flex-wrap gap-3 sm:gap-4 items-center">
-                        <button id="connectButton" class="flex-1 px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base">Pair New Device</button>
-                        <button id="disconnectButton" disabled class="flex-1 px-6 py-3 bg-gray-600 text-white font-semibold rounded-xl shadow-lg hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-500 focus:ring-opacity-50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base">Disconnect</button>
+                        <button id="connectButton" class="flex-1 px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
+                           Connect Device
+                        </button>
+                        <button id="disconnectButton" disabled class="flex-1 px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base">Disconnect</button>
                     </div>
-
-                    <!-- BLE Status Indicator -->
+                    
                     <div id="ble-status" class="mt-4 text-center text-sm hidden">
-                        <p class="text-gray-400 uppercase font-medium">Bluetooth</p>
-                        <p id="ble-peer-name" class="font-semibold text-green-400 animate-pulse text-lg">Disconnected</p>
+                        <p class="text-slate-400 uppercase font-medium text-xs tracking-wider">Bluetooth Status</p>
+                        <p id="ble-peer-name" class="font-semibold text-green-400 text-lg">Disconnected</p>
                     </div>
                 </header>
 
-                <!-- Main Controls - hidden until connected -->
-                <div id="main-controls" class="space-y-5" style="display: none;">
+                <div id="main-controls" class="space-y-6" style="display: none;">
 
-                    <!-- Bank Select Section -->
-                    <section class="bg-gray-900/40 p-4 rounded-xl border border-gray-700 shadow-lg">
-                        <h2 class="text-xl font-bold mb-3 text-teal-300">Bank Selection</h2>
+                    <section class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 shadow-lg">
+                        <h2 class="text-xl font-bold mb-4 text-teal-300 flex items-center gap-2">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" /></svg>
+                           Bank Selection
+                        </h2>
                         <div id="bank-selection-grid" class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-                            <!-- Bank buttons populated by JS -->
-                        </div>
+                            </div>
                     </section>
 
-                    <!-- Global & Device Settings Section -->
-                    <section class="bg-gray-900/40 p-4 rounded-xl border border-gray-700 shadow-lg">
-                        <h2 class="text-xl font-bold mb-3 text-teal-300">Device Settings</h2>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <!-- Brightness Slider -->
+                    <section class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 shadow-lg">
+                        <h2 class="text-xl font-bold mb-4 text-teal-300 flex items-center gap-2">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.532 1.532 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.532 1.532 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>
+                           Device Settings
+                        </h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
                             <div class="space-y-2">
                                 <div class="flex justify-between items-center">
-                                    <label for="brightness" class="block text-sm font-medium text-gray-400">Display Brightness</label>
+                                    <label for="brightness" class="block text-sm font-medium text-slate-400">Display Brightness</label>
                                     <span id="brightness-value" class="font-mono text-cyan-300 text-sm font-semibold"></span>
                                 </div>
                                 <input type="range" id="brightness" min="3" max="255" class="w-full update-on-release" data-action="brightness">
                             </div>
-                            <!-- MIDI Channel Slider -->
                             <div class="space-y-2">
                                 <div class="flex justify-between items-center">
-                                    <label for="midiChannel" class="block text-sm font-medium text-gray-400">MIDI Channel</label>
+                                    <label for="midiChannel" class="block text-sm font-medium text-slate-400">MIDI Channel</label>
                                     <span id="midiChannel-value" class="font-mono text-cyan-300 text-sm font-semibold"></span>
                                 </div>
                                 <input type="range" id="midiChannel" min="1" max="16" class="w-full update-on-release" data-action="midi_ch">
                             </div>
-                            <!-- Button Mode Select -->
-                            <div class="space-y-2">
-                                <label for="buttonMode" class="block text-sm font-medium text-gray-400">Button Mode</label>
-                                <select id="buttonMode" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release appearance-none cursor-pointer" data-action="button_mode">
+                            <div class="space-y-2 custom-select">
+                                <label for="buttonMode" class="block text-sm font-medium text-slate-400">Button Mode</label>
+                                <select id="buttonMode" class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release cursor-pointer" data-action="button_mode">
                                     <option value="0">Momentary</option>
                                     <option value="1">Toggle</option>
                                 </select>
                             </div>
-                            <!-- ESB Channel Select -->
-                            <div class="space-y-2">
-                                <label for="esbChannel" class="block text-sm font-medium text-gray-400">ESB Channel</label>
-                                <select id="esbChannel" class="mt-1 block w-full bg-gray-900 border border-gray-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release appearance-none cursor-pointer" data-action="esb_ch">
-                                    <option value="5">5</option>
-                                    <option value="10">10</option>
-                                    <option value="15">15</option>
-                                    <option value="20">20</option>
+                            <div class="space-y-2 custom-select">
+                                <label for="esbChannel" class="block text-sm font-medium text-slate-400">ESB Channel</label>
+                                <select id="esbChannel" class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release cursor-pointer" data-action="esb_ch">
+                                    <option value="5">5</option> <option value="10">10</option>
+                                    <option value="15">15</option> <option value="20">20</option>
                                 </select>
                             </div>
-                            <!-- Bluetooth Toggle Button -->
                             <div class="space-y-2 flex flex-col justify-end">
-                                <label class="block text-sm font-medium text-gray-400 sr-only">Bluetooth Status</label>
-                                <button id="bleToggleButton" class="w-full px-5 py-2.5 text-white font-semibold rounded-lg shadow-md transition-colors duration-200 mt-auto" data-action="toggle_ble">Enable BLE</button>
+                                <button id="bleToggleButton" class="w-full px-5 py-2.5 text-white font-semibold rounded-lg shadow-md transition-all duration-200 mt-auto inline-flex items-center justify-center gap-2" data-action="toggle_ble">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M14.243 5.757a6 6 0 10-8.486 8.486 6 6 0 008.486-8.486zM10 14a4 4 0 110-8 4 4 0 010 8z" /><path d="M10 11a1 1 0 100-2 1 1 0 000 2z" /></svg>
+                                    Enable BLE
+                                </button>
                             </div>
-                            <!-- Calibration Button -->
                             <div class="space-y-2 flex flex-col justify-end">
-                                <label class="block text-sm font-medium text-gray-400 sr-only">Device Calibration</label>
-                                <button id="startCalButton" class="w-full px-5 py-2.5 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-75 transition-colors duration-200 mt-auto">Start EasyCal</button>
+                                <button id="startCalButton" class="w-full px-5 py-2.5 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/75 transition-colors duration-200 mt-auto inline-flex items-center justify-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.055 11H5a2 2 0 012 2v1a1 1 0 001 1h4a1 1 0 001-1v-1a2 2 0 012-2h1.945a8.002 8.002 0 00-11.89 0zM10 2a8 8 0 100 16 8 8 0 000-16zM6.343 6.343a.75.75 0 011.06 0l2.25 2.25a.75.75 0 01-1.06 1.06L6.343 7.404a.75.75 0 010-1.06zm7.314 0a.75.75 0 010 1.06l-2.25 2.25a.75.75 0 11-1.06-1.06l2.25-2.25a.75.75 0 011.06 0z" clip-rule="evenodd" /></svg>
+                                    Start EasyCal
+                                </button>
                             </div>
                         </div>
                     </section>
 
-                    <!-- Input Assignments Section -->
-                    <section class="bg-gray-900/40 p-4 rounded-xl border border-gray-700 shadow-lg">
-                        <h2 class="text-xl font-bold mb-3 text-teal-300">Input Assignments (Current Bank)</h2>
-                        <div id="assignments-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            <!-- Input assignment cards populated by JS -->
-                        </div>
+                    <section class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 shadow-lg">
+                        <h2 class="text-xl font-bold mb-4 text-teal-300">Input Assignments (Current Bank)</h2>
+                        <div id="assignments-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                            </div>
                     </section>
                 </div>
             </div>
         </aside>
 
-        <!-- Right Panel: Visualizer & Logs -->
-        <main class="w-full lg:w-1/2 bg-gray-900 p-4 sm:p-6 lg:p-7 flex flex-col border-l border-gray-700">
-            <!-- Real-time CC Monitor Header -->
-            <div id="monitor-header" class="flex justify-between items-baseline pb-4 mb-4 border-b border-gray-800" style="display: none;">
-                <h2 class="text-2xl font-bold text-teal-300">Real-time CC Monitor</h2>
+        <main class="w-full lg:w-1/2 bg-slate-900 p-4 sm:p-6 lg:p-8 flex flex-col border-l border-slate-800">
+             <div id="welcome-message" class="flex flex-col items-center justify-center h-full text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-slate-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <h2 class="text-3xl font-bold text-slate-300">Awaiting Connection</h2>
+                <p class="text-slate-500 mt-2 max-w-sm">Please connect your Plate 1 device via USB and click the "Connect Device" button to begin.</p>
+            </div>
+
+            <div id="monitor-header" class="flex justify-between items-baseline pb-4 mb-4 border-b border-slate-800" style="display: none;">
+                <h2 class="text-2xl font-bold text-teal-300">Real-time Monitor</h2>
                 <div class="text-right">
-                    <p class="text-sm text-gray-400 uppercase font-medium">Last MIDI Value</p>
+                    <p class="text-xs text-slate-400 uppercase font-medium tracking-wider">Last MIDI Value</p>
                     <p id="last-cc-sent" class="font-mono text-3xl text-white font-extrabold">-</p>
                 </div>
             </div>
 
-            <!-- CC Visualizer Containers -->
-            <div id="visualizer" class="flex-grow flex flex-col justify-end min-h-[100px]" style="display: none;">
-                <div id="cc-pots-container" class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-6 flex-grow items-end pb-1"></div>
-                <div id="cc-btns-container" class="grid grid-cols-2 sm:grid-cols-4 gap-4 h-12 items-end pt-2"></div>
+            <div id="visualizer" class="flex-grow flex flex-col justify-end min-h-[150px]" style="display: none;">
+                <div id="cc-pots-container" class="grid grid-cols-4 md:grid-cols-8 gap-x-6 gap-y-2 flex-grow items-end pb-8"></div>
+                <div id="cc-btns-container" class="grid grid-cols-2 sm:grid-cols-4 gap-4 h-16 items-end pt-8 pb-8 border-t border-slate-800"></div>
             </div>
 
-            <!-- Log Area -->
-            <div id="log-area" class="mt-6 p-3 rounded-xl border border-gray-700 shadow-inner">
-                <p class="text-white font-semibold mb-2 text-base">Activity Log:</p>
-                <!-- Log messages appended here -->
+            <div class="mt-auto">
+                <p class="text-white font-semibold mb-2 text-sm">Activity Log:</p>
+                <div id="log-area" class="rounded-xl shadow-inner">
+                    </div>
             </div>
         </main>
     </div>
@@ -315,6 +283,7 @@
         const mainControls = document.getElementById('main-controls');
         const visualizer = document.getElementById('visualizer');
         const monitorHeader = document.getElementById('monitor-header');
+        const welcomeMessage = document.getElementById('welcome-message'); // NEW
         const lastCcSentEl = document.getElementById('last-cc-sent');
         const brightnessSlider = document.getElementById('brightness');
         const brightnessValueEl = document.getElementById('brightness-value');
@@ -324,12 +293,9 @@
         const blePeerNameEl = document.getElementById('ble-peer-name');
         const logArea = document.getElementById('log-area');
 
-        // --- WebUSB State and Constants ---
-        const VENDOR_ID = 0x000a;
-        const PRODUCT_ID = 0x000a;
+        // --- WebUSB State ---
         let device, interfaceNumber, endpointIn, endpointOut;
         let keepReading = false;
-        let autoConnectInterval = null;
         const textEncoder = new TextEncoder();
         const textDecoder = new TextDecoder();
         let ccMap = {}; // Maps CC number to its index (0-11)
@@ -339,8 +305,12 @@
         const log = (msg) => {
             console.log(`[SYS] ${msg}`);
             const p = document.createElement('p');
-            p.textContent = `[${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit'})}] ${msg}`;
+            // Add a timestamp for professional logging
+            const timestamp = `[${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'})}] `;
+            const textNode = document.createTextNode(timestamp + msg);
+            p.appendChild(textNode);
             logArea.prepend(p);
+            // Keep log area from growing too large
             while (logArea.children.length > 50) {
                 logArea.removeChild(logArea.lastChild);
             }
@@ -368,7 +338,7 @@
             bankGrid.innerHTML = ''; // Clear existing buttons
             for (let i = 0; i < 12; i++) {
                 const bankBtn = document.createElement('button');
-                bankBtn.className = 'bank-btn p-3 text-sm font-semibold rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors duration-150 transform hover:scale-105 active:scale-95 shadow';
+                bankBtn.className = 'bank-btn p-3 text-sm font-semibold rounded-lg bg-slate-800 hover:bg-slate-700/70 transition-colors duration-150 transform hover:scale-105 active:scale-95 shadow-md';
                 bankBtn.textContent = `${i + 1}`;
                 bankBtn.dataset.bank = i;
                 if (i === settings.activeBank) {
@@ -395,19 +365,18 @@
             bleButton.classList.toggle('focus:ring-red-500', settings.bleOn);
             bleButton.classList.toggle('focus:ring-green-500', !settings.bleOn);
 
+
             // Update BLE Status Display
             if (settings.bleOn && settings.blePeerName && settings.blePeerName.length > 0) {
                 bleStatusEl.classList.remove('hidden');
                 blePeerNameEl.textContent = settings.blePeerName;
-                blePeerNameEl.classList.remove('text-yellow-400');
+                blePeerNameEl.classList.remove('text-yellow-400', 'animate-pulse');
                 blePeerNameEl.classList.add('text-green-400');
-                blePeerNameEl.classList.remove('animate-pulse'); // Stop pulse if connected
             } else if (settings.bleOn) {
                 bleStatusEl.classList.remove('hidden');
                 blePeerNameEl.textContent = 'Advertising...';
                 blePeerNameEl.classList.remove('text-green-400');
-                blePeerNameEl.classList.add('text-yellow-400'); // Yellow for advertising
-                blePeerNameEl.classList.add('animate-pulse'); // Pulse when advertising
+                blePeerNameEl.classList.add('text-yellow-400', 'animate-pulse');
             } else {
                 bleStatusEl.classList.add('hidden');
             }
@@ -427,25 +396,25 @@
                 const num = isPot ? i + 1 : i - 7;
                 const cc = settings.ccs[i];
                 const label = settings.labels[i] || (type + ' ' + num);
-                ccMap[cc] = i; // Populate CC map
+                ccMap[cc] = i;
 
                 // Assignment Card
                 const card = document.createElement('div');
-                card.className = 'bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-lg flex flex-col justify-between';
+                card.className = 'bg-slate-800/70 p-4 rounded-xl border border-slate-700 shadow-lg flex flex-col justify-between';
                 card.innerHTML = `
-                    <label class="block text-base font-semibold text-gray-300 mb-2 assignment-card-label">${label}</label>
-                    <div class="assignment-input-group">
-                        <input type="text" value="${label}" maxlength="4" placeholder="Label" class="bg-gray-900 border border-gray-700 rounded-md text-base p-2.5 focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-change" data-action="label" data-index="${i}">
-                        <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="bg-gray-900 border border-gray-700 rounded-md text-base p-2.5 text-center font-mono focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-release" data-action="cc" data-index="${i}">
+                    <label class="block text-base font-semibold text-slate-300 mb-2 text-center h-6">${label}</label>
+                    <div class="flex items-center gap-2 mt-2">
+                        <input type="text" value="${label}" maxlength="4" placeholder="Label" class="w-full bg-slate-800 border border-slate-700 rounded-md text-sm p-2 focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-change" data-action="label" data-index="${i}">
+                        <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="w-20 bg-slate-800 border border-slate-700 rounded-md text-sm p-2 text-center font-mono focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-release" data-action="cc" data-index="${i}">
                     </div>
                 `;
                 assignmentsGrid.appendChild(card);
-
+                
                 // Add mouse wheel listener to the CC input field
                 const ccInput = card.querySelector(`input[data-action="cc"][data-index="${i}"]`);
                 if (ccInput) {
                     ccInput.addEventListener('wheel', (e) => {
-                        e.preventDefault(); // Prevent page scrolling
+                        e.preventDefault();
                         let currentValue = parseInt(e.target.value);
                         let newValue = currentValue;
                         if (e.deltaY < 0) { // Scroll up
@@ -460,27 +429,28 @@
                     });
                 }
 
+
                 // Visualizer Elements
                 if (isPot) {
                     const barWrapper = document.createElement('div');
                     barWrapper.className = 'visualizer-item relative flex flex-col items-center h-full group';
                     barWrapper.innerHTML = `
-                        <span id="cc-val-${i}" class="text-sm text-teal-300 font-mono mb-1 font-semibold">${settings.currentPotValues ? settings.currentPotValues[i] : 0}</span>
-                        <div class="cc-bar-container bg-gray-900 h-full w-full rounded-full flex items-start border border-gray-700 shadow-inner overflow-hidden">
+                        <span id="cc-val-${i}" class="text-xs text-teal-300 font-mono mb-1.5 font-semibold">${settings.currentPotValues ? settings.currentPotValues[i] : 0}</span>
+                        <div class="cc-bar-container bg-slate-900 h-full w-4 rounded-full flex items-start border border-slate-700 shadow-inner overflow-hidden">
                             <div id="cc-bar-${i}" class="cc-bar bg-gradient-to-t from-teal-500 to-cyan-400 w-full" style="height: ${settings.currentPotValues ? (settings.currentPotValues[i] / 127) * 100 : 0}%;"></div>
                         </div>
-                        <span class="text-sm text-gray-400 font-mono mt-1 font-semibold">${cc}</span>
-                        <span class="absolute bottom-0 text-base font-semibold text-white -mb-8">${label}</span>
+                        <span class="text-xs text-slate-500 font-mono mt-2 font-semibold">${cc}</span>
+                        <span class="absolute -bottom-5 text-sm font-semibold text-slate-300 truncate w-20 text-center">${label}</span>
                     `;
                     ccPotsContainer.appendChild(barWrapper);
                 } else {
                     const btnWrapper = document.createElement('div');
                     btnWrapper.className = 'visualizer-item relative flex flex-col items-center h-full justify-end group';
                     btnWrapper.innerHTML = `
-                        <div id="cc-btn-${i}" class="btn-indicator bg-gray-900 h-12 w-12 rounded-full border-2 border-gray-700 mb-2 shadow-lg flex items-center justify-center">
-                            <span class="text-white text-base font-mono font-semibold">${cc}</span>
+                        <div id="cc-btn-${i}" class="btn-indicator bg-slate-800 h-12 w-12 rounded-full border-2 border-slate-700 mb-2 shadow-lg flex items-center justify-center">
+                            <span class="text-white text-sm font-mono font-semibold">${cc}</span>
                         </div>
-                        <span class="absolute bottom-0 text-base font-semibold text-white -mb-8">${label}</span>
+                        <span class="absolute -bottom-5 text-sm font-semibold text-slate-300 truncate w-20 text-center">${label}</span>
                     `;
                     ccBtnsContainer.appendChild(btnWrapper);
                     if (settings.currentPotValues && settings.currentPotValues[i] > 64) {
@@ -512,7 +482,7 @@
                 if (btn) btn.classList.toggle('active', value > 64);
             }
         };
-        
+
         async function readLoop() {
             let incomingData = "";
             while (keepReading) {
@@ -531,7 +501,8 @@
                                     log("Received settings object.");
                                     populateUI(settings);
                                 } catch (e) {
-                                    log(`JSON Parse Error: ${e.message} Data: ${line}`);
+                                    console.error("JSON Parse Error:", e, "Data:", line);
+                                    log(`JSON Parse Error: ${e.message}`);
                                 }
                             } else if (line.startsWith('cc:')) {
                                 const parts = line.substring(3).split(',');
@@ -549,8 +520,9 @@
                 } catch (error) {
                     if (error.message.includes("disconnected")) {
                         log("Device disconnected.");
-                        await disconnectDevice(); // This will trigger the auto-reconnect
+                        if (!disconnectButton.disabled) await disconnectButton.click();
                     } else {
+                        console.error(`Read loop error: ${error.message}`);
                         log(`Read loop error: ${error.message}`);
                     }
                     keepReading = false;
@@ -558,12 +530,12 @@
             }
         }
 
-        // --- NEW: Connection and Disconnection Logic ---
-
-        const connectDevice = async (deviceToConnect) => {
-            log(`Connecting to: ${deviceToConnect.manufacturerName} ${deviceToConnect.productName}`);
+        // --- Event Listeners ---
+        connectButton.addEventListener('click', async () => {
+            log("Attempting to connect to device...");
+            connectButton.disabled = true;
             try {
-                device = deviceToConnect;
+                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x000a }] });
                 await device.open();
 
                 if (device.configuration === null) {
@@ -572,7 +544,7 @@
 
                 for (const iface of device.configuration.interfaces) {
                     for (const alt of iface.alternates) {
-                        if (alt.interfaceClass === 0xFF) { // Vendor-specific interface
+                        if (alt.interfaceClass === 0xFF) { // Vendor-specific
                             interfaceNumber = iface.interfaceNumber;
                             for (const ep of alt.endpoints) {
                                 if (ep.direction === 'out') endpointOut = ep.endpointNumber;
@@ -590,94 +562,59 @@
                 await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x01, index: interfaceNumber });
 
                 log("Device connected successfully!");
-                stopAutoConnect(); // Stop trying to connect since we're successful
-                
-                // Update UI
-                connectButton.disabled = true;
                 disconnectButton.disabled = false;
+                
+                // NEW: Use fade-in animation
+                welcomeMessage.style.display = 'none';
                 mainControls.style.display = 'block';
+                mainControls.classList.add('fade-in');
                 visualizer.style.display = 'flex';
+                visualizer.classList.add('fade-in');
                 monitorHeader.style.display = 'flex';
+                monitorHeader.classList.add('fade-in');
 
                 keepReading = true;
                 readLoop();
 
                 await sendCommand("get_settings");
-                return true;
 
             } catch (error) {
+                console.error("Connection failed:", error);
                 log(`Connection failed: ${error.message}`);
-                device = null; // Clear device on failure
-                return false;
+                connectButton.disabled = false;
             }
-        };
+        });
 
-        const disconnectDevice = async () => {
+        disconnectButton.addEventListener('click', async () => {
             if (!device) return;
-            log("Disconnecting device...");
+            log("Attempting to disconnect device...");
             keepReading = false;
             try {
                 await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x00, index: interfaceNumber });
                 await device.releaseInterface(interfaceNumber);
                 await device.close();
             } catch (error) {
+                console.error("Disconnect error:", error);
                 log(`Disconnect error: ${error.message}`);
             } finally {
                 device = null;
                 connectButton.disabled = false;
                 disconnectButton.disabled = true;
+
+                // NEW: Hide controls and show welcome message
                 mainControls.style.display = 'none';
                 visualizer.style.display = 'none';
                 monitorHeader.style.display = 'none';
+                mainControls.classList.remove('fade-in');
+                visualizer.classList.remove('fade-in');
+                monitorHeader.classList.remove('fade-in');
+                welcomeMessage.style.display = 'flex';
+                
                 bleStatusEl.classList.add('hidden');
-                log("Disconnected. Restarting auto-connect...");
-                startAutoConnect(); // Start trying to reconnect
-            }
-        };
-
-        // --- NEW: Auto-Connection Logic ---
-        
-        const autoConnect = async () => {
-            if (device) return; // Don't try if already connected
-            const pairedDevices = await navigator.usb.getDevices();
-            const targetDevice = pairedDevices.find(d => d.vendorId === VENDOR_ID && d.productId === PRODUCT_ID);
-
-            if (targetDevice) {
-                log("Found previously paired device. Attempting to auto-connect...");
-                await connectDevice(targetDevice);
-            }
-        };
-
-        const startAutoConnect = () => {
-            stopAutoConnect(); // Ensure no multiple intervals are running
-            log(`Scanning for device (VID: 0x${VENDOR_ID.toString(16)}, PID: 0x${PRODUCT_ID.toString(16)}) every 0.5s...`);
-            autoConnectInterval = setInterval(autoConnect, 500);
-        };
-
-        const stopAutoConnect = () => {
-            if (autoConnectInterval) {
-                clearInterval(autoConnectInterval);
-                autoConnectInterval = null;
-                log("Auto-connect scan stopped.");
-            }
-        };
-
-        // --- Event Listeners ---
-        
-        // Manual "Pair New Device" button (for first-time permission)
-        connectButton.addEventListener('click', async () => {
-            log("Please select your device from the popup to grant permission.");
-            try {
-                const requestedDevice = await navigator.usb.requestDevice({ filters: [{ vendorId: VENDOR_ID, productId: PRODUCT_ID }] });
-                await connectDevice(requestedDevice);
-            } catch (error) {
-                log(`Device pairing failed: ${error.message}`);
+                log("Disconnected.");
             }
         });
 
-        disconnectButton.addEventListener('click', disconnectDevice);
-
-        // Event listener for sliders (brightness, MIDI channel)
         document.addEventListener('input', (e) => {
             const target = e.target;
             if (target.id === 'brightness') {
@@ -687,7 +624,6 @@
             }
         });
 
-        // Event listener for elements that send commands on change
         document.addEventListener('change', (e) => {
             const target = e.target;
             if (target.classList.contains('update-on-release') || target.classList.contains('update-on-change')) {
@@ -700,6 +636,7 @@
                     command += `${index},`;
                 }
                 command += value;
+
                 sendCommand(command);
 
                 if (action === 'cc' || action === 'label') {
@@ -708,27 +645,20 @@
             }
         });
 
-        // Event listener for buttons (bank select, BLE toggle, calibration)
         document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('bank-btn')) {
-                document.querySelectorAll('.bank-btn').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-                sendCommand(`set_bank=${e.target.dataset.bank}`);
-            } else if (e.target.id === 'bleToggleButton') {
-                sendCommand('toggle_ble');
-            } else if (e.target.id === 'startCalButton') {
-                sendCommand('start_cal');
-                log("Calibration command sent. Follow device instructions on device screen.");
-            }
-        });
+            const target = e.target.closest('button'); // More robust target finding
+            if (!target) return;
 
-        // --- Initialisation ---
-        window.addEventListener('DOMContentLoaded', () => {
-            mainControls.style.display = 'none';
-            visualizer.style.display = 'none';
-            monitorHeader.style.display = 'none';
-            log("Page loaded. Starting auto-connect process.");
-            startAutoConnect();
+            if (target.classList.contains('bank-btn')) {
+                document.querySelectorAll('.bank-btn').forEach(btn => btn.classList.remove('active'));
+                target.classList.add('active');
+                sendCommand(`set_bank=${target.dataset.bank}`);
+            } else if (target.id === 'bleToggleButton') {
+                sendCommand('toggle_ble');
+            } else if (target.id === 'startCalButton') {
+                sendCommand('start_cal');
+                log("Calibration command sent. Follow instructions on device screen.");
+            }
         });
     </script>
 </body>
