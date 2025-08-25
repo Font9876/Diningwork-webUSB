@@ -2,461 +2,657 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PLATE 1 | Configurator</title>
+    <title>WebUSB MIDI Control Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Tailwind CSS for rapid, utility-first styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts for a clean, modern aesthetic -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS for advanced styling, animations, and a polished look -->
     <style>
-        :root {
-            --bg-color: #f4f4f5; /* Zinc 100 */
-            --panel-bg-color: #ffffff;
-            --border-color: #e4e4e7; /* Zinc 200 */
-            --text-primary: #18181b; /* Zinc 900 */
-            --text-secondary: #71717a; /* Zinc 500 */
-            --accent-color: #18181b; /* Zinc 900 for accent */
-            --accent-text-color: #ffffff;
-            --success-color: #16a34a; /* Green 600 */
-            --warning-color: #f59e0b; /* Amber 500 */
-        }
-
+        /* --- Base & Typography --- */
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #020617; /* Slate 950 */
+            background-image: radial-gradient(circle at top, rgba(30, 41, 59, 0.5) 0%, #020617 50%);
+            color: #e2e8f0; /* Slate 200 */
+            overflow: hidden;
         }
 
-        /* Custom SVG for the logo */
-        .logo-svg-sm {
-            width: 100px;
-            height: auto;
+        /* --- Keyframe Animations --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
         }
 
-        /* Custom button styles */
-        .btn { @apply font-semibold py-2 px-4 rounded-lg transition-all duration-200 ease-in-out flex items-center justify-center gap-2; }
-        .btn-primary { @apply bg-black text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black; }
-        .btn-secondary { @apply bg-white border border-gray-300 text-gray-800 hover:bg-gray-50; }
-        .btn-icon { @apply p-2 rounded-full hover:bg-gray-200; }
-
-        /* Input field styling */
-        .input-field { @apply w-full bg-gray-50 border border-gray-300 rounded-md text-sm p-2 focus:ring-black focus:border-black transition-colors; }
-        .input-label { @apply block text-sm font-medium text-gray-600 mb-1; }
-
-        /* Range slider styling */
-        input[type=range] { -webkit-appearance: none; background: transparent; cursor: pointer; width: 100%; }
-        input[type=range]::-webkit-slider-runnable-track { background: #e5e7eb; height: 4px; border-radius: 2px; }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; margin-top: -6px; background-color: var(--accent-color);
-            height: 16px; width: 16px; border-radius: 50%;
-            transition: transform 0.15s ease;
-        }
-        input[type=range]:active::-webkit-slider-thumb { transform: scale(1.2); }
-
-        /* Fade-in animation */
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* --- UI Component Styling --- */
         .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        .toast {
+            animation: popIn 0.3s ease-out forwards, fadeOut 0.3s ease-in 2.7s forwards;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3), 0 4px 6px -2px rgba(0,0,0,0.2);
+        }
+        
+        /* --- Custom Scrollbar --- */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; transition: background 0.2s ease; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-        /* Visualizer styles */
-        .visualizer-bar { transition: height 0.1s linear; }
-        .visualizer-btn { transition: all 0.1s ease; }
-        .visualizer-btn.active { background-color: var(--accent-color); border-color: var(--accent-color); }
-        .visualizer-btn.active span { color: var(--accent-text-color); }
+        /* --- Input & Control Styling --- */
+        input[type="range"] { -webkit-appearance: none; background: transparent; cursor: pointer; width: 100%; }
+        input[type="range"]::-webkit-slider-runnable-track { background: #334155; height: 6px; border-radius: 3px; }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; margin-top: -7px; background-color: #22d3ee;
+            height: 20px; width: 20px; border-radius: 50%; border: 3px solid #f8fafc;
+            box-shadow: 0 0 8px rgba(34, 211, 238, 0.7); transition: all 0.15s ease;
+        }
+        input[type="range"]:active::-webkit-slider-thumb {
+            cursor: grabbing; background-color: #06b6d4;
+            box-shadow: 0 0 12px rgba(6, 182, 212, 1); transform: scale(1.1);
+        }
+
+        /* --- Visualizer Specific Styles --- */
+        .cc-bar { transition: height 0.1s cubic-bezier(0.25, 0.1, 0.25, 1); }
+        .btn-indicator { transition: background-color 0.1s ease, box-shadow 0.1s ease, transform 0.1s ease; }
+        .btn-indicator.active {
+            background-color: #2dd4bf; /* Teal 400 */
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(45, 212, 191, 0.7), 0 0 8px rgba(45, 212, 191, 0.5);
+        }
+        
+        /* --- Utility Classes --- */
+        .control-section {
+            background-color: rgba(15, 23, 42, 0.6); /* Slate 900 with alpha */
+            border: 1px solid rgba(51, 65, 85, 0.7); /* Slate 700 with alpha */
+            border-radius: 1.5rem; /* rounded-3xl */
+            backdrop-filter: blur(8px);
+            padding: 1.5rem; /* p-6 */
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
 
-    <!-- Header -->
-    <header class="bg-white/80 backdrop-blur-lg border-b border-gray-200 sticky top-0 z-10">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <!-- Logo -->
-                <div class="flex items-center gap-2">
-                    <svg class="logo-svg-sm" viewBox="0 0 220 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M2 38.5V98H22L22 58.5L52 98H70L40 58.5H108V98H128V58.5L158 98H176L146 58.5H188C204.5 58.5 218 45.031 218 28.5C218 12.469 204.5 2 188 2H2L22 38.5H2ZM22 38.5V2H188C193.523 2 198 6.477 198 12C198 17.523 193.523 22 188 22H52C30 22 22 38.5 22 38.5Z" stroke="black" stroke-width="4"/>
-                    </svg>
-                    <span class="text-xl font-bold text-gray-500 tracking-tighter">/ Configurator</span>
+<body class="flex items-center justify-center h-screen p-4 bg-slate-950">
+
+    <!-- Main Dashboard Layout -->
+    <div id="dashboard" class="grid grid-cols-1 lg:grid-cols-2 w-full h-full max-w-screen-2xl max-h-[95vh] gap-4">
+
+        <!-- Left Panel: Controls -->
+        <aside class="flex flex-col gap-4 overflow-y-auto pr-2">
+            <!-- Header & Connection -->
+            <section class="control-section">
+                <header class="pb-4 mb-4 border-b border-slate-700/50">
+                    <h1 class="text-4xl font-extrabold text-white tracking-tighter">
+                        <span class="text-teal-400">MIDI</span> Controller
+                    </h1>
+                    <p class="text-slate-400">WebUSB Configuration Dashboard</p>
+                </header>
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="connectButton" class="flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-lg hover:bg-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd"></path></svg>
+                        Connect
+                    </button>
+                    <button id="disconnectButton" disabled class="flex items-center justify-center gap-2 px-5 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                        Disconnect
+                    </button>
                 </div>
-                <!-- Connection Controls -->
-                <div class="flex items-center gap-3">
-                    <div id="status-indicator" class="w-3 h-3 rounded-full bg-gray-400" title="Disconnected"></div>
-                    <p id="device-name" class="text-sm font-medium text-gray-600 hidden md:block">No Device</p>
-                    <button id="connectButton" class="btn btn-primary text-sm">Connect</button>
-                    <button id="disconnectButton" class="btn btn-secondary text-sm hidden">Disconnect</button>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Welcome / Disconnected State -->
-        <div id="welcome-message" class="text-center py-24">
-            <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            <h1 class="mt-4 text-3xl font-bold tracking-tight text-gray-800">PLATE 1 Configurator</h1>
-            <p class="mt-2 text-base text-gray-500">Connect your device via USB to begin.</p>
-        </div>
-
-        <!-- Main Dashboard (Hidden by default) -->
-        <div id="dashboard" class="hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            </section>
+            
+            <!-- Controls are hidden until device is connected -->
+            <div id="main-controls" class="hidden flex-col gap-4">
+                <!-- Bank Selection -->
+                <section class="control-section">
+                    <h2 class="text-xl font-bold mb-4 text-teal-300">Bank Selection</h2>
+                    <div id="bank-selection-grid" class="grid grid-cols-4 sm:grid-cols-6 gap-3"></div>
+                </section>
                 
-                <!-- Left Column: Banks & Global Settings -->
-                <div class="lg:col-span-1 space-y-8">
-                    <!-- Bank Selection -->
-                    <section class="bg-white p-6 rounded-xl border border-gray-200">
-                        <h2 class="text-lg font-bold mb-4">Banks</h2>
-                        <div id="bank-selection-grid" class="grid grid-cols-4 gap-2"></div>
-                    </section>
+                <!-- Device Settings -->
+                <section class="control-section">
+                    <h2 class="text-xl font-bold mb-4 text-teal-300">Device Settings</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+                        <!-- All setting controls will be dynamically inserted here -->
+                    </div>
+                </section>
 
-                    <!-- Global Settings -->
-                    <section class="bg-white p-6 rounded-xl border border-gray-200">
-                        <h2 class="text-lg font-bold mb-4">Global Settings</h2>
-                        <div class="space-y-5">
-                            <div>
-                                <div class="flex justify-between items-center"><label for="midiChannel" class="input-label">MIDI Channel</label><span id="midiChannel-value" class="font-mono text-sm font-semibold">1</span></div>
-                                <input type="range" id="midiChannel" min="1" max="16" class="w-full update-on-release" data-action="midi_ch">
-                            </div>
-                            <div>
-                                <label for="buttonMode" class="input-label">Button Mode</label>
-                                <select id="buttonMode" class="input-field update-on-release" data-action="button_mode"><option value="0">Momentary</option><option value="1">Toggle</option></select>
-                            </div>
-                            <button id="startCalButton" class="btn btn-secondary w-full">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.055 11H5a2 2 0 012 2v1a1 1 0 001 1h4a1 1 0 001-1v-1a2 2 0 012-2h1.945a8.002 8.002 0 00-11.89 0zM10 2a8 8 0 100 16 8 8 0 000-16zM6.343 6.343a.75.75 0 011.06 0l2.25 2.25a.75.75 0 01-1.06 1.06L6.343 7.404a.75.75 0 010-1.06zm7.314 0a.75.75 0 010 1.06l-2.25 2.25a.75.75 0 11-1.06-1.06l2.25-2.25a.75.75 0 011.06 0z" clip-rule="evenodd" /></svg>
-                                Start Calibration
-                            </button>
-                        </div>
-                    </section>
+                <!-- Input Assignments -->
+                <section class="control-section">
+                    <h2 class="text-xl font-bold mb-4 text-teal-300">Input Assignments (Bank <span id="current-bank-display">1</span>)</h2>
+                    <div id="assignments-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+                </section>
+                 
+                <!-- Configuration Management -->
+                <section class="control-section">
+                    <h2 class="text-xl font-bold mb-4 text-teal-300">Configuration</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="saveConfigButton" class="flex items-center justify-center gap-2 px-5 py-3 bg-green-700 text-white font-semibold rounded-xl shadow-lg hover:bg-green-600 focus:outline-none focus:ring-4 focus:ring-green-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            Save
+                        </button>
+                        <button id="loadConfigButton" class="flex items-center justify-center gap-2 px-5 py-3 bg-purple-700 text-white font-semibold rounded-xl shadow-lg hover:bg-purple-600 focus:outline-none focus:ring-4 focus:ring-purple-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            Load
+                        </button>
+                        <input type="file" id="file-input" class="hidden" accept=".json">
+                    </div>
+                </section>
+            </div>
+        </aside>
+
+        <!-- Right Panel: Monitor & Log -->
+        <main class="control-section flex flex-col">
+            <div id="welcome-message" class="flex flex-col items-center justify-center h-full text-center p-8 transition-opacity duration-500">
+                <svg class="w-24 h-24 text-slate-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12" /></svg>
+                <h2 class="text-3xl font-bold text-slate-300">Awaiting Connection</h2>
+                <p class="text-slate-500 mt-2 max-w-sm">Please connect your device via USB and click the "Connect" button to begin.</p>
+            </div>
+            
+            <div id="monitor-view" class="hidden flex-col h-full">
+                <!-- Monitor Header -->
+                <div class="flex justify-between items-baseline pb-4 mb-4 border-b border-slate-800">
+                    <h2 class="text-2xl font-bold text-teal-300">Real-time Monitor</h2>
+                    <div id="ble-status" class="text-right"></div>
                 </div>
-
-                <!-- Middle Column: Assignments & Visualizer -->
-                <div class="lg:col-span-2 space-y-8">
-                    <!-- Input Assignments -->
-                    <section class="bg-white p-6 rounded-xl border border-gray-200">
-                        <h2 class="text-lg font-bold mb-4">Input Assignments (Bank <span id="current-bank-label">1</span>)</h2>
-                        <div id="assignments-grid" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
-                    </section>
-                    
-                    <!-- Real-time Visualizer -->
-                    <section class="bg-white p-6 rounded-xl border border-gray-200">
-                        <h2 class="text-lg font-bold mb-4">Real-time Monitor</h2>
-                        <div class="grid grid-cols-2 gap-8">
-                            <!-- Faders -->
-                            <div class="col-span-2 md:col-span-1">
-                                <p class="text-sm font-medium text-gray-500 mb-2">Faders</p>
-                                <div id="cc-pots-container" class="grid grid-cols-4 gap-6 h-40 items-end"></div>
-                            </div>
-                            <!-- Buttons -->
-                            <div class="col-span-2 md:col-span-1">
-                                <p class="text-sm font-medium text-gray-500 mb-2">Buttons</p>
-                                <div id="cc-btns-container" class="grid grid-cols-4 gap-4 h-40 items-start"></div>
-                            </div>
-                        </div>
-                    </section>
+                
+                <!-- Visualizer -->
+                <div class="flex-grow flex flex-col justify-end min-h-[250px] pb-8">
+                    <div id="cc-pots-container" class="grid grid-cols-8 gap-x-6 gap-y-2 flex-grow items-end"></div>
+                    <div id="cc-btns-container" class="grid grid-cols-4 gap-4 h-16 items-end pt-8 mt-8 border-t border-slate-800"></div>
+                </div>
+                
+                <!-- Activity Log -->
+                <div class="mt-auto pt-4 border-t border-slate-800">
+                    <p class="text-white font-semibold mb-2 text-sm">Activity Log:</p>
+                    <div id="log-area" class="h-32 max-h-32 overflow-y-auto rounded-xl shadow-inner bg-slate-950/50 p-2 font-mono text-xs text-slate-400"></div>
                 </div>
             </div>
-        </div>
-    </main>
+        </main>
+    </div>
+
+    <!-- Loading Spinner Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="w-16 h-16 border-4 border-t-blue-500 border-slate-700 rounded-full animate-spin"></div>
+    </div>
+
+    <!-- Toast Notification Area -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3"></div>
 
     <script>
-        // --- DOM Elements ---
-        const connectButton = document.getElementById('connectButton');
-        const disconnectButton = document.getElementById('disconnectButton');
-        const dashboard = document.getElementById('dashboard');
-        const welcomeMessage = document.getElementById('welcome-message');
-        const midiChannelSlider = document.getElementById('midiChannel');
-        const midiChannelValueEl = document.getElementById('midiChannel-value');
-        const statusIndicator = document.getElementById('status-indicator');
-        const deviceNameEl = document.getElementById('device-name');
-        
-        // --- WebUSB State ---
-        let device, interfaceNumber, endpointIn, endpointOut;
-        let keepReading = false;
-        const textEncoder = new TextEncoder();
-        const textDecoder = new TextDecoder();
-        let ccMap = {};
-        let currentBank = 0;
+    document.addEventListener('DOMContentLoaded', () => {
 
-        // --- Core Functions ---
-        const log = (msg, type = 'info') => {
-            console.log(`[${type.toUpperCase()}] ${msg}`);
-            // In a real app, you might show a toast notification here.
+        // --- DOM Element Cache ---
+        const dom = {
+            connectButton: document.getElementById('connectButton'),
+            disconnectButton: document.getElementById('disconnectButton'),
+            mainControls: document.getElementById('main-controls'),
+            welcomeMessage: document.getElementById('welcome-message'),
+            monitorView: document.getElementById('monitor-view'),
+            bankGrid: document.getElementById('bank-selection-grid'),
+            assignmentsGrid: document.getElementById('assignments-grid'),
+            settingsGrid: document.querySelector('#main-controls section:nth-of-type(2) > div'),
+            ccPotsContainer: document.getElementById('cc-pots-container'),
+            ccBtnsContainer: document.getElementById('cc-btns-container'),
+            logArea: document.getElementById('log-area'),
+            bleStatus: document.getElementById('ble-status'),
+            currentBankDisplay: document.getElementById('current-bank-display'),
+            loadingOverlay: document.getElementById('loading-overlay'),
+            toastContainer: document.getElementById('toast-container'),
+            saveConfigButton: document.getElementById('saveConfigButton'),
+            loadConfigButton: document.getElementById('loadConfigButton'),
+            fileInput: document.getElementById('file-input'),
         };
 
+        // --- State Management ---
+        let state = {
+            device: null,
+            interfaceNumber: null,
+            endpointIn: null,
+            endpointOut: null,
+            keepReading: false,
+            ccMap: {},
+            fullConfig: {}, // To store settings for all banks
+        };
+        const textEncoder = new TextEncoder();
+        const textDecoder = new TextDecoder();
+
+        // --- UI Functions ---
+        const log = (msg, type = 'info') => {
+            console.log(`[${type.toUpperCase()}] ${msg}`);
+            const p = document.createElement('p');
+            const timestamp = `[${new Date().toLocaleTimeString('en-US', { hour12: false })}] `;
+            p.textContent = timestamp + msg;
+            if (type === 'error') p.className = 'text-red-400';
+            if (type === 'success') p.className = 'text-green-400';
+            dom.logArea.prepend(p);
+            if (dom.logArea.children.length > 100) {
+                dom.logArea.removeChild(dom.logArea.lastChild);
+            }
+        };
+
+        const showToast = (message, type = 'info') => {
+            const toast = document.createElement('div');
+            let bgColor, icon;
+            switch (type) {
+                case 'success':
+                    bgColor = 'bg-green-600';
+                    icon = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+                    break;
+                case 'error':
+                    bgColor = 'bg-red-600';
+                    icon = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                    break;
+                default:
+                    bgColor = 'bg-blue-600';
+                    icon = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            }
+            toast.className = `toast flex items-center gap-3 text-white font-semibold py-3 px-5 rounded-lg shadow-xl ${bgColor}`;
+            toast.innerHTML = `${icon}<span>${message}</span>`;
+            dom.toastContainer.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        };
+        
+        const setLoading = (isLoading) => {
+            dom.loadingOverlay.classList.toggle('hidden', !isLoading);
+        };
+
+        const updateUIState = (isConnected) => {
+            if (isConnected) {
+                dom.welcomeMessage.style.opacity = '0';
+                setTimeout(() => {
+                    dom.welcomeMessage.classList.add('hidden');
+                    dom.mainControls.classList.remove('hidden');
+                    dom.mainControls.classList.add('flex', 'fade-in');
+                    dom.monitorView.classList.remove('hidden');
+                    dom.monitorView.classList.add('flex', 'fade-in');
+                }, 300);
+            } else {
+                dom.mainControls.classList.add('hidden');
+                dom.monitorView.classList.add('hidden');
+                dom.mainControls.classList.remove('flex', 'fade-in');
+                dom.monitorView.classList.remove('flex', 'fade-in');
+                dom.welcomeMessage.classList.remove('hidden');
+                setTimeout(() => dom.welcomeMessage.style.opacity = '1', 50);
+            }
+            dom.connectButton.disabled = isConnected;
+            dom.disconnectButton.disabled = !isConnected;
+        };
+
+        const populateUI = (settings) => {
+            state.fullConfig[settings.activeBank] = settings; // Cache settings for the current bank
+            dom.currentBankDisplay.textContent = settings.activeBank + 1;
+
+            // Banks
+            dom.bankGrid.innerHTML = '';
+            for (let i = 0; i < 12; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'bank-btn p-3 text-sm font-semibold rounded-lg bg-slate-800 hover:bg-slate-700/70 transition-all duration-150 transform hover:scale-105 active:scale-95 shadow-md';
+                if (i === settings.activeBank) btn.classList.add('!bg-teal-500', 'text-white', 'font-bold');
+                btn.textContent = `${i + 1}`;
+                btn.dataset.bank = i;
+                dom.bankGrid.appendChild(btn);
+            }
+
+            // Settings
+            populateSettingsControls(settings);
+
+            // Assignments & Visualizer
+            dom.assignmentsGrid.innerHTML = '';
+            dom.ccPotsContainer.innerHTML = '';
+            dom.ccBtnsContainer.innerHTML = '';
+            state.ccMap = {};
+
+            for (let i = 0; i < 12; i++) {
+                const isPot = i < 8;
+                const cc = settings.ccs[i];
+                const label = settings.labels[i] || (isPot ? `Pot ${i + 1}` : `Btn ${i - 7}`);
+                state.ccMap[cc] = i;
+
+                // Assignment Card
+                const card = document.createElement('div');
+                card.className = 'bg-slate-800/70 p-3 rounded-xl border border-slate-700 shadow-md flex flex-col justify-between transition-all hover:border-teal-500/50 hover:shadow-lg';
+                card.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <input type="text" value="${label}" maxlength="4" placeholder="Label" class="w-full bg-slate-900 border border-slate-700 rounded-md text-sm p-2 focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-change" data-action="label" data-index="${i}">
+                        <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="w-20 bg-slate-900 border border-slate-700 rounded-md text-sm p-2 text-center font-mono focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-release" data-action="cc" data-index="${i}">
+                    </div>`;
+                dom.assignmentsGrid.appendChild(card);
+                
+                // Visualizer Element
+                if (isPot) {
+                    const potEl = document.createElement('div');
+                    potEl.className = 'relative flex flex-col items-center h-full group';
+                    potEl.innerHTML = `
+                        <span id="cc-val-${i}" class="text-xs text-teal-300 font-mono mb-1.5 font-semibold">0</span>
+                        <div class="bg-slate-800 h-full w-4 rounded-full flex items-end border border-slate-700 shadow-inner overflow-hidden">
+                            <div id="cc-bar-${i}" class="cc-bar bg-gradient-to-t from-teal-500 to-cyan-400 w-full" style="height: 0%;"></div>
+                        </div>
+                        <span class="text-xs text-slate-500 font-mono mt-2 font-semibold">${cc}</span>
+                        <span class="absolute -bottom-6 text-sm font-semibold text-slate-300 truncate w-20 text-center">${label}</span>`;
+                    dom.ccPotsContainer.appendChild(potEl);
+                } else {
+                    const btnEl = document.createElement('div');
+                    btnEl.className = 'relative flex flex-col items-center h-full justify-end group';
+                    btnEl.innerHTML = `
+                        <div id="cc-btn-${i}" class="btn-indicator bg-slate-800 h-12 w-12 rounded-full border-2 border-slate-700 mb-2 shadow-lg flex items-center justify-center">
+                            <span class="text-white text-sm font-mono font-semibold">${cc}</span>
+                        </div>
+                        <span class="absolute -bottom-6 text-sm font-semibold text-slate-300 truncate w-20 text-center">${label}</span>`;
+                    dom.ccBtnsContainer.appendChild(btnEl);
+                }
+            }
+
+            // Initial population of values
+            if (settings.currentPotValues) {
+                settings.currentPotValues.forEach((value, index) => updateCCVisualizer(settings.ccs[index], value));
+            }
+        };
+        
+        const populateSettingsControls = (settings) => {
+            dom.settingsGrid.innerHTML = `
+                <div>
+                    <div class="flex justify-between items-center"><label for="brightness" class="block text-sm font-medium text-slate-400">Display Brightness</label><span id="brightness-value" class="font-mono text-cyan-300 text-sm font-semibold">${settings.brightness}</span></div>
+                    <input type="range" id="brightness" min="3" max="255" value="${settings.brightness}" class="w-full update-on-release" data-action="brightness">
+                </div>
+                <div>
+                    <div class="flex justify-between items-center"><label for="midiChannel" class="block text-sm font-medium text-slate-400">MIDI Channel</label><span id="midiChannel-value" class="font-mono text-cyan-300 text-sm font-semibold">${settings.midiChannel}</span></div>
+                    <input type="range" id="midiChannel" min="1" max="16" value="${settings.midiChannel}" class="w-full update-on-release" data-action="midi_ch">
+                </div>
+                <div>
+                    <label for="buttonMode" class="block text-sm font-medium text-slate-400 mb-1">Button Mode</label>
+                    <select id="buttonMode" class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release cursor-pointer" data-action="button_mode">
+                        <option value="0" ${settings.buttonMode == 0 ? 'selected' : ''}>Momentary</option>
+                        <option value="1" ${settings.buttonMode == 1 ? 'selected' : ''}>Toggle</option>
+                    </select>
+                </div>
+                 <div>
+                    <label for="esbChannel" class="block text-sm font-medium text-slate-400 mb-1">ESB Channel</label>
+                    <select id="esbChannel" class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release cursor-pointer" data-action="esb_ch">
+                        ${[5,10,15,20].map(ch => `<option value="${ch}" ${settings.esbChannel == ch ? 'selected' : ''}>${ch}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="flex flex-col justify-end">
+                    <button id="bleToggleButton" class="w-full px-5 py-2.5 text-white font-semibold rounded-lg shadow-md transition-all duration-200 mt-auto inline-flex items-center justify-center gap-2"></button>
+                </div>
+                <div class="flex flex-col justify-end">
+                    <button id="startCalButton" class="w-full px-5 py-2.5 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/75 transition-colors duration-200 mt-auto">Start EasyCal</button>
+                </div>
+            `;
+            updateBLEButton(settings.bleOn);
+            updateBLEStatus(settings);
+        };
+
+        const updateBLEButton = (isBleOn) => {
+            const btn = document.getElementById('bleToggleButton');
+            if (!btn) return;
+            btn.innerHTML = isBleOn ? 'Disable BLE' : 'Enable BLE';
+            btn.classList.toggle('bg-red-600', isBleOn);
+            btn.classList.toggle('hover:bg-red-500', isBleOn);
+            btn.classList.toggle('bg-green-600', !isBleOn);
+            btn.classList.toggle('hover:bg-green-500', !isBleOn);
+        };
+        
+        const updateBLEStatus = (settings) => {
+            if (settings.bleOn) {
+                if (settings.blePeerName && settings.blePeerName.length > 0) {
+                    dom.bleStatus.innerHTML = `<p class="text-xs text-slate-400 uppercase">Bluetooth Status</p><p class="font-semibold text-green-400">Connected</p>`;
+                } else {
+                    dom.bleStatus.innerHTML = `<p class="text-xs text-slate-400 uppercase">Bluetooth Status</p><p class="font-semibold text-yellow-400 animate-pulse">Advertising...</p>`;
+                }
+            } else {
+                dom.bleStatus.innerHTML = '';
+            }
+        };
+
+        const updateCCVisualizer = (cc, value) => {
+            const index = state.ccMap[cc];
+            if (index === undefined) return;
+
+            if (index < 8) { // It's a Pot
+                const bar = document.getElementById(`cc-bar-${index}`);
+                const valLabel = document.getElementById(`cc-val-${index}`);
+                if (bar) bar.style.height = `${(value / 127) * 100}%`;
+                if (valLabel) valLabel.textContent = value;
+            } else { // It's a Button
+                const btn = document.getElementById(`cc-btn-${index}`);
+                if (btn) btn.classList.toggle('active', value > 64);
+            }
+        };
+
+        // --- WebUSB Logic ---
         const sendCommand = async (command) => {
-            if (!device) {
-                log("Device not connected.", 'warn');
+            if (!state.device) {
+                log("Device not connected.", 'error');
                 return;
             }
+            log(`Sending: ${command}`);
             try {
-                await device.transferOut(endpointOut, textEncoder.encode(command + '\n'));
+                await state.device.transferOut(state.endpointOut, textEncoder.encode(command + '\n'));
             } catch (error) {
                 console.error("Send command error:", error);
                 log(`Error sending command: ${error.message}`, 'error');
             }
         };
 
-        const createAssignmentCard = (index, cc, label) => {
-            const isPot = index < 4;
-            const type = isPot ? 'Fader' : 'Button';
-            const num = isPot ? index + 1 : index - 3;
-            const card = document.createElement('div');
-            card.innerHTML = `
-                <div>
-                    <label class="input-label">${type} ${num}</label>
-                    <input type="text" value="${label}" maxlength="4" placeholder="Name" class="input-field update-on-change" data-action="label" data-index="${index}">
-                </div>
-                <div class="mt-2">
-                    <label class="input-label">CC#</label>
-                    <input type="number" value="${cc}" min="0" max="127" class="input-field font-mono text-center update-on-release" data-action="cc" data-index="${index}">
-                </div>
-            `;
-            return card;
-        };
-        
-        const createVisualizer = (index, cc, label) => {
-            const isPot = index < 4;
-            if (isPot) {
-                const faderEl = document.createElement('div');
-                faderEl.className = 'flex flex-col items-center h-full';
-                faderEl.innerHTML = `
-                    <div class="w-2 h-full bg-gray-200 rounded-full overflow-hidden flex flex-col justify-end">
-                        <div id="cc-bar-${index}" class="visualizer-bar w-full bg-black rounded-full" style="height: 0%;"></div>
-                    </div>
-                    <span class="text-xs font-mono mt-2 text-gray-500">${label}</span>
-                `;
-                return faderEl;
-            } else {
-                const btnEl = document.createElement('div');
-                btnEl.className = 'flex flex-col items-center';
-                btnEl.innerHTML = `
-                    <div id="cc-btn-${index}" class="visualizer-btn h-12 w-12 rounded-lg border-2 border-gray-300 flex items-center justify-center">
-                        <span class="text-black text-sm font-mono font-semibold">${cc}</span>
-                    </div>
-                    <span class="text-xs font-mono mt-2 text-gray-500">${label}</span>
-                `;
-                return btnEl;
-            }
-        };
-
-        const populateUI = (settings) => {
-            currentBank = settings.activeBank;
-            document.getElementById('current-bank-label').textContent = currentBank + 1;
-
-            const bankGrid = document.getElementById('bank-selection-grid');
-            bankGrid.innerHTML = '';
-            for (let i = 0; i < 12; i++) {
-                const bankBtn = document.createElement('button');
-                bankBtn.className = 'bank-btn p-3 text-sm font-semibold rounded-lg transition-colors duration-150';
-                bankBtn.textContent = `${i + 1}`;
-                bankBtn.dataset.bank = i;
-                if (i === currentBank) {
-                    bankBtn.classList.add('bg-black', 'text-white', 'font-bold');
-                } else {
-                    bankBtn.classList.add('bg-gray-100', 'hover:bg-gray-200');
-                }
-                bankGrid.appendChild(bankBtn);
-            }
-
-            midiChannelSlider.value = settings.midiChannel;
-            midiChannelValueEl.textContent = settings.midiChannel;
-            document.getElementById('buttonMode').value = settings.buttonMode;
-            
-            const assignmentsGrid = document.getElementById('assignments-grid');
-            const ccPotsContainer = document.getElementById('cc-pots-container');
-            const ccBtnsContainer = document.getElementById('cc-btns-container');
-            assignmentsGrid.innerHTML = '';
-            ccPotsContainer.innerHTML = '';
-            ccBtnsContainer.innerHTML = '';
-            ccMap = {};
-
-            // Assuming 4 faders and 4 buttons
-            for (let i = 0; i < 8; i++) {
-                const cc = settings.ccs[i];
-                const label = settings.labels[i] || (i < 4 ? `F${i+1}` : `B${i-3}`);
-                ccMap[cc] = i;
-
-                assignmentsGrid.appendChild(createAssignmentCard(i, cc, label));
-                
-                const visualizerEl = createVisualizer(i, cc, label);
-                if (i < 4) {
-                    ccPotsContainer.appendChild(visualizerEl);
-                } else {
-                    ccBtnsContainer.appendChild(visualizerEl);
-                }
-            }
-            
-            // Update initial values if present
-            if (settings.currentPotValues) {
-                settings.currentPotValues.forEach((value, index) => {
-                    updateCCVisualizer(settings.ccs[index], value);
-                });
-            }
-        };
-
-        const updateCCVisualizer = (cc, value) => {
-            const index = ccMap[cc];
-            if (index === undefined) return;
-
-            if (index < 4) { // Fader
-                const bar = document.getElementById(`cc-bar-${index}`);
-                if (bar) bar.style.height = `${(value / 127) * 100}%`;
-            } else { // Button
-                const btn = document.getElementById(`cc-btn-${index}`);
-                if (btn) btn.classList.toggle('active', value > 64);
-            }
-        };
-
-        async function readLoop() {
+        const readLoop = async () => {
             let incomingData = "";
-            while (keepReading) {
+            while (state.keepReading) {
                 try {
-                    let result = await device.transferIn(endpointIn, 512);
+                    let result = await state.device.transferIn(state.endpointIn, 512);
                     if (result.status === 'ok' && result.data.byteLength > 0) {
                         incomingData += textDecoder.decode(result.data, { stream: true });
                         let newlineIndex;
                         while ((newlineIndex = incomingData.indexOf('\n')) !== -1) {
                             const line = incomingData.slice(0, newlineIndex).trim();
                             incomingData = incomingData.slice(newlineIndex + 1);
-                            if (line.startsWith('{')) {
-                                try {
-                                    populateUI(JSON.parse(line));
-                                } catch (e) {
-                                    log(`JSON Parse Error: ${e.message}`, 'error');
-                                }
-                            } else if (line.startsWith('cc:')) {
-                                const parts = line.substring(3).split(',');
-                                if (parts.length === 2) updateCCVisualizer(parseInt(parts[0]), parseInt(parts[1]));
-                            } else if (line.startsWith('bank_changed:')) {
-                                log("Bank changed. Requesting new settings.");
-                                setTimeout(() => sendCommand('get_settings'), 100);
-                            } else {
-                                log(`Device: ${line}`);
-                            }
+                            handleDeviceMessage(line);
                         }
                     }
                 } catch (error) {
                     if (error.message.includes("disconnected")) {
-                        handleDisconnect();
+                        log("Device disconnected during read.", 'error');
+                        if (!dom.disconnectButton.disabled) await handleDisconnect();
                     } else {
                         log(`Read loop error: ${error.message}`, 'error');
                     }
-                    keepReading = false;
+                    state.keepReading = false;
                 }
             }
-        }
+        };
         
-        const handleConnect = () => {
-            log("Device connected successfully!");
-            deviceNameEl.textContent = device.productName || 'PLATE 1';
-            deviceNameEl.classList.remove('hidden');
-            statusIndicator.classList.remove('bg-gray-400');
-            statusIndicator.classList.add('bg-green-500');
-            statusIndicator.title = 'Connected';
-
-            connectButton.classList.add('hidden');
-            disconnectButton.classList.remove('hidden');
-            
-            welcomeMessage.classList.add('hidden');
-            dashboard.classList.remove('hidden');
-            dashboard.classList.add('fade-in');
-
-            keepReading = true;
-            readLoop();
-            sendCommand("get_settings");
+        const handleDeviceMessage = (line) => {
+            if (line.startsWith('{')) {
+                try {
+                    const settings = JSON.parse(line);
+                    populateUI(settings);
+                } catch (e) {
+                    log(`JSON Parse Error: ${e.message}`, 'error');
+                }
+            } else if (line.startsWith('cc:')) {
+                const parts = line.substring(3).split(',');
+                if (parts.length === 2) updateCCVisualizer(parseInt(parts[0]), parseInt(parts[1]));
+            } else if (line.startsWith('bank_changed:')) {
+                log("Bank changed. Requesting new settings.");
+                showToast(`Switched to Bank ${parseInt(line.split(':')[1]) + 1}`);
+                setTimeout(() => sendCommand('get_settings'), 100);
+            } else if (line.length > 0) {
+                log(`Device: ${line}`);
+            }
         };
 
-        const handleDisconnect = () => {
-            device = null;
-            keepReading = false;
-            
-            deviceNameEl.textContent = 'No Device';
-            deviceNameEl.classList.add('hidden');
-            statusIndicator.classList.add('bg-gray-400');
-            statusIndicator.classList.remove('bg-green-500');
-            statusIndicator.title = 'Disconnected';
-
-            connectButton.classList.remove('hidden');
-            disconnectButton.classList.add('hidden');
-
-            dashboard.classList.add('hidden');
-            welcomeMessage.classList.remove('hidden');
-            log("Device disconnected.");
-        };
-
-        connectButton.addEventListener('click', async () => {
+        const handleConnect = async () => {
             log("Attempting to connect...");
+            setLoading(true);
             try {
-                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x000a }] });
+                const device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x000a }] });
                 await device.open();
                 if (device.configuration === null) await device.selectConfiguration(1);
-                
-                // Find the correct interface and endpoints
+
                 for (const iface of device.configuration.interfaces) {
                     for (const alt of iface.alternates) {
                         if (alt.interfaceClass === 0xFF) { // Vendor-specific class
-                            interfaceNumber = iface.interfaceNumber;
+                            state.interfaceNumber = iface.interfaceNumber;
                             for (const ep of alt.endpoints) {
-                                if (ep.direction === 'out') endpointOut = ep.endpointNumber;
-                                if (ep.direction === 'in') endpointIn = ep.endpointNumber;
+                                if (ep.direction === 'out') state.endpointOut = ep.endpointNumber;
+                                if (ep.direction === 'in') state.endpointIn = ep.endpointNumber;
                             }
                         }
                     }
                 }
-                
-                if (interfaceNumber === undefined) throw new Error("Compatible interface not found.");
-                
-                await device.claimInterface(interfaceNumber);
-                await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x01, index: interfaceNumber });
-                
-                handleConnect();
 
+                if (state.interfaceNumber === null) throw new Error("Compatible interface not found.");
+
+                await device.claimInterface(state.interfaceNumber);
+                await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x01, index: state.interfaceNumber });
+                
+                state.device = device;
+                state.keepReading = true;
+                readLoop();
+                
+                await sendCommand("get_settings");
+
+                updateUIState(true);
+                showToast("Device Connected", 'success');
+                log("Device connected successfully!", 'success');
             } catch (error) {
                 log(`Connection failed: ${error.message}`, 'error');
+                showToast(`Connection failed: ${error.message}`, 'error');
+            } finally {
+                setLoading(false);
             }
-        });
+        };
 
-        disconnectButton.addEventListener('click', async () => {
-            if (!device) return;
+        const handleDisconnect = async () => {
+            if (!state.device) return;
+            log("Disconnecting...");
+            state.keepReading = false;
             try {
-                await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x00, index: interfaceNumber });
-                await device.releaseInterface(interfaceNumber);
-                await device.close();
+                await state.device.releaseInterface(state.interfaceNumber);
+                await state.device.close();
             } catch (error) {
                 log(`Disconnect error: ${error.message}`, 'error');
             } finally {
-                handleDisconnect();
+                state.device = null;
+                updateUIState(false);
+                showToast("Device Disconnected");
             }
-        });
+        };
+        
+        // --- Configuration Save/Load ---
+        const saveConfiguration = () => {
+            if (Object.keys(state.fullConfig).length === 0) {
+                showToast("No configuration data to save.", 'error');
+                return;
+            }
+            const dataStr = JSON.stringify(state.fullConfig, null, 2);
+            const dataBlob = new Blob([dataStr], {type: "application/json"});
+            const url = URL.createObjectURL(dataBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `midi-controller-config-${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("Configuration saved!", 'success');
+        };
+        
+        const loadConfiguration = () => {
+            dom.fileInput.click();
+        };
+
+        const handleFileLoad = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const config = JSON.parse(e.target.result);
+                    state.fullConfig = config;
+                    // Apply the settings for the currently active bank
+                    const currentBank = state.fullConfig[Object.keys(state.fullConfig)[0]].activeBank;
+                    const settingsToApply = state.fullConfig[currentBank];
+                    if (settingsToApply) {
+                        // This is a simplified application. A full implementation would
+                        // iterate through all settings and send individual commands.
+                        // For now, we just refresh the UI with the loaded bank's data.
+                        populateUI(settingsToApply);
+                        showToast("Configuration loaded. Apply settings manually or connect to sync.", 'success');
+                    } else {
+                        throw new Error("Invalid configuration file format.");
+                    }
+                } catch (err) {
+                    showToast(`Error loading file: ${err.message}`, 'error');
+                }
+            };
+            reader.readAsText(file);
+        };
+
+        // --- Event Listeners ---
+        dom.connectButton.addEventListener('click', handleConnect);
+        dom.disconnectButton.addEventListener('click', handleDisconnect);
+        dom.saveConfigButton.addEventListener('click', saveConfiguration);
+        dom.loadConfigButton.addEventListener('click', loadConfiguration);
+        dom.fileInput.addEventListener('change', handleFileLoad);
 
         document.addEventListener('input', (e) => {
-            if (e.target.id === 'midiChannel') midiChannelValueEl.textContent = e.target.value;
+            if (e.target.id === 'brightness') document.getElementById('brightness-value').textContent = e.target.value;
+            if (e.target.id === 'midiChannel') document.getElementById('midiChannel-value').textContent = e.target.value;
         });
 
         document.addEventListener('change', (e) => {
             const t = e.target;
             if (t.classList.contains('update-on-release') || t.classList.contains('update-on-change')) {
                 const action = t.dataset.action;
-                let cmd = `set_${action}=${t.dataset.index ? t.dataset.index + ',' : ''}${t.value}`;
+                const value = t.value;
+                const index = t.dataset.index;
+                const cmd = `set_${action}=${index ? index + ',' : ''}${value}`;
                 sendCommand(cmd);
+                
+                // Refresh settings after a label or CC change to update visualizer
                 if (action === 'cc' || action === 'label') {
-                    // Refresh settings after a short delay to see changes reflected
                     setTimeout(() => sendCommand('get_settings'), 200);
                 }
             }
         });
-
+        
         document.addEventListener('click', (e) => {
             const target = e.target.closest('button');
             if (!target) return;
+            
             if (target.classList.contains('bank-btn')) {
                 sendCommand(`set_bank=${target.dataset.bank}`);
+            } else if (target.id === 'bleToggleButton') {
+                sendCommand('toggle_ble');
+                // Optimistically update UI
+                const currentSettings = state.fullConfig[state.fullConfig[Object.keys(state.fullConfig)[0]].activeBank];
+                if(currentSettings) {
+                    currentSettings.bleOn = !currentSettings.bleOn;
+                    updateBLEButton(currentSettings.bleOn);
+                    updateBLEStatus(currentSettings);
+                }
             } else if (target.id === 'startCalButton') {
                 sendCommand('start_cal');
-                log("Calibration started. Follow device instructions.");
+                showToast("Calibration started. Follow device instructions.");
             }
         });
+    });
     </script>
 </body>
 </html>
