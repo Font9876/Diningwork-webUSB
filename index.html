@@ -482,7 +482,6 @@
                     if (error.message.includes("disconnected")) {
                         log("Device disconnected.");
                         await handleDisconnectCleanup(); // Clean up UI and state
-                        // Only try to reconnect if the user has connected before and hasn't manually disconnected
                         if (hasConnectedOnce && !reconnectInterval) {
                             log("Auto-reconnect activated.");
                             reconnectInterval = setInterval(autoReconnect, 250);
@@ -501,10 +500,9 @@
                 await device.open();
                 if (device.configuration === null) await device.selectConfiguration(1);
                 
-                // Find the correct interface
                 for (const iface of device.configuration.interfaces) {
                     for (const alt of iface.alternates) {
-                        if (alt.interfaceClass === 0xFF) { // 0xFF is vendor-specific
+                        if (alt.interfaceClass === 0xFF) {
                             interfaceNumber = iface.interfaceNumber;
                             for (const ep of alt.endpoints) {
                                 if (ep.direction === 'out') endpointOut = ep.endpointNumber;
@@ -521,13 +519,11 @@
                 
                 log(`Device "${device.productName}" connected successfully!`);
                 
-                // Stop trying to reconnect if we were
                 if (reconnectInterval) {
                     clearInterval(reconnectInterval);
                     reconnectInterval = null;
                 }
 
-                // Update UI
                 connectButton.disabled = true;
                 disconnectButton.disabled = false;
                 welcomeMessage.style.display = 'none';
@@ -542,8 +538,8 @@
 
             } catch (error) {
                 log(`Connection failed: ${error.message}`);
-                device = null; // Reset device on failure
-                connectButton.disabled = false; // Allow user to try again
+                device = null;
+                connectButton.disabled = false;
             }
         };
 
@@ -551,14 +547,12 @@
             keepReading = false;
             
             try {
-                // These might fail if the device is already gone, so wrap in a try-catch
                 if (device && device.opened) {
                     await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x00, index: interfaceNumber });
                     await device.releaseInterface(interfaceNumber);
                     await device.close();
                 }
             } catch (innerError) {
-                // This is expected if the device was physically unplugged
                 console.warn("Could not gracefully close device, it may have been unplugged:", innerError.message);
             } finally {
                 device = null;
@@ -579,7 +573,6 @@
         };
 
         const autoReconnect = async () => {
-            // This function should only run if a reconnect interval is active
             if (!hasConnectedOnce || device) return; 
             try {
                 const permittedDevices = await navigator.usb.getDevices();
@@ -593,26 +586,41 @@
             }
         };
 
-        connectButton.addEventListener('click', async () => {
-            log("Requesting device from user...");
-            // Stop any potential reconnect loops before user action
+        const initiateConnection = async () => {
+            log("Attempting to connect...");
             if (reconnectInterval) {
                 clearInterval(reconnectInterval);
                 reconnectInterval = null;
             }
-            hasConnectedOnce = true; // Mark that user has initiated a connection
+            
+            hasConnectedOnce = true;
+
             try {
-                const requestedDevice = await navigator.usb.requestDevice({ filters: [{ vendorId: VENDOR_ID }] });
-                await connectDevice(requestedDevice);
+                // First, check for already permitted devices to connect without a prompt.
+                const permittedDevices = await navigator.usb.getDevices();
+                const knownDevice = permittedDevices.find(d => d.vendorId === VENDOR_ID);
+
+                if (knownDevice) {
+                    log("Found previously permitted device. Connecting...");
+                    await connectDevice(knownDevice);
+                } else {
+                    // If no device was found, request permission from the user. This will show a prompt.
+                    log("No permitted device found. Asking user for permission...");
+                    const requestedDevice = await navigator.usb.requestDevice({ filters: [{ vendorId: VENDOR_ID }] });
+                    await connectDevice(requestedDevice);
+                }
             } catch (error) {
-                log(`Device request failed: ${error.message}`);
-                hasConnectedOnce = false; // Reset if the request fails
+                // This error is often just the user clicking "cancel" on the prompt.
+                log(`Connection process failed: ${error.message}`);
+                hasConnectedOnce = false; // Reset connection intent if any part of the process fails.
             }
-        });
+        };
+
+        connectButton.addEventListener('click', initiateConnection);
 
         disconnectButton.addEventListener('click', async () => {
             log("User initiated disconnect.");
-            hasConnectedOnce = false; // This prevents auto-reconnect from starting
+            hasConnectedOnce = false; // This prevents auto-reconnect from starting.
             if (reconnectInterval) {
                 clearInterval(reconnectInterval);
                 reconnectInterval = null;
