@@ -281,6 +281,7 @@
         let ccMap = {};
         let currentSettingsCache = {};
         let reconnectInterval = null; // For auto-reconnect timer
+        let hasConnectedOnce = false; // Track if the user has ever connected
         const VENDOR_ID = 0x000a; // Device Vendor ID
         
         // --- BLE Button Content ---
@@ -480,7 +481,12 @@
                 } catch (error) {
                     if (error.message.includes("disconnected")) {
                         log("Device disconnected.");
-                        await handleDisconnect(); // Gracefully handle disconnect
+                        await handleDisconnectCleanup(); // Clean up UI and state
+                        // Only try to reconnect if the user has connected before and hasn't manually disconnected
+                        if (hasConnectedOnce && !reconnectInterval) {
+                            log("Auto-reconnect activated.");
+                            reconnectInterval = setInterval(autoReconnect, 250);
+                        }
                     } else {
                         log(`Read loop error: ${error.message}`);
                     }
@@ -515,7 +521,7 @@
                 
                 log(`Device "${device.productName}" connected successfully!`);
                 
-                // Stop trying to reconnect
+                // Stop trying to reconnect if we were
                 if (reconnectInterval) {
                     clearInterval(reconnectInterval);
                     reconnectInterval = null;
@@ -537,17 +543,16 @@
             } catch (error) {
                 log(`Connection failed: ${error.message}`);
                 device = null; // Reset device on failure
+                connectButton.disabled = false; // Allow user to try again
             }
         };
 
-        const handleDisconnect = async () => {
-            if (!device) return;
-            log("Disconnecting...");
+        const handleDisconnectCleanup = async () => {
             keepReading = false;
             
             try {
                 // These might fail if the device is already gone, so wrap in a try-catch
-                if (device.opened) {
+                if (device && device.opened) {
                     await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x00, index: interfaceNumber });
                     await device.releaseInterface(interfaceNumber);
                     await device.close();
@@ -570,16 +575,12 @@
                 welcomeMessage.style.display = 'flex';
                 bleStatusEl.classList.add('hidden');
                 log("Disconnected.");
-
-                // Restart the auto-reconnect process
-                if (!reconnectInterval) {
-                    reconnectInterval = setInterval(autoReconnect, 250);
-                }
             }
         };
 
         const autoReconnect = async () => {
-            if (device) return; // Already connected or connecting
+            // This function should only run if a reconnect interval is active
+            if (!hasConnectedOnce || device) return; 
             try {
                 const permittedDevices = await navigator.usb.getDevices();
                 const knownDevice = permittedDevices.find(d => d.vendorId === VENDOR_ID);
@@ -594,16 +595,32 @@
 
         connectButton.addEventListener('click', async () => {
             log("Requesting device from user...");
+            // Stop any potential reconnect loops before user action
+            if (reconnectInterval) {
+                clearInterval(reconnectInterval);
+                reconnectInterval = null;
+            }
+            hasConnectedOnce = true; // Mark that user has initiated a connection
             try {
                 const requestedDevice = await navigator.usb.requestDevice({ filters: [{ vendorId: VENDOR_ID }] });
                 await connectDevice(requestedDevice);
             } catch (error) {
                 log(`Device request failed: ${error.message}`);
+                hasConnectedOnce = false; // Reset if the request fails
             }
         });
 
         disconnectButton.addEventListener('click', async () => {
-            await handleDisconnect();
+            log("User initiated disconnect.");
+            hasConnectedOnce = false; // This prevents auto-reconnect from starting
+            if (reconnectInterval) {
+                clearInterval(reconnectInterval);
+                reconnectInterval = null;
+                log("Auto-reconnect disabled.");
+            }
+            if (device) {
+                await handleDisconnectCleanup();
+            }
         });
 
 
@@ -637,12 +654,8 @@
             }
         });
         
-        // Start the auto-reconnect check when the page loads
         window.addEventListener('DOMContentLoaded', () => {
-            log("MIDI Control Dashboard initialized. Looking for devices...");
-            if (!reconnectInterval) {
-                reconnectInterval = setInterval(autoReconnect, 250);
-            }
+            log("MIDI Control Dashboard initialized. Waiting for user to connect.");
         });
     </script>
 </body>
