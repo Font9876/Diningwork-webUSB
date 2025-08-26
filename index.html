@@ -198,11 +198,11 @@
                             </div>
                             <div class="space-y-2 custom-select">
                                 <label for="buttonMode" class="block text-sm font-medium text-slate-400">Button Mode</label>
-                                <select id="buttonMode" class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release cursor-pointer" data-action="button_mode"><option value="0">Momentary</option><option value="1">Toggle</option></select>
+                                <select id="buttonMode" class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release cursor-pointer"data-action="button_mode"><option value="0">Momentary</option><option value="1">Toggle</option></select>
                             </div>
                             <div class="space-y-2 custom-select">
                                 <label for="esbChannel" class="block text-sm font-medium text-slate-400">ESB Channel</label>
-                                <select id="esbChannel" class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release cursor-pointer" data-action="esb_ch"><option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="20">20</option></select>
+                                <select id="esbChannel" class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release cursor-pointer"data-action="esb_ch"><option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="20">20</option></select>
                             </div>
                             <!-- NEW: Updated BLE button with dynamic icon -->
                             <div class="space-y-2 flex flex-col justify-end">
@@ -280,6 +280,8 @@
         const textDecoder = new TextDecoder();
         let ccMap = {};
         let currentSettingsCache = {};
+        let reconnectInterval = null; // For auto-reconnect timer
+        const VENDOR_ID = 0x000a; // Device Vendor ID
         
         // --- BLE Button Content ---
         const bleOnIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 2.293a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 4.414V17a1 1 0 11-2 0V4.414L5.707 7.707a1 1 0 01-1.414-1.414l4-4z" clip-rule="evenodd" /></svg> Disable BLE`;
@@ -300,7 +302,7 @@
         };
 
         const sendCommand = async (command) => {
-            if (!device) {
+            if (!device || !device.opened) {
                 log("Device not connected. Cannot send command.");
                 return;
             }
@@ -478,25 +480,25 @@
                 } catch (error) {
                     if (error.message.includes("disconnected")) {
                         log("Device disconnected.");
-                        if (!disconnectButton.disabled) await disconnectButton.click();
+                        await handleDisconnect(); // Gracefully handle disconnect
                     } else {
                         log(`Read loop error: ${error.message}`);
                     }
-                    keepReading = false;
+                    keepReading = false; // Stop the loop on error
                 }
             }
         }
 
-        connectButton.addEventListener('click', async () => {
-            log("Attempting to connect...");
-            connectButton.disabled = true;
+        const connectDevice = async (deviceToConnect) => {
             try {
-                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x000a }] });
+                device = deviceToConnect;
                 await device.open();
                 if (device.configuration === null) await device.selectConfiguration(1);
+                
+                // Find the correct interface
                 for (const iface of device.configuration.interfaces) {
                     for (const alt of iface.alternates) {
-                        if (alt.interfaceClass === 0xFF) {
+                        if (alt.interfaceClass === 0xFF) { // 0xFF is vendor-specific
                             interfaceNumber = iface.interfaceNumber;
                             for (const ep of alt.endpoints) {
                                 if (ep.direction === 'out') endpointOut = ep.endpointNumber;
@@ -505,37 +507,60 @@
                         }
                     }
                 }
-                if (interfaceNumber === undefined) throw new Error("Interface not found.");
+
+                if (interfaceNumber === undefined) throw new Error("Compatible interface not found.");
+
                 await device.claimInterface(interfaceNumber);
                 await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x01, index: interfaceNumber });
-                log("Device connected successfully!");
+                
+                log(`Device "${device.productName}" connected successfully!`);
+                
+                // Stop trying to reconnect
+                if (reconnectInterval) {
+                    clearInterval(reconnectInterval);
+                    reconnectInterval = null;
+                }
+
+                // Update UI
+                connectButton.disabled = true;
                 disconnectButton.disabled = false;
                 welcomeMessage.style.display = 'none';
                 [mainControls, visualizer, monitorHeader].forEach(el => {
                     el.style.display = el.id === 'main-controls' ? 'block' : 'flex';
                     el.classList.add('fade-in');
                 });
+
                 keepReading = true;
                 readLoop();
                 await sendCommand("get_settings");
+
             } catch (error) {
                 log(`Connection failed: ${error.message}`);
-                connectButton.disabled = false;
+                device = null; // Reset device on failure
             }
-        });
+        };
 
-        disconnectButton.addEventListener('click', async () => {
+        const handleDisconnect = async () => {
             if (!device) return;
             log("Disconnecting...");
             keepReading = false;
+            
             try {
-                await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x00, index: interfaceNumber });
-                await device.releaseInterface(interfaceNumber);
-                await device.close();
-            } catch (error) {
-                log(`Disconnect error: ${error.message}`);
+                // These might fail if the device is already gone, so wrap in a try-catch
+                if (device.opened) {
+                    await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x00, index: interfaceNumber });
+                    await device.releaseInterface(interfaceNumber);
+                    await device.close();
+                }
+            } catch (innerError) {
+                // This is expected if the device was physically unplugged
+                console.warn("Could not gracefully close device, it may have been unplugged:", innerError.message);
             } finally {
                 device = null;
+                interfaceNumber = undefined;
+                endpointIn = undefined;
+                endpointOut = undefined;
+
                 connectButton.disabled = false;
                 disconnectButton.disabled = true;
                 [mainControls, visualizer, monitorHeader].forEach(el => {
@@ -545,8 +570,42 @@
                 welcomeMessage.style.display = 'flex';
                 bleStatusEl.classList.add('hidden');
                 log("Disconnected.");
+
+                // Restart the auto-reconnect process
+                if (!reconnectInterval) {
+                    reconnectInterval = setInterval(autoReconnect, 250);
+                }
+            }
+        };
+
+        const autoReconnect = async () => {
+            if (device) return; // Already connected or connecting
+            try {
+                const permittedDevices = await navigator.usb.getDevices();
+                const knownDevice = permittedDevices.find(d => d.vendorId === VENDOR_ID);
+                if (knownDevice) {
+                    log("Found previously permitted device. Attempting to reconnect...");
+                    await connectDevice(knownDevice);
+                }
+            } catch (error) {
+                console.error("Auto-reconnect failed:", error);
+            }
+        };
+
+        connectButton.addEventListener('click', async () => {
+            log("Requesting device from user...");
+            try {
+                const requestedDevice = await navigator.usb.requestDevice({ filters: [{ vendorId: VENDOR_ID }] });
+                await connectDevice(requestedDevice);
+            } catch (error) {
+                log(`Device request failed: ${error.message}`);
             }
         });
+
+        disconnectButton.addEventListener('click', async () => {
+            await handleDisconnect();
+        });
+
 
         document.addEventListener('input', (e) => {
             if (e.target.id === 'brightness') brightnessValueEl.textContent = e.target.value;
@@ -577,7 +636,14 @@
                 log("Calibration started. Follow device instructions.");
             }
         });
+        
+        // Start the auto-reconnect check when the page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            log("MIDI Control Dashboard initialized. Looking for devices...");
+            if (!reconnectInterval) {
+                reconnectInterval = setInterval(autoReconnect, 250);
+            }
+        });
     </script>
 </body>
 </html>
-
