@@ -527,11 +527,14 @@
         };
 
         const populateRxUI = (settings) => {
-            // RX only cares about ESB Channel for now. The Arduino RX code only sends back "Channel set to: X" messages.
-            // We can parse the RX log messages to update the slider if a command was sent from the UI or if the device rebooted.
-            // For now, let's just make sure the slider is set to what we last sent.
-            rxEsbChannelSlider.value = settings.esbChannel; // This assumes `settings` object is populated with `esbChannel`
-            rxEsbChannelValueEl.textContent = settings.esbChannel;
+            // Expects a settings object with 'esbChannel' property
+            if (settings && typeof settings.esbChannel !== 'undefined') {
+                rxEsbChannelSlider.value = settings.esbChannel;
+                rxEsbChannelValueEl.textContent = settings.esbChannel;
+                log(`RX ESB Channel updated to: ${settings.esbChannel} (from JSON)`);
+            } else {
+                log("Received RX settings, but 'esbChannel' property is missing or undefined.");
+            }
         };
 
         const updateCCVisualizer = (cc, value) => {
@@ -577,10 +580,11 @@
                             incomingData = incomingData.slice(newlineIndex + 1);
                             if (line.startsWith('{')) {
                                 try {
+                                    const parsedJson = JSON.parse(line);
                                     if (deviceType === 'tx') {
-                                        populateTxUI(JSON.parse(line));
-                                    } else { // RX does not send JSON, but good to have a fallback
-                                        // log(`RX: ${line}`); // Suppress RX JSON logging
+                                        populateTxUI(parsedJson);
+                                    } else if (deviceType === 'rx') { // Handle RX JSON
+                                        populateRxUI(parsedJson);
                                     }
                                 } catch (e) {
                                     log(`JSON Parse Error (${deviceType.toUpperCase()}): ${e.message}`);
@@ -599,17 +603,6 @@
                                 } else {
                                     // log(`RX: ${line}`); // Suppress RX bank changed logging
                                 }
-                            } else if (line.startsWith('Channel set to:')) { // NEW: Handle RX channel updates
-                                if (deviceType === 'rx') {
-                                    const channelMatch = line.match(/Channel set to: (\d+)/);
-                                    if (channelMatch && channelMatch[1]) {
-                                        const newChannel = parseInt(channelMatch[1]);
-                                        rxEsbChannelSlider.value = newChannel;
-                                        rxEsbChannelValueEl.textContent = newChannel;
-                                        log(`RX ESB Channel updated to: ${newChannel}`); // Keep this log for visibility
-                                    }
-                                }
-                                // log(`${deviceType.toUpperCase()}: ${line}`); // Suppress general RX logging
                             }
                             else {
                                 // log(`${deviceType.toUpperCase()}: ${line}`); // Suppress general logging
@@ -707,11 +700,9 @@
                     rxWasConnected = true; // Mark as successfully connected at least once
                     rxInitialConnectFailed = false; // Reset failure flag
                     readLoop('rx');
-                    sendChannelToRX(parseInt(rxEsbChannelSlider.value || 0)); // Set RX channel on connect
-                    // After connecting and setting channel, request current status to update UI.
-                    // The RX Arduino sketch doesn't have a "get_settings" command,
-                    // but it will print "Channel set to: X" when the channel is set,
-                    // which our `readLoop` can parse to update the UI.
+                    // After connecting, request current settings from RX
+                    // The RX Arduino code will now send its settings as JSON on connect.
+                    // No explicit "get_settings" command is needed for RX if it sends on connect.
                 }
 
                 return true; // Connection successful
