@@ -274,9 +274,14 @@
     </div>
 
     <script>
-        // --- Device Vendor IDs ---
+        // --- Device Vendor IDs & Product IDs ---
+        // Assuming TX uses VID 0x000a and PID 0x000a (common for simple devices)
         const TX_VID = 0x000a;
-        const RX_VID = 0x000a; // CHANGED: RX now uses the same VID as TX
+        const TX_PID = 0x000a; 
+        
+        // RX now uses VID 0x000a and PID 0x001a (as defined in your RX Arduino sketch)
+        const RX_VID = 0x000a;
+        const RX_PID = 0x001a; 
 
         // --- DOM Elements ---
         const connectAllButton = document.getElementById('connectAllButton');
@@ -310,7 +315,7 @@
         const rxConnectionStatusEl = document.getElementById('rx-connection-status');
         const rxEsbChannelSlider = document.getElementById('rxEsbChannel');
         const rxEsbChannelValueEl = document.getElementById('rxEsbChannel-value');
-        const rxRssiValueEl = document.getElementById('rxRssi-value'); // NEW: Reference to RX RSSI display
+        const rxRssiValueEl = document.getElementById('rxRssi-value'); // Reference to RX RSSI display
 
         // Tab Elements
         const tabTx = document.getElementById('tab-tx');
@@ -541,7 +546,7 @@
                 log("Received RX settings, but 'esbChannel' property is missing or undefined.");
             }
 
-            // NEW: Update RSSI display
+            // Update RSSI display
             if (settings && typeof settings.rssi !== 'undefined') {
                 rxRssiValueEl.textContent = `${settings.rssi} dBm`;
                 log(`RX RSSI updated to: ${settings.rssi} dBm (from JSON)`);
@@ -637,7 +642,7 @@
             }
         }
 
-        const connectDevice = async (deviceType, vendorId, isAutoReconnect = false) => {
+        const connectDevice = async (deviceType, vendorId, productId, isAutoReconnect = false) => {
             let deviceObj, interfaceNum, endpointInNum, endpointOutNum;
             let connectionStatusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusEl;
             let wasConnectedFlag = deviceType === 'tx' ? txWasConnected : rxWasConnected;
@@ -645,7 +650,7 @@
 
             // Only update "Connecting..." status for manual attempts or if it was previously connected
             if (!isAutoReconnect || wasConnectedFlag) {
-                log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)})...`); // Keep this log
+                log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)}, PID: 0x${productId.toString(16)})...`); 
                 connectionStatusEl.textContent = 'Connecting...';
                 connectionStatusEl.classList.remove('text-green-400', 'text-red-400', 'animate-pulse');
                 connectionStatusEl.classList.add('text-yellow-400');
@@ -655,23 +660,16 @@
             }
 
             try {
-                // Try to get an already granted device first
+                // Try to get an already granted device first, filtering by both VID and PID
                 const devices = await navigator.usb.getDevices();
-                deviceObj = devices.find(d => d.vendorId === vendorId);
-
-                // IMPORTANT: If both TX and RX have the same VID, and only one is connected,
-                // this `find` might return the wrong device or not find the one we expect.
-                // If both are connected, `requestDevice` will present a choice, but `getDevices`
-                // will return both, and we'd need a way to distinguish (e.g., by Product ID or serial).
-                // For now, we assume a single device of this VID is being targeted or the user will pick correctly.
+                deviceObj = devices.find(d => d.vendorId === vendorId && d.productId === productId);
 
                 if (!deviceObj) {
                     // If not already granted, we need to request permission.
                     // This will trigger the browser's device selection pop-up for manual connection.
-                    // For auto-reconnect, we'll silently fail here.
                     if (!isAutoReconnect) {
-                        log(`Device (VID: 0x${vendorId.toString(16)}) not found. Requesting permission...`);
-                        deviceObj = await navigator.usb.requestDevice({ filters: [{ vendorId: vendorId }] });
+                        log(`Device (VID: 0x${vendorId.toString(16)}, PID: 0x${productId.toString(16)}) not found. Requesting permission...`);
+                        deviceObj = await navigator.usb.requestDevice({ filters: [{ vendorId: vendorId, productId: productId }] });
                     } else {
                         // For auto-reconnect, if not found and not previously connected, just fail silently.
                         setConnectionStatus(deviceType, false);
@@ -773,11 +771,11 @@
 
             // Attempt to connect TX if not connected and either no initial failure or it was connected before
             if (!txDevice && !txKeepReading && (!txInitialConnectFailed || txWasConnected)) {
-                await connectDevice('tx', TX_VID, true); // true for isAutoReconnect
+                await connectDevice('tx', TX_VID, TX_PID, true); // true for isAutoReconnect
             }
             // Attempt to connect RX if not connected and either no initial failure or it was connected before
             if (!rxDevice && !rxKeepReading && (!rxInitialConnectFailed || rxWasConnected)) {
-                await connectDevice('rx', RX_VID, true); // true for isAutoReconnect
+                await connectDevice('rx', RX_VID, RX_PID, true); // true for isAutoReconnect
             }
 
             // Check overall connection state
@@ -929,7 +927,7 @@
         // USB device connect/disconnect event listeners for the browser
         navigator.usb.addEventListener('connect', (event) => {
             const device = event.device;
-            log(`USB Device connected: ${device.productName} (VID: 0x${device.vendorId.toString(16)})`);
+            log(`USB Device connected: ${device.productName} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)})`);
             // Trigger auto-reconnect to try and re-establish connection
             if (!reconnectIntervalId) {
                  reconnectIntervalId = setInterval(autoReconnect, RECONNECT_INTERVAL_MS);
@@ -939,13 +937,13 @@
 
         navigator.usb.addEventListener('disconnect', (event) => {
             const device = event.device;
-            log(`USB Device disconnected: ${device.productName} (VID: 0x${device.vendorId.toString(16)})`);
+            log(`USB Device disconnected: ${device.productName} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)})`);
             // Mark devices as disconnected and trigger auto-reconnect
-            if (device.vendorId === TX_VID) {
+            if (device.vendorId === TX_VID && device.productId === TX_PID) {
                 txDevice = null;
                 txKeepReading = false;
                 setConnectionStatus('tx', false);
-            } else if (device.vendorId === RX_VID) {
+            } else if (device.vendorId === RX_VID && device.productId === RX_PID) {
                 rxDevice = null;
                 rxKeepReading = false;
                 setConnectionStatus('rx', false);
