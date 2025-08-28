@@ -124,133 +124,122 @@
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="%239ca3af"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>');
             background-repeat: no-repeat; pointer-events: none; transition: transform 0.2s ease;
         }
+
+        /* Custom style for vertical RSSI bar */
+        .vertical-rssi-bar-container {
+            border-radius: 9999px; /* Fully rounded capsule */
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            height: 100%; /* Fill parent container height */
+            max-height: 250px; /* Increased length for RSSI bar */
+            width: 1rem;
+            position: relative;
+            display: flex;
+            align-items: flex-end; /* Ensure the bar fills from the bottom */
+            justify-content: center;
+        }
+
+        .vertical-rssi-bar {
+            width: 100%;
+            border-radius: 9999px;
+            /* Gradient from red (bad) to yellow to green (good) */
+            background-image: linear-gradient(to top, #ef4444, #f59e0b, #22c55e);
+            transition: height 0.2s ease-out;
+        }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
     <div class="flex flex-col lg:flex-row w-full max-w-screen-2xl bg-slate-900/70 backdrop-blur-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-700/80">
 
-        <!-- Left Panel: Header, Connection, Settings -->
-        <aside class="w-full lg:w-1/2 bg-slate-800/50 p-4 sm:p-6 lg:p-8 flex flex-col justify-between">
+        <!-- Left Panel: Header, TX Settings (45%) -->
+        <aside class="w-full lg:w-[45%] bg-slate-800/50 p-4 sm:p-6 lg:p-8 flex flex-col justify-between border-r border-slate-700">
             <div>
-                <!-- Header and Connection Controls -->
+                <!-- Header and Connection Controls (now just status) -->
                 <header class="pb-6 mb-6 border-b border-slate-700">
                     <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tighter">
                         <span class="text-teal-400">Plate</span> 1
                     </h1>
                     <p class="text-slate-400 text-sm mb-6">MIDI Control Dashboard &amp; Configuration</p>
 
-                    <div class="flex flex-wrap gap-3 sm:gap-4 items-center">
-                        <button id="connectAllButton" class="flex-1 px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
-                            Connect All Devices
-                        </button>
-                        <button id="disconnectAllButton" disabled class="flex-1 px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base inline-flex items-center justify-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                            Disconnect All
-                        </button>
-                    </div>
-
-                    <!-- Device Status Indicators -->
-                    <div class="mt-4 grid grid-cols-2 gap-4">
+                    <!-- Device Status Indicators for TX only -->
+                    <div class="mt-4 grid grid-cols-1 gap-4">
                         <div id="tx-status" class="text-center text-sm">
                             <p class="text-slate-400 uppercase font-medium text-xs tracking-wider">TX Status</p>
                             <p id="tx-connection-status" class="font-semibold text-red-400 text-lg">Disconnected</p>
                         </div>
-                        <div id="rx-status" class="text-center text-sm">
-                            <p class="text-slate-400 uppercase font-medium text-xs tracking-wider">RX Status</p>
-                            <p id="rx-connection-status" class="font-semibold text-red-400 text-lg">Disconnected</p>
-                        </div>
+                    </div>
+                    <!-- TX Connect/Disconnect Button -->
+                    <div id="tx-connection-buttons" class="mt-4">
+                        <button id="connectTxButton" class="w-full px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2 hidden">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
+                            Connect TX
+                        </button>
+                        <button id="disconnectTxButton" disabled class="w-full px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base inline-flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                            Disconnect TX
+                        </button>
                     </div>
                 </header>
 
-                <!-- Tabs for Device Settings -->
-                <div class="mb-6">
-                    <div class="flex border-b border-slate-700">
-                        <button id="tab-tx" class="flex-1 py-3 px-4 text-center text-sm font-medium text-slate-300 border-b-2 border-transparent hover:text-white hover:border-teal-400 focus:outline-none transition-colors duration-200" data-tab="tx">TX Settings</button>
-                        <button id="tab-rx" class="flex-1 py-3 px-4 text-center text-sm font-medium text-slate-300 border-b-2 border-transparent hover:text-white hover:border-teal-400 focus:outline-none transition-colors duration-200" data-tab="rx">RX Settings</button>
-                    </div>
-                    <div id="tab-content-tx" class="p-5 rounded-b-2xl border border-t-0 border-slate-700 shadow-lg bg-slate-900/40">
-                        <!-- TX Settings Content (from previous version) -->
-                        <div id="main-controls-tx" class="space-y-6">
-                            <section class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 shadow-lg">
-                                <h2 class="text-xl font-bold mb-4 text-teal-300 flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" /></svg>
-                                    Bank Selection
-                                </h2>
-                                <div id="bank-selection-grid" class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-6 gap-3"></div>
-                            </section>
+                <!-- TX Settings Content -->
+                <div id="main-controls-tx" class="space-y-6">
+                    <section class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 shadow-lg">
+                        <h2 class="text-xl font-bold mb-4 text-teal-300 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" /></svg>
+                            Bank Selection
+                        </h2>
+                        <div id="bank-selection-grid" class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-6 gap-3"></div>
+                    </section>
 
-                            <section class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 shadow-lg">
-                                <h2 class="text-xl font-bold mb-4 text-teal-300 flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.532 1.532 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.532 1.532 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>
-                                    Device Settings
-                                </h2>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between items-center"><label for="brightness" class="block text-sm font-medium text-slate-400">Display Brightness</label><span id="brightness-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-                                        <input type="range" id="brightness" min="3" max="255" class="w-full update-on-release" data-action="brightness">
-                                    </div>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between items-center"><label for="midiChannel" class="block text-sm font-medium text-slate-400">MIDI Channel</label><span id="midiChannel-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-                                        <input type="range" id="midiChannel" min="1" max="16" class="w-full update-on-release" data-action="midi_ch">
-                                    </div>
-                                    <div class="space-y-2 custom-select">
-                                        <label for="buttonMode" class="block text-sm font-medium text-slate-400">Button Mode</label>
-                                        <select id="buttonMode" class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release cursor-pointer" data-action="button_mode"><option value="0">Momentary</option><option value="1">Toggle</option></select>
-                                    </div>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between items-center"><label for="esbChannel" class="block text-sm font-medium text-slate-400">ESB Channel</label><span id="esbChannel-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-                                        <input type="range" id="esbChannel" min="0" max="100" class="w-full update-on-release" data-action="esb_ch">
-                                    </div>
-                                    <div class="space-y-2 flex flex-col justify-end">
-                                        <button id="bleToggleButton" class="w-full px-5 py-2.5 text-white font-semibold rounded-lg shadow-md transition-all duration-200 mt-auto inline-flex items-center justify-center gap-2" data-action="toggle_ble"></button>
-                                    </div>
-                                    <div class="space-y-2 flex flex-col justify-end">
-                                        <button id="startCalButton" class="w-full px-5 py-2.5 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/75 transition-colors duration-200 mt-auto inline-flex items-center justify-center gap-2">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.055 11H5a2 2 0 012 2v1a1 1 0 001 1h4a1 1 0 001-1v-1a2 2 0 012-2h1.945a8.002 8.002 0 00-11.89 0zM10 2a8 8 0 100 16 8 8 0 000-16zM6.343 6.343a.75.75 0 011.06 0l2.25 2.25a.75.75 0 01-1.06 1.06L6.343 7.404a.75.75 0 010-1.06zm7.314 0a.75.75 0 010 1.06l-2.25 2.25a.75.75 0 11-1.06-1.06l2.25-2.25a.75.75 0 011.06 0z" clip-rule="evenodd" /></svg>
-                                            Start EasyCal
-                                        </button>
-                                    </div>
-                                </div>
-                            </section>
+                    <section class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 shadow-lg">
+                        <h2 class="text-xl font-bold mb-4 text-teal-300 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.532 1.532 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.532 1.532 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>
+                            Device Settings
+                        </h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center"><label for="brightness" class="block text-sm font-medium text-slate-400">Display Brightness</label><span id="brightness-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                                <input type="range" id="brightness" min="3" max="255" class="w-full update-on-release" data-action="brightness">
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center"><label for="midiChannel" class="block text-sm font-medium text-slate-400">MIDI Channel</label><span id="midiChannel-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                                <input type="range" id="midiChannel" min="1" max="16" class="w-full update-on-release" data-action="midi_ch">
+                            </div>
+                            <div class="space-y-2 custom-select">
+                                <label for="buttonMode" class="block text-sm font-medium text-slate-400">Button Mode</label>
+                                <select id="buttonMode" class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release cursor-pointer" data-action="button_mode"><option value="0">Momentary</option><option value="1">Toggle</option></select>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center"><label for="esbChannel" class="block text-sm font-medium text-slate-400">ESB Channel</label><span id="esbChannel-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                                <input type="range" id="esbChannel" min="0" max="100" class="w-full update-on-release" data-action="esb_ch">
+                            </div>
+                            <div class="space-y-2 flex flex-col justify-end">
+                                <button id="bleToggleButton" class="w-full px-5 py-2.5 text-white font-semibold rounded-lg shadow-md transition-all duration-200 mt-auto inline-flex items-center justify-center gap-2" data-action="toggle_ble"></button>
+                            </div>
+                            <div class="space-y-2 flex flex-col justify-end">
+                                <button id="startCalButton" class="w-full px-5 py-2.5 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/75 transition-colors duration-200 mt-auto inline-flex items-center justify-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.055 11H5a2 2 0 012 2v1a1 1 0 001 1h4a1 1 0 001-1v-1a2 2 0 012-2h1.945a8.002 8.002 0 00-11.89 0zM10 2a8 8 0 100 16 8 8 0 000-16zM6.343 6.343a.75.75 0 011.06 0l2.25 2.25a.75.75 0 01-1.06 1.06L6.343 7.404a.75.75 0 010-1.06zm7.314 0a.75.75 0 010 1.06l-2.25 2.25a.75.75 0 11-1.06-1.06l2.25-2.25a.75.75 0 011.06 0z" clip-rule="evenodd" /></svg>
+                                    Start EasyCal
+                                </button>
+                            </div>
+                        </div>
+                    </section>
 
-                            <section class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 shadow-lg">
-                                <h2 class="text-xl font-bold mb-4 text-teal-300">Input Assignments (Current Bank)</h2>
-                                <div id="assignments-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4"></div>
-                            </section>
-                        </div>
-                    </div>
-                    <div id="tab-content-rx" class="p-5 rounded-b-2xl border border-t-0 border-slate-700 shadow-lg bg-slate-900/40 hidden">
-                        <!-- RX Settings Content -->
-                        <div id="main-controls-rx" class="space-y-6">
-                            <section class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 shadow-lg">
-                                <h2 class="text-xl font-bold mb-4 text-teal-300 flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" /></svg>
-                                    RX Settings
-                                </h2>
-                                <div class="grid grid-cols-1 gap-x-6 gap-y-5">
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between items-center"><label for="rxEsbChannel" class="block text-sm font-medium text-slate-400">ESB Channel</label><span id="rxEsbChannel-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-                                        <input type="range" id="rxEsbChannel" min="0" max="100" class="w-full update-on-release" data-action="rx_esb_ch">
-                                    </div>
-                                    <!-- NEW: RX RSSI Display -->
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between items-center"><label for="rxRssi" class="block text-sm font-medium text-slate-400">RSSI</label><span id="rxRssi-value" class="font-mono text-cyan-300 text-sm font-semibold">-- dBm</span></div>
-                                    </div>
-                                </div>
-                            </section>
-                        </div>
-                    </div>
+                    <section class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 shadow-lg">
+                        <h2 class="text-xl font-bold mb-4 text-teal-300">Input Assignments (Current Bank)</h2>
+                        <div id="assignments-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+                    </section>
                 </div>
             </div>
         </aside>
 
-        <!-- Right Panel: Visualizer & Logs -->
-        <main class="w-full lg:w-1/2 bg-slate-900 p-4 sm:p-6 lg:p-8 flex flex-col border-l border-slate-800">
+        <!-- Middle Panel: Visualizer & Logs (45%) -->
+        <main class="w-full lg:w-[45%] bg-slate-900 p-4 sm:p-6 lg:p-8 flex flex-col border-l border-slate-800">
             <div id="welcome-message" class="flex flex-col items-center justify-center h-full text-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-slate-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 <h2 class="text-3xl font-bold text-slate-300">Awaiting Connection</h2>
-                <p class="text-slate-500 mt-2 max-w-sm">Please click "Connect All Devices" to begin.</p>
+                <p class="text-slate-500 mt-2 max-w-sm">Attempting to connect to devices...</p>
             </div>
 
             <div id="monitor-header" class="flex justify-between items-baseline pb-4 mb-4 border-b border-slate-800" style="display: none;">
@@ -271,28 +260,62 @@
                 <div id="log-area" class="rounded-xl shadow-inner"></div>
             </div>
         </main>
+
+        <!-- Rightmost Thin Panel: RX Status & Vertical RSSI (10%) -->
+        <div class="w-full lg:w-[10%] bg-slate-800/50 p-4 sm:p-6 flex flex-col justify-start border-l border-slate-700">
+            <h2 class="text-xl font-bold text-teal-300 text-center mb-4 lg:mb-6">RX</h2>
+            <div id="rx-column-status" class="text-center text-sm mb-4 lg:mb-6">
+                <p class="text-slate-400 uppercase font-medium text-xs tracking-wider">RX Status</p>
+                <p id="rx-connection-status-col" class="font-semibold text-red-400 text-lg">Disconnected</p>
+            </div>
+
+            <!-- RX Connect/Disconnect Button -->
+            <div id="rx-connection-buttons" class="mb-8">
+                <button id="connectRxButton" class="w-full px-4 py-2 bg-gradient-to-br from-blue-600 to-blue-700 text-white text-sm font-semibold rounded-lg shadow-md hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 inline-flex items-center justify-center gap-2 hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
+                    Connect RX
+                </button>
+                <button id="disconnectRxButton" disabled class="w-full px-4 py-2 bg-slate-600 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none inline-flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                    Disconnect RX
+                </button>
+            </div>
+
+            <div class="space-y-2 mb-8">
+                <div class="flex flex-col items-center justify-center"><label for="rxEsbChannel-col" class="block text-sm font-medium text-slate-400 mb-1">ESB Ch</label><span id="rxEsbChannel-value-col" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                <input type="range" id="rxEsbChannel-col" min="0" max="100" step="5" class="w-full update-on-release" data-action="rx_esb_ch">
+            </div>
+
+            <div class="flex-grow flex flex-col items-center justify-end h-40 mt-auto">
+                <span class="text-xs text-slate-500 font-mono mb-0.5 font-semibold">-20dBm</span>
+                <div class="vertical-rssi-bar-container bg-slate-900 h-full w-4 rounded-full border border-slate-700 shadow-inner overflow-hidden">
+                    <div id="vertical-rssi-bar" class="vertical-rssi-bar" style="height: 0%;"></div>
+                </div>
+                <span id="rxRssi-value-col" class="text-sm font-mono text-cyan-300 font-semibold my-2">-- dBm</span>
+                <span class="text-xs text-slate-500 font-mono mt-0.5 font-semibold">-100dBm</span>
+            </div>
+        </div>
     </div>
 
     <script>
         // --- Device Vendor IDs & Product IDs ---
-        // Assuming TX uses VID 0x000a and PID 0x000a (common for simple devices)
         const TX_VID = 0x000a;
-        const TX_PID = 0x000a; 
-        
-        // RX now uses VID 0x000a and PID 0x001a (as defined in your RX Arduino sketch)
+        const TX_PID = 0x000a;
         const RX_VID = 0x000a;
-        const RX_PID = 0x001a; 
+        const RX_PID = 0x001a;
 
         // --- DOM Elements ---
-        const connectAllButton = document.getElementById('connectAllButton');
-        const disconnectAllButton = document.getElementById('disconnectAllButton');
+        const connectTxButton = document.getElementById('connectTxButton');
+        const disconnectTxButton = document.getElementById('disconnectTxButton');
+        const connectRxButton = document.getElementById('connectRxButton');
+        const disconnectRxButton = document.getElementById('disconnectRxButton');
+
         const welcomeMessage = document.getElementById('welcome-message');
         const monitorHeader = document.getElementById('monitor-header');
         const visualizer = document.getElementById('visualizer');
         const logArea = document.getElementById('log-area');
 
         // TX Elements
-        const mainControlsTx = document.getElementById('main-controls-tx');
         const txConnectionStatusEl = document.getElementById('tx-connection-status');
         const bankSelectionGrid = document.getElementById('bank-selection-grid');
         const brightnessSlider = document.getElementById('brightness');
@@ -307,21 +330,18 @@
         const ccPotsContainer = document.getElementById('cc-pots-container');
         const ccBtnsContainer = document.getElementById('cc-btns-container');
         const lastCcSentEl = document.getElementById('last-cc-sent');
-        const lastCcSentLabel = document.getElementById('last-cc-sent-label');
-
 
         // RX Elements
-        const mainControlsRx = document.getElementById('main-controls-rx');
-        const rxConnectionStatusEl = document.getElementById('rx-connection-status');
-        const rxEsbChannelSlider = document.getElementById('rxEsbChannel');
-        const rxEsbChannelValueEl = document.getElementById('rxEsbChannel-value');
-        const rxRssiValueEl = document.getElementById('rxRssi-value'); // Reference to RX RSSI display
+        const rxConnectionStatusElCol = document.getElementById('rx-connection-status-col');
+        const rxEsbChannelSliderCol = document.getElementById('rxEsbChannel-col');
+        const rxEsbChannelValueElCol = document.getElementById('rxEsbChannel-value-col');
+        const rxRssiValueElCol = document.getElementById('rxRssi-value-col');
+        const verticalRssiBar = document.getElementById('vertical-rssi-bar');
 
-        // Tab Elements
+        // Tab Elements (only TX settings remain as a conceptual "tab" in the left column)
         const tabTx = document.getElementById('tab-tx');
-        const tabRx = document.getElementById('tab-rx');
         const tabContentTx = document.getElementById('tab-content-tx');
-        const tabContentRx = document.getElementById('tab-content-rx');
+
 
         // --- WebUSB State ---
         let txDevice = null;
@@ -337,16 +357,12 @@
         let ccMap = {};
         let currentTxSettingsCache = {};
 
-        const RECONNECT_INTERVAL_MS = 250;
-        let reconnectIntervalId = null;
-
-        // Flags to track if a device was ever successfully connected
         let txWasConnected = false;
         let rxWasConnected = false;
 
-        // Flags to stop auto-reconnect if initial manual connection failed
-        let txInitialConnectFailed = false;
-        let rxInitialConnectFailed = false;
+        let autoReconnectIntervalId = null;
+        const RECONNECT_INTERVAL_MS = 100; // 100ms interval for alternating attempts
+        let nextDeviceToAttempt = 'tx'; // Start by attempting TX
 
         // --- BLE Button Content ---
         const bleOnIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 2.293a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 4.414V17a1 1 0 11-2 0V4.414L5.707 7.707a1 1 0 01-1.414-1.414l4-4z" clip-rule="evenodd" /></svg> Disable BLE`;
@@ -366,7 +382,7 @@
         };
 
         const setConnectionStatus = (deviceType, connected) => {
-            const statusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusEl;
+            const statusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusElCol;
             let wasConnectedFlag = deviceType === 'tx' ? txWasConnected : rxWasConnected;
 
             if (connected) {
@@ -379,7 +395,6 @@
                 statusEl.textContent = 'Disconnected';
                 statusEl.classList.remove('text-green-400', 'text-yellow-400');
                 statusEl.classList.add('text-red-400');
-                // Only add pulse if it was previously connected and now disconnected
                 if (wasConnectedFlag) {
                     statusEl.classList.add('animate-pulse');
                 }
@@ -395,21 +410,20 @@
                 device = rxDevice;
                 endpointOut = rxEndpointOut;
             } else {
-                log(`Unknown device type: ${deviceType}`);
+                // log(`Unknown device type: ${deviceType}`); // Suppress this log
                 return;
             }
 
             if (!device) {
-                log(`${deviceType.toUpperCase()} device not connected. Cannot send command.`);
+                // log(`${deviceType.toUpperCase()} device not connected. Cannot send command.`); // Suppress this log
                 return;
             }
-            // log(`Sending to ${deviceType.toUpperCase()}: ${command}`); // Suppress logging for background commands
             try {
                 await device.transferOut(endpointOut, textEncoder.encode(command + '\n'));
             } catch (error) {
                 console.error(`Send command to ${deviceType.toUpperCase()} error:`, error);
                 log(`Error sending command to ${deviceType.toUpperCase()}: ${error.message}`);
-                setConnectionStatus(deviceType, false); // Update status on error
+                setConnectionStatus(deviceType, false);
             }
         };
 
@@ -418,15 +432,13 @@
                 log("RX device not connected. Cannot send channel.");
                 return;
             }
-            // log(`Sending ESB channel ${channel} to RX.`); // Suppress logging for background commands
             try {
-                // The RX expects 'C' followed by a single byte for the channel number
                 const data = new Uint8Array([0x43, channel]); // 0x43 is ASCII for 'C'
                 await rxDevice.transferOut(rxEndpointOut, data);
             } catch (error) {
                 console.error("Send channel to RX error:", error);
                 log(`Error sending channel to RX: ${error.message}`);
-                setConnectionStatus('rx', false); // Update status on error
+                setConnectionStatus('rx', false);
             }
         };
 
@@ -454,7 +466,7 @@
             esbChannelValueEl.textContent = settings.esbChannel;
 
             // BLE Toggle Button
-            bleToggleButton.innerHTML = settings.bleOn ? bleOnIcon.replace('Enable', 'Disable') : bleOffIcon.replace('Disable', 'Enable');
+            bleToggleButton.innerHTML = settings.bleOn ? bleOnIcon : bleOffIcon;
             bleToggleButton.classList.toggle('bg-red-600', settings.bleOn);
             bleToggleButton.classList.toggle('hover:bg-red-500', settings.bleOn);
             bleToggleButton.classList.toggle('bg-green-600', !settings.bleOn);
@@ -536,23 +548,32 @@
             }
         };
 
+        const updateRxRSSI = (rssiValue) => {
+            if (rxRssiValueElCol) rxRssiValueElCol.textContent = `${rssiValue} dBm`;
+
+            if (verticalRssiBar) {
+                // Map RSSI from -100 to -20 to a 0-100% height
+                const minRssi = -100;
+                const maxRssi = -20;
+                const range = maxRssi - minRssi;
+                const clampedRssi = Math.max(minRssi, Math.min(maxRssi, rssiValue));
+                const percentage = ((clampedRssi - minRssi) / range) * 100;
+                verticalRssiBar.style.height = `${percentage}%`;
+            }
+        };
+
+
         const populateRxUI = (settings) => {
-            // Expects a settings object with 'esbChannel' and 'rssi' properties
             if (settings && typeof settings.esbChannel !== 'undefined') {
-                rxEsbChannelSlider.value = settings.esbChannel;
-                rxEsbChannelValueEl.textContent = settings.esbChannel;
-                log(`RX ESB Channel updated to: ${settings.esbChannel} (from JSON)`);
-            } else {
-                log("Received RX settings, but 'esbChannel' property is missing or undefined.");
+                rxEsbChannelSliderCol.value = settings.esbChannel;
+                rxEsbChannelValueElCol.textContent = settings.esbChannel;
             }
 
-            // NEW: Update RSSI display
             if (settings && typeof settings.rssi !== 'undefined') {
-                rxRssiValueEl.textContent = `${settings.rssi} dBm`;
-                log(`RX RSSI updated to: ${settings.rssi} dBm (from JSON)`);
+                updateRxRSSI(settings.rssi);
             } else {
-                rxRssiValueEl.textContent = `-- dBm`; // Reset if RSSI is not present
-                log("Received RX settings, but 'rssi' property is missing or undefined.");
+                rxRssiValueElCol.textContent = `-- dBm`;
+                verticalRssiBar.style.height = '0%';
             }
         };
 
@@ -572,17 +593,15 @@
         };
 
         async function readLoop(deviceType) {
-            let device, endpointIn, keepReadingFlag, connectionStatusEl;
+            let device, endpointIn, keepReadingFlag;
             if (deviceType === 'tx') {
                 device = txDevice;
                 endpointIn = txEndpointIn;
                 keepReadingFlag = () => txKeepReading;
-                connectionStatusEl = txConnectionStatusEl;
             } else if (deviceType === 'rx') {
                 device = rxDevice;
                 endpointIn = rxEndpointIn;
                 keepReadingFlag = () => rxKeepReading;
-                connectionStatusEl = rxConnectionStatusEl;
             } else {
                 return;
             }
@@ -602,29 +621,21 @@
                                     const parsedJson = JSON.parse(line);
                                     if (deviceType === 'tx') {
                                         populateTxUI(parsedJson);
-                                    } else if (deviceType === 'rx') { // Handle RX JSON
+                                    } else if (deviceType === 'rx') {
                                         populateRxUI(parsedJson);
                                     }
                                 } catch (e) {
                                     log(`JSON Parse Error (${deviceType.toUpperCase()}): ${e.message}`);
                                 }
                             } else if (line.startsWith('cc:')) {
-                                if (deviceType === 'tx') { // Only TX sends CC data for visualizer
+                                if (deviceType === 'tx') {
                                     const parts = line.substring(3).split(',');
                                     if (parts.length === 2) updateCCVisualizer(parseInt(parts[0]), parseInt(parts[1]));
-                                } else {
-                                    // log(`RX: ${line}`); // Suppress RX CC logging
                                 }
                             } else if (line.startsWith('bank_changed:')) {
                                 if (deviceType === 'tx') {
-                                    // log("TX Bank changed. Requesting new settings."); // Suppress logging
                                     setTimeout(() => sendCommand('tx', 'get_settings'), 100);
-                                } else {
-                                    // log(`RX: ${line}`); // Suppress RX bank changed logging
                                 }
-                            }
-                            else {
-                                // log(`${deviceType.toUpperCase()}: ${line}`); // Suppress general logging
                             }
                         }
                     }
@@ -637,44 +648,35 @@
                     }
                     if (deviceType === 'tx') txKeepReading = false;
                     else if (deviceType === 'rx') rxKeepReading = false;
-                    break; // Exit loop on error
+                    break;
                 }
             }
         }
 
-        const connectDevice = async (deviceType, vendorId, productId, isAutoReconnect = false) => {
+        const connectDevice = async (deviceType, vendorId, productId) => {
             let deviceObj, interfaceNum, endpointInNum, endpointOutNum;
-            let connectionStatusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusEl;
-            let wasConnectedFlag = deviceType === 'tx' ? txWasConnected : rxWasConnected;
-            let initialConnectFailedFlag = deviceType === 'tx' ? txInitialConnectFailed : rxInitialConnectFailed;
+            let connectionStatusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusElCol;
+            let deviceRef = deviceType === 'tx' ? txDevice : rxDevice;
+            let keepReadingRef = deviceType === 'tx' ? txKeepReading : rxKeepReading;
 
-            // Only update "Connecting..." status for manual attempts or if it was previously connected
-            if (!isAutoReconnect || wasConnectedFlag) {
-                log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)}, PID: 0x${productId.toString(16)})...`); 
+            if (deviceRef && deviceRef.opened && keepReadingRef()) {
+                return true;
+            }
+
+            if (!deviceRef) {
+                // Only log connection attempt if device is not currently connected
+                log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)}, PID: 0x${productId.toString(16)})...`);
                 connectionStatusEl.textContent = 'Connecting...';
                 connectionStatusEl.classList.remove('text-green-400', 'text-red-400', 'animate-pulse');
                 connectionStatusEl.classList.add('text-yellow-400');
-            } else if (isAutoReconnect && initialConnectFailedFlag) {
-                // If it's an auto-reconnect and the initial manual connect failed, perform silently
-                return false; // Skip this device for now, it failed its first visible attempt
             }
 
             try {
-                // Try to get an already granted device first, filtering by both VID and PID
                 const devices = await navigator.usb.getDevices();
                 deviceObj = devices.find(d => d.vendorId === vendorId && d.productId === productId);
 
                 if (!deviceObj) {
-                    // If not already granted, we need to request permission.
-                    // This will trigger the browser's device selection pop-up for manual connection.
-                    if (!isAutoReconnect) {
-                        log(`Device (VID: 0x${vendorId.toString(16)}, PID: 0x${productId.toString(16)}) not found. Requesting permission...`);
-                        deviceObj = await navigator.usb.requestDevice({ filters: [{ vendorId: vendorId, productId: productId }] });
-                    } else {
-                        // For auto-reconnect, if not found and not previously connected, just fail silently.
-                        setConnectionStatus(deviceType, false);
-                        return false;
-                    }
+                    throw new Error("Device not found among granted devices.");
                 }
 
                 await deviceObj.open();
@@ -682,7 +684,7 @@
 
                 for (const iface of deviceObj.configuration.interfaces) {
                     for (const alt of iface.alternates) {
-                        if (alt.interfaceClass === 0xFF) { // Vendor specific interface
+                        if (alt.interfaceClass === 0xFF) {
                             interfaceNum = iface.interfaceNumber;
                             for (const ep of alt.endpoints) {
                                 if (ep.direction === 'out') endpointOutNum = ep.endpointNumber;
@@ -705,8 +707,7 @@
                     txEndpointIn = endpointInNum;
                     txEndpointOut = endpointOutNum;
                     txKeepReading = true;
-                    txWasConnected = true; // Mark as successfully connected at least once
-                    txInitialConnectFailed = false; // Reset failure flag
+                    txWasConnected = true;
                     readLoop('tx');
                     await sendCommand('tx', "get_settings");
                 } else if (deviceType === 'rx') {
@@ -715,24 +716,29 @@
                     rxEndpointIn = endpointInNum;
                     rxEndpointOut = endpointOutNum;
                     rxKeepReading = true;
-                    rxWasConnected = true; // Mark as successfully connected at least once
-                    rxInitialConnectFailed = false; // Reset failure flag
+                    rxWasConnected = true;
                     readLoop('rx');
-                    // After connecting, the RX Arduino code will send its settings as JSON on connect.
-                    // No explicit "get_settings" command is needed for RX if it sends on connect.
+                }
+                return true;
+            } catch (error) {
+                // Only log connection failure messages if they are not "disconnected" and the device was previously connected
+                if (!(deviceRef && error.message.includes("disconnected"))) {
+                     log(`Connection failed for ${deviceType.toUpperCase()}: ${error.message}`);
                 }
 
-                return true; // Connection successful
-            } catch (error) {
-                log(`Connection failed for ${deviceType.toUpperCase()}: ${error.message}`); // Always log manual failures
-                setConnectionStatus(deviceType, false);
-                if (!isAutoReconnect) { // If it was a manual connect attempt that failed
-                    if (deviceType === 'tx') txInitialConnectFailed = true;
-                    else if (deviceType === 'rx') rxInitialConnectFailed = true;
+                if (deviceRef && error.message.includes("disconnected")) {
+                    if (deviceType === 'tx') txDevice = null;
+                    else if (deviceType === 'rx') rxDevice = null;
                 }
-                return false; // Connection failed
+
+                setConnectionStatus(deviceType, false);
+                return false;
+            } finally {
+                updateButtonStates();
+                updateUIVisibility();
             }
         };
+
 
         const disconnectDevice = async (deviceType) => {
             let deviceObj, interfaceNum;
@@ -758,126 +764,134 @@
             } catch (error) {
                 log(`Disconnect error for ${deviceType.toUpperCase()}: ${error.message}`);
             } finally {
-                if (deviceType === 'tx') txDevice = null;
-                else if (deviceType === 'rx') rxDevice = null;
+                if (deviceType === 'tx') {
+                    txDevice = null;
+                    txWasConnected = false;
+                } else if (deviceType === 'rx') {
+                    rxDevice = null;
+                    rxWasConnected = false;
+                    rxEsbChannelSliderCol.value = 0;
+                    rxEsbChannelValueElCol.textContent = '';
+                    rxRssiValueElCol.textContent = '-- dBm';
+                    verticalRssiBar.style.height = '0%';
+                }
                 setConnectionStatus(deviceType, false);
                 log(`${deviceType.toUpperCase()} disconnected.`);
+                updateButtonStates();
+                updateUIVisibility();
+                startAutoReconnect();
             }
         };
 
-        const autoReconnect = async () => {
-            // If reconnect interval is not set, don't run auto-reconnect in background
-            if (!reconnectIntervalId) return;
-
-            // Attempt to connect TX if not connected and either no initial failure or it was connected before
-            if (!txDevice && !txKeepReading && (!txInitialConnectFailed || txWasConnected)) {
-                await connectDevice('tx', TX_VID, TX_PID, true); // true for isAutoReconnect
-            }
-            // Attempt to connect RX if not connected and either no initial failure or it was connected before
-            if (!rxDevice && !rxKeepReading && (!rxInitialConnectFailed || rxWasConnected)) {
-                await connectDevice('rx', RX_VID, RX_PID, true); // true for isAutoReconnect
-            }
-
-            // Check overall connection state
-            const allConnected = txDevice && rxDevice;
-            const anyConnected = txDevice || rxDevice;
-            const allDisconnectedAndFailed = (!txDevice && txInitialConnectFailed) && (!rxDevice && rxInitialConnectFailed);
-
-            if (allConnected) {
-                welcomeMessage.style.display = 'none';
-                monitorHeader.style.display = 'flex';
-                visualizer.style.display = 'flex';
-                clearInterval(reconnectIntervalId);
-                reconnectIntervalId = null;
-                connectAllButton.disabled = true;
-                disconnectAllButton.disabled = false;
-            } else if (allDisconnectedAndFailed) {
-                // If both failed initial connection, stop auto-reconnect and show welcome message
-                welcomeMessage.style.display = 'flex';
-                monitorHeader.style.display = 'none';
-                visualizer.style.display = 'none';
-                connectAllButton.disabled = false;
-                disconnectAllButton.disabled = true;
-                clearInterval(reconnectIntervalId);
-                reconnectIntervalId = null;
-            } else if (anyConnected) {
-                // If at least one is connected or still trying, keep UI active
-                welcomeMessage.style.display = 'none';
-                monitorHeader.style.display = 'flex';
-                visualizer.style.display = 'flex';
-                connectAllButton.disabled = true;
-                disconnectAllButton.disabled = false;
+        const updateButtonStates = () => {
+            // TX Buttons
+            if (txDevice) {
+                connectTxButton.classList.add('hidden');
+                disconnectTxButton.classList.remove('hidden');
+                disconnectTxButton.disabled = false;
             } else {
-                // If nothing is connected and no specific failure, keep trying
+                connectTxButton.classList.remove('hidden');
+                disconnectTxButton.classList.add('hidden');
+                connectTxButton.disabled = false; // Always allow manual connect if disconnected
+            }
+
+            // RX Buttons
+            if (rxDevice) {
+                connectRxButton.classList.add('hidden');
+                disconnectRxButton.classList.remove('hidden');
+                disconnectRxButton.disabled = false;
+            } else {
+                connectRxButton.classList.remove('hidden');
+                disconnectRxButton.classList.add('hidden');
+                connectRxButton.disabled = false; // Always allow manual connect if disconnected
+            }
+        };
+
+        const updateUIVisibility = () => {
+            const anyConnected = txDevice || rxDevice;
+            if (anyConnected) {
+                welcomeMessage.style.display = 'none';
+                monitorHeader.style.display = 'flex';
+                visualizer.style.display = 'flex';
+            } else {
                 welcomeMessage.style.display = 'flex';
                 monitorHeader.style.display = 'none';
                 visualizer.style.display = 'none';
-                connectAllButton.disabled = false; // Allow manual retry
-                disconnectAllButton.disabled = true;
+                lastCcSentEl.textContent = '-';
             }
         };
+
+        // Auto-reconnect loop functions
+        const startAutoReconnect = () => {
+            if (autoReconnectIntervalId) {
+                clearInterval(autoReconnectIntervalId);
+            }
+            log("Starting auto-reconnect loop...");
+            nextDeviceToAttempt = 'tx'; // Reset starting device
+            autoReconnectIntervalId = setInterval(autoReconnectStep, RECONNECT_INTERVAL_MS);
+            // No initial call here, let the interval trigger the first step
+        };
+
+        const autoReconnectStep = async () => {
+            if (txDevice && rxDevice) {
+                if (autoReconnectIntervalId) {
+                    clearInterval(autoReconnectIntervalId);
+                    autoReconnectIntervalId = null;
+                    log("Both TX and RX connected. Auto-reconnect paused.");
+                }
+                return;
+            }
+
+            if (nextDeviceToAttempt === 'tx') {
+                if (!txDevice) {
+                    await connectDevice('tx', TX_VID, TX_PID);
+                }
+                nextDeviceToAttempt = 'rx';
+            } else if (nextDeviceToAttempt === 'rx') {
+                if (!rxDevice) {
+                    await connectDevice('rx', RX_VID, RX_PID);
+                }
+                nextDeviceToAttempt = 'tx';
+            }
+
+            updateButtonStates();
+            updateUIVisibility();
+        };
+
 
         // --- Event Listeners ---
-        connectAllButton.addEventListener('click', async () => {
-            connectAllButton.disabled = true;
-            disconnectAllButton.disabled = true;
-            log("Initiating connection to all devices...");
+        // New manual connect buttons
+        connectTxButton.addEventListener('click', () => connectDevice('tx', TX_VID, TX_PID));
+        connectRxButton.addEventListener('click', () => connectDevice('rx', RX_VID, RX_PID));
 
-            // Reset initial failure flags and wasConnected state for a fresh attempt
-            txInitialConnectFailed = false;
-            rxInitialConnectFailed = false;
-            txWasConnected = false;
-            rxWasConnected = false;
+        disconnectTxButton.addEventListener('click', () => disconnectDevice('tx'));
+        disconnectRxButton.addEventListener('click', () => disconnectDevice('rx')); // Use the correct button ID for RX
 
-            // Clear any existing auto-reconnect interval
-            if (reconnectIntervalId) clearInterval(reconnectIntervalId);
-
-            // Start auto-reconnect loop immediately
-            reconnectIntervalId = setInterval(autoReconnect, RECONNECT_INTERVAL_MS);
-            await autoReconnect(); // Run immediately to start connection attempts
-
-            activateTab('tx'); // Show default TX tab
-        });
-
-        disconnectAllButton.addEventListener('click', async () => {
-            if (reconnectIntervalId) {
-                clearInterval(reconnectIntervalId);
-                reconnectIntervalId = null;
-            }
-            await disconnectDevice('tx');
-            await disconnectDevice('rx');
-
-            // Reset UI to welcome state
-            welcomeMessage.style.display = 'flex';
-            monitorHeader.style.display = 'none';
-            visualizer.style.display = 'none';
-            connectAllButton.disabled = false;
-            disconnectAllButton.disabled = true;
-            log("All devices disconnected.");
-        });
-
-        // Event delegation for settings changes
         document.addEventListener('input', (e) => {
             const target = e.target;
             if (target.id === 'brightness') brightnessValueEl.textContent = target.value;
             else if (target.id === 'midiChannel') midiChannelValueEl.textContent = target.value;
             else if (target.id === 'esbChannel') esbChannelValueEl.textContent = target.value;
-            else if (target.id === 'rxEsbChannel') rxEsbChannelValueEl.textContent = target.value;
+            else if (target.id === 'rxEsbChannel-col') rxEsbChannelValueElCol.textContent = target.value;
         });
 
         document.addEventListener('change', (e) => {
             const t = e.target;
             if (t.classList.contains('update-on-release') || t.classList.contains('update-on-change')) {
                 const action = t.dataset.action;
-                const deviceType = t.closest('#tab-content-tx') ? 'tx' : 'rx';
+                const deviceType = t.closest('#main-controls-tx') ? 'tx' : 'rx';
 
                 if (deviceType === 'tx') {
                     let cmd = `set_${action}=${t.dataset.index ? t.dataset.index + ',' : ''}${t.value}`;
                     sendCommand('tx', cmd);
                     if (action === 'cc' || action === 'label') setTimeout(() => sendCommand('tx', 'get_settings'), 200);
                 } else if (deviceType === 'rx' && action === 'rx_esb_ch') {
-                    const channelValue = parseInt(t.value);
-                    sendChannelToRX(channelValue);
+                    // Snap RX ESB Channel value to the nearest 5
+                    const rawValue = parseInt(t.value);
+                    const snappedValue = Math.round(rawValue / 5) * 5;
+                    t.value = snappedValue; // Update slider position
+                    rxEsbChannelValueElCol.textContent = snappedValue; // Update display
+                    sendChannelToRX(snappedValue);
                 }
             }
         });
@@ -895,66 +909,51 @@
             } else if (target.id === 'startCalButton') {
                 sendCommand('tx', 'start_cal');
                 log("Calibration started. Follow device instructions.");
-            } else if (target.dataset.tab) {
-                activateTab(target.dataset.tab);
             }
         });
 
-        // Tab activation logic
-        const activateTab = (tabName) => {
-            // Deactivate all tabs and hide all content
-            tabTx.classList.remove('border-teal-400', 'text-white');
-            tabRx.classList.remove('border-teal-400', 'text-white');
-            tabTx.classList.add('border-transparent', 'text-slate-300');
-            tabRx.classList.add('border-transparent', 'text-slate-300');
-
-            tabContentTx.classList.add('hidden');
-            tabContentRx.classList.add('hidden');
-
-            // Activate the selected tab and show its content
-            if (tabName === 'tx') {
-                tabTx.classList.add('border-teal-400', 'text-white');
-                tabContentTx.classList.remove('hidden');
-            } else if (tabName === 'rx') {
-                tabRx.classList.add('border-teal-400', 'text-white');
-                tabContentRx.classList.remove('hidden');
-            }
+        // Initial setup on window load
+        window.onload = () => {
+            activateTab('tx'); // Default to TX tab
+            updateButtonStates(); // Set initial button states
+            updateUIVisibility(); // Set initial UI visibility
+            startAutoReconnect(); // Start the alternating auto-reconnect loop
         };
-
-        // Initial tab setup
-        activateTab('tx'); // Default to TX tab on load
 
         // USB device connect/disconnect event listeners for the browser
         navigator.usb.addEventListener('connect', (event) => {
             const device = event.device;
             log(`USB Device connected: ${device.productName} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)})`);
-            // Trigger auto-reconnect to try and re-establish connection
-            if (!reconnectIntervalId) {
-                 reconnectIntervalId = setInterval(autoReconnect, RECONNECT_INTERVAL_MS);
-                 autoReconnect();
-            }
+            startAutoReconnect(); // Restart auto-reconnect on any USB connect event
         });
 
         navigator.usb.addEventListener('disconnect', (event) => {
             const device = event.device;
             log(`USB Device disconnected: ${device.productName} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)})`);
-            // Mark devices as disconnected and trigger auto-reconnect
             if (device.vendorId === TX_VID && device.productId === TX_PID) {
                 txDevice = null;
                 txKeepReading = false;
+                txWasConnected = false;
                 setConnectionStatus('tx', false);
             } else if (device.vendorId === RX_VID && device.productId === RX_PID) {
                 rxDevice = null;
                 rxKeepReading = false;
+                rxWasConnected = false;
                 setConnectionStatus('rx', false);
+                rxEsbChannelSliderCol.value = 0;
+                rxEsbChannelValueElCol.textContent = '';
+                rxRssiValueElCol.textContent = '-- dBm';
+                verticalRssiBar.style.height = '0%';
             }
-
-            // If auto-reconnect isn't running, start it
-            if (!reconnectIntervalId) {
-                reconnectIntervalId = setInterval(autoReconnect, RECONNECT_INTERVAL_MS);
-                autoReconnect();
-            }
+            updateButtonStates();
+            updateUIVisibility();
+            startAutoReconnect(); // Always restart auto-reconnect
         });
+
+        const activateTab = (tabName) => {
+            tabTx.classList.add('border-teal-400', 'text-white');
+            tabContentTx.classList.remove('hidden');
+        };
 
     </script>
 </body>
