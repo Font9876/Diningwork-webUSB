@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    
+
     <!-- Refined and enhanced custom styles -->
     <style>
         /* Apply Inter font family and a sophisticated dark background */
@@ -21,7 +21,7 @@
             color: #e2e8f0; /* Light gray text for contrast */
             cursor: default;
         }
-        
+
         /* Added fade-in animation */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
@@ -40,10 +40,8 @@
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
             width: 1rem;
         }
-        /* MODIFICATION: Removed transitions for instant response */
         .cc-bar {
             border-radius: 9999px 9999px 0 0;
-            transition: none !important;
         }
 
         /* Styling for the button press indicators */
@@ -125,7 +123,7 @@
             box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.3);
             outline: none;
         }
-        
+
         button { cursor: pointer; }
 
         /* Custom styling for select dropdowns */
@@ -150,12 +148,12 @@
                     <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tighter">
                         <span class="text-teal-400">Plate</span> 1
                     </h1>
-                    <p class="text-slate-400 text-sm mb-6">MIDI Control Dashboard & Configuration</p>
+                    <p class="text-slate-400 text-sm mb-6">MIDI Control Dashboard &amp; Configuration</p>
 
                     <div class="flex flex-wrap gap-3 sm:gap-4 items-center">
                         <button id="connectButton" class="flex-1 px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
-                           Connect Device
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
+                            Connect Device
                         </button>
                         <!-- NEW: Added disconnect icon -->
                         <button id="disconnectButton" disabled class="flex-1 px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base inline-flex items-center justify-center gap-2">
@@ -163,7 +161,7 @@
                             Disconnect
                         </button>
                     </div>
-                    
+
                     <!-- BLE Status Indicator -->
                     <div id="ble-status" class="mt-4 text-center text-sm hidden">
                         <p class="text-slate-400 uppercase font-medium text-xs tracking-wider">Bluetooth Status</p>
@@ -177,8 +175,8 @@
                     <!-- Bank Select Section -->
                     <section class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 shadow-lg">
                         <h2 class="text-xl font-bold mb-4 text-teal-300 flex items-center gap-2">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" /></svg>
-                           Bank Selection
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" /></svg>
+                            Bank Selection
                         </h2>
                         <div id="bank-selection-grid" class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-6 gap-3"></div>
                     </section>
@@ -186,8 +184,8 @@
                     <!-- Device Settings Section -->
                     <section class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 shadow-lg">
                         <h2 class="text-xl font-bold mb-4 text-teal-300 flex items-center gap-2">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.532 1.532 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.532 1.532 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>
-                           Device Settings
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.532 1.532 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.532 1.532 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>
+                            Device Settings
                         </h2>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
                             <div class="space-y-2">
@@ -200,11 +198,12 @@
                             </div>
                             <div class="space-y-2 custom-select">
                                 <label for="buttonMode" class="block text-sm font-medium text-slate-400">Button Mode</label>
-                                <select id="buttonMode" class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release cursor-pointer"data-action="button_mode"><option value="0">Momentary</option><option value="1">Toggle</option></select>
+                                <select id="buttonMode" class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release cursor-pointer" data-action="button_mode"><option value="0">Momentary</option><option value="1">Toggle</option></select>
                             </div>
-                            <div class="space-y-2 custom-select">
-                                <label for="esbChannel" class="block text-sm font-medium text-slate-400">ESB Channel</label>
-                                <select id="esbChannel" class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release cursor-pointer"data-action="esb_ch"><option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="20">20</option></select>
+                            <!-- NEW: ESB Channel Slider (replacing select dropdown) -->
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center"><label for="esbChannel" class="block text-sm font-medium text-slate-400">ESB Channel</label><span id="esbChannel-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                                <input type="range" id="esbChannel" min="0" max="100" class="w-full update-on-release" data-action="esb_ch">
                             </div>
                             <!-- NEW: Updated BLE button with dynamic icon -->
                             <div class="space-y-2 flex flex-col justify-end">
@@ -270,6 +269,8 @@
         const brightnessValueEl = document.getElementById('brightness-value');
         const midiChannelSlider = document.getElementById('midiChannel');
         const midiChannelValueEl = document.getElementById('midiChannel-value');
+        const esbChannelSlider = document.getElementById('esbChannel'); // NEW
+        const esbChannelValueEl = document.getElementById('esbChannel-value'); // NEW
         const bleStatusEl = document.getElementById('ble-status');
         const blePeerNameEl = document.getElementById('ble-peer-name');
         const logArea = document.getElementById('log-area');
@@ -282,10 +283,7 @@
         const textDecoder = new TextDecoder();
         let ccMap = {};
         let currentSettingsCache = {};
-        let reconnectInterval = null; // For auto-reconnect timer
-        let hasConnectedOnce = false; // Track if the user has ever connected
-        const VENDOR_ID = 0x000a; // Device Vendor ID
-        
+
         // --- BLE Button Content ---
         const bleOnIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 2.293a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 4.414V17a1 1 0 11-2 0V4.414L5.707 7.707a1 1 0 01-1.414-1.414l4-4z" clip-rule="evenodd" /></svg> Disable BLE`;
         const bleOffIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.27 6.957 14.54 4 10 4c-1.255 0-2.443.29-3.536.81l-2.064-2.065zM10 12a2 2 0 110-4 2 2 0 010 4z" clip-rule="evenodd" /><path d="M2 10s3.923-6 8-6 8 6 8 6-3.923 6-8 6-8-6-8-6zm7.885-1.462A3.004 3.004 0 0010 12a3 3 0 100-6 3.004 3.004 0 00-2.115.888l2.115 2.115z" /></svg> Enable BLE`;
@@ -305,7 +303,7 @@
         };
 
         const sendCommand = async (command) => {
-            if (!device || !device.opened) {
+            if (!device) {
                 log("Device not connected. Cannot send command.");
                 return;
             }
@@ -317,6 +315,24 @@
                 log(`Error sending command: ${error.message}`);
             }
         };
+
+        // NEW: Function to send channel to RX
+        const sendChannelToRX = async (channel) => {
+            if (!device) {
+                log("Device not connected. Cannot send channel to RX.");
+                return;
+            }
+            log(`Sending channel ${channel} to RX.`);
+            try {
+                // The RX expects 'C' followed by a single byte for the channel number
+                const data = new Uint8Array([0x43, channel]); // 0x43 is ASCII for 'C'
+                await device.transferOut(endpointOut, data);
+            } catch (error) {
+                console.error("Send channel to RX error:", error);
+                log(`Error sending channel to RX: ${error.message}`);
+            }
+        };
+
 
         const populateUI = (settings) => {
             currentSettingsCache = settings;
@@ -337,9 +353,13 @@
             midiChannelSlider.value = settings.midiChannel;
             midiChannelValueEl.textContent = settings.midiChannel;
             document.getElementById('buttonMode').value = settings.buttonMode;
-            document.getElementById('esbChannel').value = settings.esbChannel;
+            
+            // NEW: Update ESB Channel slider and display
+            esbChannelSlider.value = settings.esbChannel;
+            esbChannelValueEl.textContent = settings.esbChannel;
 
-            bleToggleButton.innerHTML = settings.bleOn ? bleOffIcon.replace('Enable','Disable') : bleOnIcon.replace('Disable','Enable');
+
+            bleToggleButton.innerHTML = settings.bleOn ? bleOnIcon.replace('Enable', 'Disable') : bleOffIcon.replace('Disable', 'Enable');
             bleToggleButton.classList.toggle('bg-red-600', settings.bleOn);
             bleToggleButton.classList.toggle('hover:bg-red-500', settings.bleOn);
             bleToggleButton.classList.toggle('bg-green-600', !settings.bleOn);
@@ -387,7 +407,7 @@
                     </div>
                 `;
                 assignmentsGrid.appendChild(card);
-                
+
                 const ccInput = card.querySelector(`input[data-action="cc"][data-index="${i}"]`);
                 if (ccInput) {
                     ccInput.addEventListener('wheel', (e) => {
@@ -483,29 +503,25 @@
                 } catch (error) {
                     if (error.message.includes("disconnected")) {
                         log("Device disconnected.");
-                        await handleDisconnectCleanup(); // Clean up UI and state
-                        // MODIFICATION: Re-enable auto-reconnect if user has connected before
-                        if (hasConnectedOnce && !reconnectInterval) {
-                            log("Auto-reconnect activated.");
-                            reconnectInterval = setInterval(autoReconnect, 250);
-                        }
+                        if (!disconnectButton.disabled) await disconnectButton.click();
                     } else {
                         log(`Read loop error: ${error.message}`);
                     }
-                    keepReading = false; // Stop the loop on error
+                    keepReading = false;
                 }
             }
         }
 
-        const connectDevice = async (deviceToConnect) => {
+        connectButton.addEventListener('click', async () => {
+            log("Attempting to connect...");
+            connectButton.disabled = true;
             try {
-                device = deviceToConnect;
+                device = await navigator.usb.requestDevice({ filters: [{ vendorId: 0x001a }] }); // Updated Vendor ID
                 await device.open();
                 if (device.configuration === null) await device.selectConfiguration(1);
-                
                 for (const iface of device.configuration.interfaces) {
                     for (const alt of iface.alternates) {
-                        if (alt.interfaceClass === 0xFF) {
+                        if (alt.interfaceClass === 0xFF) { // Vendor specific interface
                             interfaceNumber = iface.interfaceNumber;
                             for (const ep of alt.endpoints) {
                                 if (ep.direction === 'out') endpointOut = ep.endpointNumber;
@@ -514,56 +530,37 @@
                         }
                     }
                 }
-
-                if (interfaceNumber === undefined) throw new Error("Compatible interface not found.");
-
+                if (interfaceNumber === undefined) throw new Error("Interface not found.");
                 await device.claimInterface(interfaceNumber);
                 await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x01, index: interfaceNumber });
-                
-                log(`Device "${device.productName}" connected successfully!`);
-
-                // MODIFICATION: Stop reconnect timer if it was running
-                if (reconnectInterval) {
-                    clearInterval(reconnectInterval);
-                    reconnectInterval = null;
-                }
-
-                connectButton.disabled = true;
+                log("Device connected successfully!");
                 disconnectButton.disabled = false;
                 welcomeMessage.style.display = 'none';
                 [mainControls, visualizer, monitorHeader].forEach(el => {
                     el.style.display = el.id === 'main-controls' ? 'block' : 'flex';
                     el.classList.add('fade-in');
                 });
-
                 keepReading = true;
                 readLoop();
                 await sendCommand("get_settings");
-
             } catch (error) {
                 log(`Connection failed: ${error.message}`);
-                device = null;
                 connectButton.disabled = false;
             }
-        };
+        });
 
-        const handleDisconnectCleanup = async () => {
+        disconnectButton.addEventListener('click', async () => {
+            if (!device) return;
+            log("Disconnecting...");
             keepReading = false;
-            
             try {
-                if (device && device.opened) {
-                    await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x00, index: interfaceNumber });
-                    await device.releaseInterface(interfaceNumber);
-                    await device.close();
-                }
-            } catch (innerError) {
-                console.warn("Could not gracefully close device, it may have been unplugged:", innerError.message);
+                await device.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x00, index: interfaceNumber });
+                await device.releaseInterface(interfaceNumber);
+                await device.close();
+            } catch (error) {
+                log(`Disconnect error: ${error.message}`);
             } finally {
                 device = null;
-                interfaceNumber = undefined;
-                endpointIn = undefined;
-                endpointOut = undefined;
-
                 connectButton.disabled = false;
                 disconnectButton.disabled = true;
                 [mainControls, visualizer, monitorHeader].forEach(el => {
@@ -574,66 +571,12 @@
                 bleStatusEl.classList.add('hidden');
                 log("Disconnected.");
             }
-        };
-        
-        // MODIFICATION: Add autoReconnect function back
-        const autoReconnect = async () => {
-            if (!hasConnectedOnce || device) return; 
-            try {
-                const permittedDevices = await navigator.usb.getDevices();
-                const knownDevice = permittedDevices.find(d => d.vendorId === VENDOR_ID);
-                if (knownDevice) {
-                    log("Found previously permitted device. Attempting to reconnect...");
-                    await connectDevice(knownDevice);
-                }
-            } catch (error) {
-                console.error("Auto-reconnect failed:", error);
-            }
-        };
-
-        const initiateConnection = async () => {
-            log("Attempting to connect...");
-            // MODIFICATION: Set flag to enable reconnect on disconnect
-            hasConnectedOnce = true;
-            try {
-                const permittedDevices = await navigator.usb.getDevices();
-                const knownDevice = permittedDevices.find(d => d.vendorId === VENDOR_ID);
-
-                if (knownDevice) {
-                    log("Found previously permitted device. Connecting...");
-                    await connectDevice(knownDevice);
-                } else {
-                    log("No permitted device found. Asking user for permission...");
-                    const requestedDevice = await navigator.usb.requestDevice({ filters: [{ vendorId: VENDOR_ID }] });
-                    await connectDevice(requestedDevice);
-                }
-            } catch (error) {
-                log(`Connection process failed: ${error.message}`);
-                // MODIFICATION: Reset flag if connection fails
-                hasConnectedOnce = false;
-            }
-        };
-
-        connectButton.addEventListener('click', initiateConnection);
-
-        disconnectButton.addEventListener('click', async () => {
-            log("User initiated disconnect.");
-            // MODIFICATION: Disable auto-reconnect on manual disconnect
-            hasConnectedOnce = false; 
-            if (reconnectInterval) {
-                clearInterval(reconnectInterval);
-                reconnectInterval = null;
-                log("Auto-reconnect disabled.");
-            }
-            if (device) {
-                await handleDisconnectCleanup();
-            }
         });
-
 
         document.addEventListener('input', (e) => {
             if (e.target.id === 'brightness') brightnessValueEl.textContent = e.target.value;
             else if (e.target.id === 'midiChannel') midiChannelValueEl.textContent = e.target.value;
+            else if (e.target.id === 'esbChannel') esbChannelValueEl.textContent = e.target.value; // NEW
         });
 
         document.addEventListener('change', (e) => {
@@ -643,6 +586,13 @@
                 let cmd = `set_${action}=${t.dataset.index ? t.dataset.index + ',' : ''}${t.value}`;
                 sendCommand(cmd);
                 if (action === 'cc' || action === 'label') setTimeout(() => sendCommand('get_settings'), 200);
+                
+                // NEW: If ESB channel is changed, send to RX as well
+                if (action === 'esb_ch') {
+                    // Convert the string value from the slider to a number
+                    const channelValue = parseInt(t.value);
+                    sendChannelToRX(channelValue);
+                }
             }
         });
 
@@ -659,10 +609,6 @@
                 sendCommand('start_cal');
                 log("Calibration started. Follow device instructions.");
             }
-        });
-        
-        window.addEventListener('DOMContentLoaded', () => {
-            log("MIDI Control Dashboard initialized. Waiting for user to connect.");
         });
     </script>
 </body>
