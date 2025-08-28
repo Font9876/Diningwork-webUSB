@@ -662,6 +662,7 @@
 
             // If already connected, no need to proceed
             if (deviceRef && deviceRef.opened && keepReadingRef()) {
+                log(`${deviceType.toUpperCase()} device already connected. Skipping connection attempt.`);
                 return true;
             }
 
@@ -673,9 +674,11 @@
             try {
                 if (deviceToConnect) {
                     // Use the device provided (e.g., from auto-reconnect or USB connect event)
+                    log(`Using pre-found device for ${deviceType.toUpperCase()}.`);
                     deviceObj = deviceToConnect;
                 } else {
                     // This is for the *initial* connection via button click: prompt user
+                    log(`No pre-found device for ${deviceType.toUpperCase()}. Requesting user permission...`);
                     deviceObj = await navigator.usb.requestDevice({
                         filters: [{ vendorId: vendorId, productId: productId }]
                     });
@@ -851,18 +854,27 @@
                 return;
             }
 
+            log("autoReconnectStep: Checking for available devices...");
             const availableDevices = await navigator.usb.getDevices();
+            log(`autoReconnectStep: Found ${availableDevices.length} previously permitted devices.`);
+
 
             if (nextDeviceToAttempt === 'tx' && !txDevice) {
                 const foundTx = availableDevices.find(d => d.vendorId === TX_VID && d.productId === TX_PID);
                 if (foundTx) {
+                    log(`autoReconnectStep: Found TX device (VID: 0x${TX_VID.toString(16)}, PID: 0x${TX_PID.toString(16)}). Attempting connection.`);
                     await connectDevice('tx', TX_VID, TX_PID, foundTx); // Pass the found device
+                } else {
+                    log(`autoReconnectStep: TX device (VID: 0x${TX_VID.toString(16)}, PID: 0x${TX_PID.toString(16)}) not found among permitted devices.`);
                 }
                 nextDeviceToAttempt = 'rx';
             } else if (nextDeviceToAttempt === 'rx' && !rxDevice) {
                 const foundRx = availableDevices.find(d => d.vendorId === RX_VID && d.productId === RX_PID);
                 if (foundRx) {
+                    log(`autoReconnectStep: Found RX device (VID: 0x${RX_VID.toString(16)}, PID: 0x${RX_PID.toString(16)}). Attempting connection.`);
                     await connectDevice('rx', RX_VID, RX_PID, foundRx); // Pass the found device
+                } else {
+                    log(`autoReconnectStep: RX device (VID: 0x${RX_VID.toString(16)}, PID: 0x${RX_PID.toString(16)}) not found among permitted devices.`);
                 }
                 nextDeviceToAttempt = 'tx';
             }
