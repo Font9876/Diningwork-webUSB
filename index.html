@@ -653,30 +653,35 @@
             }
         }
 
-        const connectDevice = async (deviceType, vendorId, productId) => {
+        // Modified connectDevice function to support both initial request and auto-reconnect
+        const connectDevice = async (deviceType, vendorId, productId, deviceToConnect = null) => {
             let deviceObj, interfaceNum, endpointInNum, endpointOutNum;
             let connectionStatusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusElCol;
             let deviceRef = deviceType === 'tx' ? txDevice : rxDevice;
             let keepReadingRef = deviceType === 'tx' ? txKeepReading : rxKeepReading;
 
+            // If already connected, no need to proceed
             if (deviceRef && deviceRef.opened && keepReadingRef()) {
                 return true;
             }
 
-            if (!deviceRef) {
-                // Only log connection attempt if device is not currently connected
-                log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)}, PID: 0x${productId.toString(16)})...`);
-                connectionStatusEl.textContent = 'Connecting...';
-                connectionStatusEl.classList.remove('text-green-400', 'text-red-400', 'animate-pulse');
-                connectionStatusEl.classList.add('text-yellow-400');
-            }
+            log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)}, PID: 0x${productId.toString(16)})...`);
+            connectionStatusEl.textContent = 'Connecting...';
+            connectionStatusEl.classList.remove('text-green-400', 'text-red-400', 'animate-pulse');
+            connectionStatusEl.classList.add('text-yellow-400');
 
             try {
-                const devices = await navigator.usb.getDevices();
-                deviceObj = devices.find(d => d.vendorId === vendorId && d.productId === productId);
-
-                if (!deviceObj) {
-                    throw new Error("Device not found among granted devices.");
+                if (deviceToConnect) {
+                    // Use the device provided (e.g., from auto-reconnect or USB connect event)
+                    deviceObj = deviceToConnect;
+                } else {
+                    // This is for the *initial* connection via button click: prompt user
+                    deviceObj = await navigator.usb.requestDevice({
+                        filters: [{ vendorId: vendorId, productId: productId }]
+                    });
+                    if (!deviceObj) {
+                        throw new Error("User cancelled device selection or no device found.");
+                    }
                 }
 
                 await deviceObj.open();
@@ -684,7 +689,7 @@
 
                 for (const iface of deviceObj.configuration.interfaces) {
                     for (const alt of iface.alternates) {
-                        if (alt.interfaceClass === 0xFF) {
+                        if (alt.interfaceClass === 0xFF) { // Assuming a vendor-specific class
                             interfaceNum = iface.interfaceNumber;
                             for (const ep of alt.endpoints) {
                                 if (ep.direction === 'out') endpointOutNum = ep.endpointNumber;
@@ -693,7 +698,7 @@
                         }
                     }
                 }
-                if (interfaceNum === undefined) throw new Error("Interface not found.");
+                if (interfaceNum === undefined) throw new Error("Interface not found for the selected device.");
 
                 await deviceObj.claimInterface(interfaceNum);
                 await deviceObj.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x01, index: interfaceNum });
@@ -718,12 +723,14 @@
                     rxKeepReading = true;
                     rxWasConnected = true;
                     readLoop('rx');
+                    // Add an initial get_settings or relevant command for RX if needed, if it doesn't auto-send
                 }
                 return true;
             } catch (error) {
-                // Only log connection failure messages if they are not "disconnected" and the device was previously connected
-                if (!(deviceRef && error.message.includes("disconnected"))) {
-                     log(`Connection failed for ${deviceType.toUpperCase()}: ${error.message}`);
+                if (error.message.includes("User cancelled") || error.message.includes("No device selected")) {
+                    log(`Connection for ${deviceType.toUpperCase()} cancelled by user.`);
+                } else if (!(deviceRef && error.message.includes("disconnected"))) {
+                    log(`Connection failed for ${deviceType.toUpperCase()}: ${error.message}`);
                 }
 
                 if (deviceRef && error.message.includes("disconnected")) {
@@ -779,7 +786,7 @@
                 log(`${deviceType.toUpperCase()} disconnected.`);
                 updateButtonStates();
                 updateUIVisibility();
-                startAutoReconnect();
+                startAutoReconnect(); // Always restart auto-reconnect
             }
         };
 
@@ -832,6 +839,7 @@
             // No initial call here, let the interval trigger the first step
         };
 
+        // Modified autoReconnectStep to use navigator.usb.getDevices() for already-permitted devices
         const autoReconnectStep = async () => {
             if (txDevice && rxDevice) {
                 if (autoReconnectIntervalId) {
@@ -842,14 +850,18 @@
                 return;
             }
 
-            if (nextDeviceToAttempt === 'tx') {
-                if (!txDevice) {
-                    await connectDevice('tx', TX_VID, TX_PID);
+            const availableDevices = await navigator.usb.getDevices();
+
+            if (nextDeviceToAttempt === 'tx' && !txDevice) {
+                const foundTx = availableDevices.find(d => d.vendorId === TX_VID && d.productId === TX_PID);
+                if (foundTx) {
+                    await connectDevice('tx', TX_VID, TX_PID, foundTx); // Pass the found device
                 }
                 nextDeviceToAttempt = 'rx';
-            } else if (nextDeviceToAttempt === 'rx') {
-                if (!rxDevice) {
-                    await connectDevice('rx', RX_VID, RX_PID);
+            } else if (nextDeviceToAttempt === 'rx' && !rxDevice) {
+                const foundRx = availableDevices.find(d => d.vendorId === RX_VID && d.productId === RX_PID);
+                if (foundRx) {
+                    await connectDevice('rx', RX_VID, RX_PID, foundRx); // Pass the found device
                 }
                 nextDeviceToAttempt = 'tx';
             }
@@ -861,8 +873,14 @@
 
         // --- Event Listeners ---
         // New manual connect buttons
-        connectTxButton.addEventListener('click', () => connectDevice('tx', TX_VID, TX_PID));
-        connectRxButton.addEventListener('click', () => connectDevice('rx', RX_VID, RX_PID));
+        connectTxButton.addEventListener('click', async () => {
+            await connectDevice('tx', TX_VID, TX_PID); // Trigger requestDevice for initial connection
+            startAutoReconnect(); // Restart auto-reconnect after manual connection
+        });
+        connectRxButton.addEventListener('click', async () => {
+            await connectDevice('rx', RX_VID, RX_PID); // Trigger requestDevice for initial connection
+            startAutoReconnect(); // Restart auto-reconnect after manual connection
+        });
 
         disconnectTxButton.addEventListener('click', () => disconnectDevice('tx'));
         disconnectRxButton.addEventListener('click', () => disconnectDevice('rx')); // Use the correct button ID for RX
@@ -924,6 +942,12 @@
         navigator.usb.addEventListener('connect', (event) => {
             const device = event.device;
             log(`USB Device connected: ${device.productName} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)})`);
+            // Attempt to connect newly connected device if it matches our VIDs/PIDs
+            if (device.vendorId === TX_VID && device.productId === TX_PID) {
+                connectDevice('tx', TX_VID, TX_PID, device);
+            } else if (device.vendorId === RX_VID && device.productId === RX_PID) {
+                connectDevice('rx', RX_VID, RX_PID, device);
+            }
             startAutoReconnect(); // Restart auto-reconnect on any USB connect event
         });
 
