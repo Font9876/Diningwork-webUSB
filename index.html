@@ -393,7 +393,7 @@
                 log(`${deviceType.toUpperCase()} device not connected. Cannot send command.`);
                 return;
             }
-            log(`Sending to ${deviceType.toUpperCase()}: ${command}`);
+            // log(`Sending to ${deviceType.toUpperCase()}: ${command}`); // Suppress logging for background commands
             try {
                 await device.transferOut(endpointOut, textEncoder.encode(command + '\n'));
             } catch (error) {
@@ -408,7 +408,7 @@
                 log("RX device not connected. Cannot send channel.");
                 return;
             }
-            log(`Sending ESB channel ${channel} to RX.`);
+            // log(`Sending ESB channel ${channel} to RX.`); // Suppress logging for background commands
             try {
                 // The RX expects 'C' followed by a single byte for the channel number
                 const data = new Uint8Array([0x43, channel]); // 0x43 is ASCII for 'C'
@@ -578,7 +578,7 @@
                                     if (deviceType === 'tx') {
                                         populateTxUI(JSON.parse(line));
                                     } else { // RX does not send JSON, but good to have a fallback
-                                        log(`RX: ${line}`);
+                                        // log(`RX: ${line}`); // Suppress RX JSON logging
                                     }
                                 } catch (e) {
                                     log(`JSON Parse Error (${deviceType.toUpperCase()}): ${e.message}`);
@@ -588,14 +588,14 @@
                                     const parts = line.substring(3).split(',');
                                     if (parts.length === 2) updateCCVisualizer(parseInt(parts[0]), parseInt(parts[1]));
                                 } else {
-                                    log(`RX: ${line}`); // Log other RX messages
+                                    // log(`RX: ${line}`); // Suppress RX CC logging
                                 }
                             } else if (line.startsWith('bank_changed:')) {
                                 if (deviceType === 'tx') {
-                                    log("TX Bank changed. Requesting new settings.");
+                                    // log("TX Bank changed. Requesting new settings."); // Suppress logging
                                     setTimeout(() => sendCommand('tx', 'get_settings'), 100);
                                 } else {
-                                    log(`RX: ${line}`);
+                                    // log(`RX: ${line}`); // Suppress RX bank changed logging
                                 }
                             } else if (line.startsWith('Channel set to:')) { // NEW: Handle RX channel updates
                                 if (deviceType === 'rx') {
@@ -604,13 +604,13 @@
                                         const newChannel = parseInt(channelMatch[1]);
                                         rxEsbChannelSlider.value = newChannel;
                                         rxEsbChannelValueEl.textContent = newChannel;
-                                        log(`RX ESB Channel updated to: ${newChannel}`);
+                                        // log(`RX ESB Channel updated to: ${newChannel}`); // Suppress logging
                                     }
                                 }
-                                log(`${deviceType.toUpperCase()}: ${line}`);
+                                // log(`${deviceType.toUpperCase()}: ${line}`); // Suppress general RX logging
                             }
                             else {
-                                log(`${deviceType.toUpperCase()}: ${line}`);
+                                // log(`${deviceType.toUpperCase()}: ${line}`); // Suppress general logging
                             }
                         }
                     }
@@ -634,26 +634,16 @@
             let wasConnectedFlag = deviceType === 'tx' ? txWasConnected : rxWasConnected;
             let initialConnectFailedFlag = deviceType === 'tx' ? txInitialConnectFailed : rxInitialConnectFailed;
 
-            // Only show "Connecting..." status for manual attempts or first auto-reconnect attempt
-            // Also, don't show "Connecting..." if the initial manual attempt failed for this device and it's an auto-reconnect.
-            if (!isAutoReconnect || (isAutoReconnect && !initialConnectFailedFlag && !wasConnectedFlag)) {
-                log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)})...`);
+            // Only update "Connecting..." status for manual attempts or if it was previously connected
+            if (!isAutoReconnect || wasConnectedFlag) {
+                // log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)})...`); // Suppress this log for auto-reconnect
                 connectionStatusEl.textContent = 'Connecting...';
                 connectionStatusEl.classList.remove('text-green-400', 'text-red-400', 'animate-pulse');
                 connectionStatusEl.classList.add('text-yellow-400');
-                if (!isAutoReconnect && !wasConnectedFlag) { // Only pulse for initial manual connect
-                    connectionStatusEl.classList.add('animate-pulse');
-                }
             } else if (isAutoReconnect && initialConnectFailedFlag) {
                 // If it's an auto-reconnect and the initial manual connect failed, perform silently
-                // No UI update here for background retries
                 return false; // Skip this device for now, it failed its first visible attempt
-            } else if (isAutoReconnect && wasConnectedFlag) {
-                // If it's an auto-reconnect and it was previously connected, perform silently
-                // No UI update here for background retries
-                return false; // Let the auto-reconnect handle the silent retry
             }
-
 
             try {
                 // Try to get an already granted device first
@@ -661,9 +651,15 @@
                 deviceObj = devices.find(d => d.vendorId === vendorId);
 
                 if (!deviceObj) {
-                    // If not already granted, request new device. This will show the browser prompt.
-                    // This is the only place a browser pop-up is expected for new devices.
-                    deviceObj = await navigator.usb.requestDevice({ filters: [{ vendorId: vendorId }] });
+                    // If not already granted, log silently and return false. No pop-up.
+                    // log(`Device (VID: 0x${vendorId.toString(16)}) not found among paired devices. Please pair it manually.`); // Suppress this log for auto-reconnect
+                    if (!isAutoReconnect) { // Only log this message for a manual connect attempt
+                        log(`Device (VID: 0x${vendorId.toString(16)}) not found among paired devices. Please pair it manually.`);
+                        if (deviceType === 'tx') txInitialConnectFailed = true;
+                        else if (deviceType === 'rx') rxInitialConnectFailed = true;
+                    }
+                    setConnectionStatus(deviceType, false);
+                    return false;
                 }
 
                 await deviceObj.open();
@@ -712,9 +708,10 @@
 
                 return true; // Connection successful
             } catch (error) {
-                log(`Connection failed for ${deviceType.toUpperCase()}: ${error.message}`);
+                // log(`Connection failed for ${deviceType.toUpperCase()}: ${error.message}`); // Suppress this log for auto-reconnect
                 setConnectionStatus(deviceType, false);
                 if (!isAutoReconnect) { // If it was a manual connect attempt that failed
+                    log(`Connection failed for ${deviceType.toUpperCase()}: ${error.message}`); // Only log this for manual failure
                     if (deviceType === 'tx') txInitialConnectFailed = true;
                     else if (deviceType === 'rx') rxInitialConnectFailed = true;
                 }
@@ -754,6 +751,9 @@
         };
 
         const autoReconnect = async () => {
+            // If reconnect interval is not set, don't run auto-reconnect in background
+            if (!reconnectIntervalId) return;
+
             // Attempt to connect TX if not connected and either no initial failure or it was connected before
             if (!txDevice && !txKeepReading && (!txInitialConnectFailed || txWasConnected)) {
                 await connectDevice('tx', TX_VID, true); // true for isAutoReconnect
@@ -771,7 +771,6 @@
                 welcomeMessage.style.display = 'none';
                 monitorHeader.style.display = 'flex';
                 visualizer.style.display = 'flex';
-                // No fade-in classes here, as they are applied on initial successful connection
                 clearInterval(reconnectIntervalId);
                 reconnectIntervalId = null;
                 connectAllButton.disabled = true;
