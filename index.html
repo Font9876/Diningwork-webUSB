@@ -527,8 +527,10 @@
         };
 
         const populateRxUI = (settings) => {
-            // RX only cares about ESB Channel
-            rxEsbChannelSlider.value = settings.esbChannel;
+            // RX only cares about ESB Channel for now. The Arduino RX code only sends back "Channel set to: X" messages.
+            // We can parse the RX log messages to update the slider if a command was sent from the UI or if the device rebooted.
+            // For now, let's just make sure the slider is set to what we last sent.
+            rxEsbChannelSlider.value = settings.esbChannel; // This assumes `settings` object is populated with `esbChannel`
             rxEsbChannelValueEl.textContent = settings.esbChannel;
         };
 
@@ -604,7 +606,7 @@
                                         const newChannel = parseInt(channelMatch[1]);
                                         rxEsbChannelSlider.value = newChannel;
                                         rxEsbChannelValueEl.textContent = newChannel;
-                                        // log(`RX ESB Channel updated to: ${newChannel}`); // Suppress logging
+                                        log(`RX ESB Channel updated to: ${newChannel}`); // Keep this log for visibility
                                     }
                                 }
                                 // log(`${deviceType.toUpperCase()}: ${line}`); // Suppress general RX logging
@@ -636,7 +638,7 @@
 
             // Only update "Connecting..." status for manual attempts or if it was previously connected
             if (!isAutoReconnect || wasConnectedFlag) {
-                // log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)})...`); // Suppress this log for auto-reconnect
+                log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)})...`); // Keep this log
                 connectionStatusEl.textContent = 'Connecting...';
                 connectionStatusEl.classList.remove('text-green-400', 'text-red-400', 'animate-pulse');
                 connectionStatusEl.classList.add('text-yellow-400');
@@ -651,15 +653,17 @@
                 deviceObj = devices.find(d => d.vendorId === vendorId);
 
                 if (!deviceObj) {
-                    // If not already granted, log silently and return false. No pop-up.
-                    // log(`Device (VID: 0x${vendorId.toString(16)}) not found among paired devices. Please pair it manually.`); // Suppress this log for auto-reconnect
-                    if (!isAutoReconnect) { // Only log this message for a manual connect attempt
-                        log(`Device (VID: 0x${vendorId.toString(16)}) not found among paired devices. Please pair it manually.`);
-                        if (deviceType === 'tx') txInitialConnectFailed = true;
-                        else if (deviceType === 'rx') rxInitialConnectFailed = true;
+                    // If not already granted, we need to request permission.
+                    // This will trigger the browser's device selection pop-up for manual connection.
+                    // For auto-reconnect, we'll silently fail here.
+                    if (!isAutoReconnect) {
+                        log(`Device (VID: 0x${vendorId.toString(16)}) not found. Requesting permission...`);
+                        deviceObj = await navigator.usb.requestDevice({ filters: [{ vendorId: vendorId }] });
+                    } else {
+                        // For auto-reconnect, if not found and not previously connected, just fail silently.
+                        setConnectionStatus(deviceType, false);
+                        return false;
                     }
-                    setConnectionStatus(deviceType, false);
-                    return false;
                 }
 
                 await deviceObj.open();
@@ -704,14 +708,17 @@
                     rxInitialConnectFailed = false; // Reset failure flag
                     readLoop('rx');
                     sendChannelToRX(parseInt(rxEsbChannelSlider.value || 0)); // Set RX channel on connect
+                    // After connecting and setting channel, request current status to update UI.
+                    // The RX Arduino sketch doesn't have a "get_settings" command,
+                    // but it will print "Channel set to: X" when the channel is set,
+                    // which our `readLoop` can parse to update the UI.
                 }
 
                 return true; // Connection successful
             } catch (error) {
-                // log(`Connection failed for ${deviceType.toUpperCase()}: ${error.message}`); // Suppress this log for auto-reconnect
+                log(`Connection failed for ${deviceType.toUpperCase()}: ${error.message}`); // Always log manual failures
                 setConnectionStatus(deviceType, false);
                 if (!isAutoReconnect) { // If it was a manual connect attempt that failed
-                    log(`Connection failed for ${deviceType.toUpperCase()}: ${error.message}`); // Only log this for manual failure
                     if (deviceType === 'tx') txInitialConnectFailed = true;
                     else if (deviceType === 'rx') rxInitialConnectFailed = true;
                 }
@@ -765,6 +772,7 @@
 
             // Check overall connection state
             const allConnected = txDevice && rxDevice;
+            const anyConnected = txDevice || rxDevice;
             const allDisconnectedAndFailed = (!txDevice && txInitialConnectFailed) && (!rxDevice && rxInitialConnectFailed);
 
             if (allConnected) {
@@ -784,13 +792,20 @@
                 disconnectAllButton.disabled = true;
                 clearInterval(reconnectIntervalId);
                 reconnectIntervalId = null;
-            } else {
+            } else if (anyConnected) {
                 // If at least one is connected or still trying, keep UI active
                 welcomeMessage.style.display = 'none';
                 monitorHeader.style.display = 'flex';
                 visualizer.style.display = 'flex';
                 connectAllButton.disabled = true;
                 disconnectAllButton.disabled = false;
+            } else {
+                // If nothing is connected and no specific failure, keep trying
+                welcomeMessage.style.display = 'flex';
+                monitorHeader.style.display = 'none';
+                visualizer.style.display = 'none';
+                connectAllButton.disabled = false; // Allow manual retry
+                disconnectAllButton.disabled = true;
             }
         };
 
@@ -900,6 +915,39 @@
 
         // Initial tab setup
         activateTab('tx'); // Default to TX tab on load
+
+        // USB device connect/disconnect event listeners for the browser
+        navigator.usb.addEventListener('connect', (event) => {
+            const device = event.device;
+            log(`USB Device connected: ${device.productName} (VID: 0x${device.vendorId.toString(16)})`);
+            // Trigger auto-reconnect to try and re-establish connection
+            if (!reconnectIntervalId) {
+                 reconnectIntervalId = setInterval(autoReconnect, RECONNECT_INTERVAL_MS);
+                 autoReconnect();
+            }
+        });
+
+        navigator.usb.addEventListener('disconnect', (event) => {
+            const device = event.device;
+            log(`USB Device disconnected: ${device.productName} (VID: 0x${device.vendorId.toString(16)})`);
+            // Mark devices as disconnected and trigger auto-reconnect
+            if (device.vendorId === TX_VID) {
+                txDevice = null;
+                txKeepReading = false;
+                setConnectionStatus('tx', false);
+            } else if (device.vendorId === RX_VID) {
+                rxDevice = null;
+                rxKeepReading = false;
+                setConnectionStatus('rx', false);
+            }
+
+            // If auto-reconnect isn't running, start it
+            if (!reconnectIntervalId) {
+                reconnectIntervalId = setInterval(autoReconnect, RECONNECT_INTERVAL_MS);
+                autoReconnect();
+            }
+        });
+
     </script>
 </body>
 </html>
