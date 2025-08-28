@@ -836,7 +836,8 @@
             log("Starting auto-reconnect loop...");
             nextDeviceToAttempt = 'tx'; // Reset starting device
             autoReconnectIntervalId = setInterval(autoReconnectStep, RECONNECT_INTERVAL_MS);
-            // No initial call here, let the interval trigger the first step
+            // This is the key change: call autoReconnectStep immediately to check for devices on load
+            autoReconnectStep(); 
         };
 
         // Modified autoReconnectStep to use navigator.usb.getDevices() for already-permitted devices
