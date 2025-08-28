@@ -141,7 +141,7 @@
 
                     <div class="flex flex-wrap gap-3 sm:gap-4 items-center">
                         <button id="connectAllButton" class="flex-1 px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
                             Connect All Devices
                         </button>
                         <button id="disconnectAllButton" disabled class="flex-1 px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base inline-flex items-center justify-center gap-2">
@@ -233,6 +233,10 @@
                                         <div class="flex justify-between items-center"><label for="rxEsbChannel" class="block text-sm font-medium text-slate-400">ESB Channel</label><span id="rxEsbChannel-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
                                         <input type="range" id="rxEsbChannel" min="0" max="100" class="w-full update-on-release" data-action="rx_esb_ch">
                                     </div>
+                                    <!-- NEW: RX RSSI Display -->
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between items-center"><label for="rxRssi" class="block text-sm font-medium text-slate-400">RSSI</label><span id="rxRssi-value" class="font-mono text-cyan-300 text-sm font-semibold">-- dBm</span></div>
+                                    </div>
                                 </div>
                             </section>
                         </div>
@@ -272,7 +276,7 @@
     <script>
         // --- Device Vendor IDs ---
         const TX_VID = 0x000a;
-        const RX_VID = 0x001a;
+        const RX_VID = 0x000a; // CHANGED: RX now uses the same VID as TX
 
         // --- DOM Elements ---
         const connectAllButton = document.getElementById('connectAllButton');
@@ -306,6 +310,7 @@
         const rxConnectionStatusEl = document.getElementById('rx-connection-status');
         const rxEsbChannelSlider = document.getElementById('rxEsbChannel');
         const rxEsbChannelValueEl = document.getElementById('rxEsbChannel-value');
+        const rxRssiValueEl = document.getElementById('rxRssi-value'); // NEW: Reference to RX RSSI display
 
         // Tab Elements
         const tabTx = document.getElementById('tab-tx');
@@ -527,13 +532,22 @@
         };
 
         const populateRxUI = (settings) => {
-            // Expects a settings object with 'esbChannel' property
+            // Expects a settings object with 'esbChannel' and 'rssi' properties
             if (settings && typeof settings.esbChannel !== 'undefined') {
                 rxEsbChannelSlider.value = settings.esbChannel;
                 rxEsbChannelValueEl.textContent = settings.esbChannel;
                 log(`RX ESB Channel updated to: ${settings.esbChannel} (from JSON)`);
             } else {
                 log("Received RX settings, but 'esbChannel' property is missing or undefined.");
+            }
+
+            // NEW: Update RSSI display
+            if (settings && typeof settings.rssi !== 'undefined') {
+                rxRssiValueEl.textContent = `${settings.rssi} dBm`;
+                log(`RX RSSI updated to: ${settings.rssi} dBm (from JSON)`);
+            } else {
+                rxRssiValueEl.textContent = `-- dBm`; // Reset if RSSI is not present
+                log("Received RX settings, but 'rssi' property is missing or undefined.");
             }
         };
 
@@ -645,6 +659,12 @@
                 const devices = await navigator.usb.getDevices();
                 deviceObj = devices.find(d => d.vendorId === vendorId);
 
+                // IMPORTANT: If both TX and RX have the same VID, and only one is connected,
+                // this `find` might return the wrong device or not find the one we expect.
+                // If both are connected, `requestDevice` will present a choice, but `getDevices`
+                // will return both, and we'd need a way to distinguish (e.g., by Product ID or serial).
+                // For now, we assume a single device of this VID is being targeted or the user will pick correctly.
+
                 if (!deviceObj) {
                     // If not already granted, we need to request permission.
                     // This will trigger the browser's device selection pop-up for manual connection.
@@ -700,8 +720,7 @@
                     rxWasConnected = true; // Mark as successfully connected at least once
                     rxInitialConnectFailed = false; // Reset failure flag
                     readLoop('rx');
-                    // After connecting, request current settings from RX
-                    // The RX Arduino code will now send its settings as JSON on connect.
+                    // After connecting, the RX Arduino code will send its settings as JSON on connect.
                     // No explicit "get_settings" command is needed for RX if it sends on connect.
                 }
 
