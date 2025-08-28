@@ -410,10 +410,12 @@
                 device = rxDevice;
                 endpointOut = rxEndpointOut;
             } else {
+                // log(`Unknown device type: ${deviceType}`); // Suppress this log
                 return;
             }
 
             if (!device) {
+                // log(`${deviceType.toUpperCase()} device not connected. Cannot send command.`); // Suppress this log
                 return;
             }
             try {
@@ -658,9 +660,8 @@
             let deviceRef = deviceType === 'tx' ? txDevice : rxDevice;
             let keepReadingRef = deviceType === 'tx' ? txKeepReading : rxKeepReading;
 
-            // If already connected (and actively reading), no need to proceed
+            // If already connected, no need to proceed
             if (deviceRef && deviceRef.opened && keepReadingRef()) {
-                // log(`${deviceType.toUpperCase()} device already connected. Skipping connection attempt.`); // Removed for cleaner logs
                 return true;
             }
 
@@ -684,8 +685,6 @@
                 }
 
                 await deviceObj.open();
-                // Add a small delay after opening to ensure device is ready
-                await new Promise(r => setTimeout(r, 50)); 
                 if (deviceObj.configuration === null) await deviceObj.selectConfiguration(1);
 
                 for (const iface of deviceObj.configuration.interfaces) {
@@ -724,6 +723,7 @@
                     rxKeepReading = true;
                     rxWasConnected = true;
                     readLoop('rx');
+                    // Add an initial get_settings or relevant command for RX if needed, if it doesn't auto-send
                 }
                 return true;
             } catch (error) {
@@ -836,8 +836,7 @@
             log("Starting auto-reconnect loop...");
             nextDeviceToAttempt = 'tx'; // Reset starting device
             autoReconnectIntervalId = setInterval(autoReconnectStep, RECONNECT_INTERVAL_MS);
-            // This is the key change: call autoReconnectStep immediately to check for devices on load
-            autoReconnectStep(); 
+            // No initial call here, let the interval trigger the first step
         };
 
         // Modified autoReconnectStep to use navigator.usb.getDevices() for already-permitted devices
@@ -983,3 +982,4 @@
     </script>
 </body>
 </html>
+
