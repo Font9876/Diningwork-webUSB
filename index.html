@@ -127,13 +127,12 @@
 
         /* Custom style for vertical RSSI bar */
         .vertical-rssi-bar-container {
-            /* We want it to fill from bottom up, so rotate the content inside or adjust height calculation */
             border-radius: 9999px; /* Fully rounded capsule */
             overflow: hidden;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
             height: 100%; /* Fill parent container height */
-            max-height: 160px; /* Maximum visual height for the bar */
+            max-height: 250px; /* Increased length for RSSI bar */
             width: 1rem;
             position: relative;
             display: flex;
@@ -270,7 +269,7 @@
 
             <div class="space-y-2 mb-8">
                 <div class="flex flex-col items-center justify-center"><label for="rxEsbChannel-col" class="block text-sm font-medium text-slate-400 mb-1">ESB Ch</label><span id="rxEsbChannel-value-col" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-                <input type="range" id="rxEsbChannel-col" min="0" max="100" class="w-full update-on-release" data-action="rx_esb_ch">
+                <input type="range" id="rxEsbChannel-col" min="0" max="100" step="5" class="w-full update-on-release" data-action="rx_esb_ch">
             </div>
 
             <div class="flex-grow flex flex-col items-center justify-end h-40 mt-auto">
@@ -293,7 +292,7 @@
 
         // --- DOM Elements ---
         const disconnectTxButton = document.getElementById('disconnectTxButton');
-        const disconnectRxButtonCol = document.getElementById('disconnectRxButtonCol'); // Changed ID
+        const disconnectRxButtonCol = document.getElementById('disconnectRxButtonCol');
         const welcomeMessage = document.getElementById('welcome-message');
         const monitorHeader = document.getElementById('monitor-header');
         const visualizer = document.getElementById('visualizer');
@@ -315,14 +314,14 @@
         const ccBtnsContainer = document.getElementById('cc-btns-container');
         const lastCcSentEl = document.getElementById('last-cc-sent');
 
-        // RX Elements (updated IDs for elements in the new RX column)
-        const rxConnectionStatusElCol = document.getElementById('rx-connection-status-col'); // New ID
-        const rxEsbChannelSliderCol = document.getElementById('rxEsbChannel-col'); // New ID
-        const rxEsbChannelValueElCol = document.getElementById('rxEsbChannel-value-col'); // New ID
-        const rxRssiValueElCol = document.getElementById('rxRssi-value-col'); // New ID
+        // RX Elements
+        const rxConnectionStatusElCol = document.getElementById('rx-connection-status-col');
+        const rxEsbChannelSliderCol = document.getElementById('rxEsbChannel-col');
+        const rxEsbChannelValueElCol = document.getElementById('rxEsbChannel-value-col');
+        const rxRssiValueElCol = document.getElementById('rxRssi-value-col');
         const verticalRssiBar = document.getElementById('vertical-rssi-bar');
 
-        // Tab Elements (only TX tab remains in the left column for settings)
+        // Tab Elements (only TX settings remain as a conceptual "tab" in the left column)
         const tabTx = document.getElementById('tab-tx');
         const tabContentTx = document.getElementById('tab-content-tx');
 
@@ -341,13 +340,12 @@
         let ccMap = {};
         let currentTxSettingsCache = {};
 
-        // Flags to track if a device was ever successfully connected
         let txWasConnected = false;
         let rxWasConnected = false;
 
-        // Global interval ID for auto-reconnect
         let autoReconnectIntervalId = null;
-        const RECONNECT_INTERVAL_MS = 1000; // Check every second
+        const RECONNECT_INTERVAL_MS = 100; // 100ms interval for alternating attempts
+        let nextDeviceToAttempt = 'tx'; // Start by attempting TX
 
         // --- BLE Button Content ---
         const bleOnIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 2.293a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 4.414V17a1 1 0 11-2 0V4.414L5.707 7.707a1 1 0 01-1.414-1.414l4-4z" clip-rule="evenodd" /></svg> Disable BLE`;
@@ -367,7 +365,7 @@
         };
 
         const setConnectionStatus = (deviceType, connected) => {
-            const statusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusElCol; // Use new RX ID
+            const statusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusElCol;
             let wasConnectedFlag = deviceType === 'tx' ? txWasConnected : rxWasConnected;
 
             if (connected) {
@@ -380,7 +378,6 @@
                 statusEl.textContent = 'Disconnected';
                 statusEl.classList.remove('text-green-400', 'text-yellow-400');
                 statusEl.classList.add('text-red-400');
-                // Only add pulse if it was previously connected and now disconnected
                 if (wasConnectedFlag) {
                     statusEl.classList.add('animate-pulse');
                 }
@@ -401,7 +398,6 @@
             }
 
             if (!device) {
-                // log(`${deviceType.toUpperCase()} device not connected. Cannot send command.`); // Suppress this log for auto-reconnect
                 return;
             }
             try {
@@ -409,7 +405,7 @@
             } catch (error) {
                 console.error(`Send command to ${deviceType.toUpperCase()} error:`, error);
                 log(`Error sending command to ${deviceType.toUpperCase()}: ${error.message}`);
-                setConnectionStatus(deviceType, false); // Update status on error
+                setConnectionStatus(deviceType, false);
             }
         };
 
@@ -419,13 +415,12 @@
                 return;
             }
             try {
-                // The RX expects 'C' followed by a single byte for the channel number
                 const data = new Uint8Array([0x43, channel]); // 0x43 is ASCII for 'C'
                 await rxDevice.transferOut(rxEndpointOut, data);
             } catch (error) {
                 console.error("Send channel to RX error:", error);
                 log(`Error sending channel to RX: ${error.message}`);
-                setConnectionStatus('rx', false); // Update status on error
+                setConnectionStatus('rx', false);
             }
         };
 
@@ -540,10 +535,9 @@
 
             if (verticalRssiBar) {
                 // Map RSSI from -100 to -20 to a 0-100% height
-                // -100dBm is 0% height (worst), -20dBm is 100% height (best)
                 const minRssi = -100;
                 const maxRssi = -20;
-                const range = maxRssi - minRssi; // 80
+                const range = maxRssi - minRssi;
                 const clampedRssi = Math.max(minRssi, Math.min(maxRssi, rssiValue));
                 const percentage = ((clampedRssi - minRssi) / range) * 100;
                 verticalRssiBar.style.height = `${percentage}%`;
@@ -552,22 +546,16 @@
 
 
         const populateRxUI = (settings) => {
-            // Expects a settings object with 'esbChannel' and 'rssi' properties
             if (settings && typeof settings.esbChannel !== 'undefined') {
                 rxEsbChannelSliderCol.value = settings.esbChannel;
                 rxEsbChannelValueElCol.textContent = settings.esbChannel;
-                // log(`RX ESB Channel updated to: ${settings.esbChannel} (from JSON)`); // Suppress for cleaner log
-            } else {
-                // log("Received RX settings, but 'esbChannel' property is missing or undefined."); // Suppress for cleaner log
             }
 
             if (settings && typeof settings.rssi !== 'undefined') {
                 updateRxRSSI(settings.rssi);
-                // log(`RX RSSI updated to: ${settings.rssi} dBm (from JSON)`); // Suppress for cleaner log
             } else {
-                rxRssiValueElCol.textContent = `-- dBm`; // Reset if RSSI is not present
-                verticalRssiBar.style.height = '0%'; // Reset bar
-                // log("Received RX settings, but 'rssi' property is missing or undefined."); // Suppress for cleaner log
+                rxRssiValueElCol.textContent = `-- dBm`;
+                verticalRssiBar.style.height = '0%';
             }
         };
 
@@ -615,14 +603,14 @@
                                     const parsedJson = JSON.parse(line);
                                     if (deviceType === 'tx') {
                                         populateTxUI(parsedJson);
-                                    } else if (deviceType === 'rx') { // Handle RX JSON
+                                    } else if (deviceType === 'rx') {
                                         populateRxUI(parsedJson);
                                     }
                                 } catch (e) {
                                     log(`JSON Parse Error (${deviceType.toUpperCase()}): ${e.message}`);
                                 }
                             } else if (line.startsWith('cc:')) {
-                                if (deviceType === 'tx') { // Only TX sends CC data for visualizer
+                                if (deviceType === 'tx') {
                                     const parts = line.substring(3).split(',');
                                     if (parts.length === 2) updateCCVisualizer(parseInt(parts[0]), parseInt(parts[1]));
                                 }
@@ -630,9 +618,6 @@
                                 if (deviceType === 'tx') {
                                     setTimeout(() => sendCommand('tx', 'get_settings'), 100);
                                 }
-                            }
-                            else if (line.length > 0) {
-                                // console.log(`${deviceType.toUpperCase()}: ${line}`); // Keep this for debugging if needed, but suppress from logArea
                             }
                         }
                     }
@@ -645,7 +630,7 @@
                     }
                     if (deviceType === 'tx') txKeepReading = false;
                     else if (deviceType === 'rx') rxKeepReading = false;
-                    break; // Exit loop on error
+                    break;
                 }
             }
         }
@@ -657,11 +642,9 @@
             let keepReadingRef = deviceType === 'tx' ? txKeepReading : rxKeepReading;
 
             if (deviceRef && deviceRef.opened && keepReadingRef()) {
-                // Device is already connected and actively reading, no need to reconnect
                 return true;
             }
 
-            // Update status to 'Connecting...' if not already connected
             if (!deviceRef) {
                 log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)}, PID: 0x${productId.toString(16)})...`);
                 connectionStatusEl.textContent = 'Connecting...';
@@ -669,14 +652,12 @@
                 connectionStatusEl.classList.add('text-yellow-400');
             }
 
-
             try {
                 const devices = await navigator.usb.getDevices();
                 deviceObj = devices.find(d => d.vendorId === vendorId && d.productId === productId);
 
                 if (!deviceObj) {
-                    // Device not found among previously granted devices, cannot auto-connect
-                    throw new Error("Device not found.");
+                    throw new Error("Device not found among granted devices.");
                 }
 
                 await deviceObj.open();
@@ -684,7 +665,7 @@
 
                 for (const iface of deviceObj.configuration.interfaces) {
                     for (const alt of iface.alternates) {
-                        if (alt.interfaceClass === 0xFF) { // Vendor specific interface
+                        if (alt.interfaceClass === 0xFF) {
                             interfaceNum = iface.interfaceNumber;
                             for (const ep of alt.endpoints) {
                                 if (ep.direction === 'out') endpointOutNum = ep.endpointNumber;
@@ -718,23 +699,20 @@
                     rxKeepReading = true;
                     rxWasConnected = true;
                     readLoop('rx');
-                    // RX device sends settings on connect, no need for get_settings
                 }
-                return true; // Connection successful
+                return true;
             } catch (error) {
-                // Only log connection failure messages if they are not "disconnected" and the device was previously connected
                 if (!(deviceRef && error.message.includes("disconnected"))) {
                      log(`Connection failed for ${deviceType.toUpperCase()}: ${error.message}`);
                 }
 
-                // If device was connected and now errored, clear its reference
                 if (deviceRef && error.message.includes("disconnected")) {
                     if (deviceType === 'tx') txDevice = null;
                     else if (deviceType === 'rx') rxDevice = null;
                 }
 
                 setConnectionStatus(deviceType, false);
-                return false; // Connection failed
+                return false;
             } finally {
                 updateButtonStates();
                 updateUIVisibility();
@@ -772,7 +750,6 @@
                 } else if (deviceType === 'rx') {
                     rxDevice = null;
                     rxWasConnected = false;
-                    // Reset RX specific UI
                     rxEsbChannelSliderCol.value = 0;
                     rxEsbChannelValueElCol.textContent = '';
                     rxRssiValueElCol.textContent = '-- dBm';
@@ -782,7 +759,7 @@
                 log(`${deviceType.toUpperCase()} disconnected.`);
                 updateButtonStates();
                 updateUIVisibility();
-                startAutoReconnect(); // Restart auto-reconnect if any device is disconnected
+                startAutoReconnect();
             }
         };
 
@@ -801,31 +778,41 @@
                 welcomeMessage.style.display = 'flex';
                 monitorHeader.style.display = 'none';
                 visualizer.style.display = 'none';
-                // Reset last MIDI value when all devices are disconnected
                 lastCcSentEl.textContent = '-';
             }
         };
 
-        // Auto-reconnect loop
-        const autoReconnect = async () => {
+        // Auto-reconnect loop functions
+        const startAutoReconnect = () => {
+            if (autoReconnectIntervalId) {
+                clearInterval(autoReconnectIntervalId);
+            }
+            log("Starting auto-reconnect loop...");
+            nextDeviceToAttempt = 'tx'; // Reset starting device
+            autoReconnectIntervalId = setInterval(autoReconnectStep, RECONNECT_INTERVAL_MS);
+            autoReconnectStep(); // Initial call
+        };
+
+        const autoReconnectStep = async () => {
             if (txDevice && rxDevice) {
-                // Both are connected, stop the interval
                 if (autoReconnectIntervalId) {
                     clearInterval(autoReconnectIntervalId);
                     autoReconnectIntervalId = null;
-                    log("Both TX and RX connected. Stopping auto-reconnect.");
+                    log("Both TX and RX connected. Auto-reconnect paused.");
                 }
                 return;
             }
 
-            // Attempt to connect TX if not connected
-            if (!txDevice) {
-                await connectDevice('tx', TX_VID, TX_PID);
-            }
-
-            // Attempt to connect RX if not connected
-            if (!rxDevice) {
-                await connectDevice('rx', RX_VID, RX_PID);
+            if (nextDeviceToAttempt === 'tx') {
+                if (!txDevice) {
+                    await connectDevice('tx', TX_VID, TX_PID);
+                }
+                nextDeviceToAttempt = 'rx';
+            } else if (nextDeviceToAttempt === 'rx') {
+                if (!rxDevice) {
+                    await connectDevice('rx', RX_VID, RX_PID);
+                }
+                nextDeviceToAttempt = 'tx';
             }
 
             updateButtonStates();
@@ -835,21 +822,20 @@
 
         // --- Event Listeners ---
         disconnectTxButton.addEventListener('click', () => disconnectDevice('tx'));
-        disconnectRxButtonCol.addEventListener('click', () => disconnectDevice('rx')); // Updated ID
+        disconnectRxButtonCol.addEventListener('click', () => disconnectDevice('rx'));
 
         document.addEventListener('input', (e) => {
             const target = e.target;
             if (target.id === 'brightness') brightnessValueEl.textContent = target.value;
             else if (target.id === 'midiChannel') midiChannelValueEl.textContent = target.value;
             else if (target.id === 'esbChannel') esbChannelValueEl.textContent = target.value;
-            else if (target.id === 'rxEsbChannel-col') rxEsbChannelValueElCol.textContent = target.value; // Updated ID
+            else if (target.id === 'rxEsbChannel-col') rxEsbChannelValueElCol.textContent = target.value;
         });
 
         document.addEventListener('change', (e) => {
             const t = e.target;
             if (t.classList.contains('update-on-release') || t.classList.contains('update-on-change')) {
                 const action = t.dataset.action;
-                // Determine if it's a TX or RX control by checking its parent's ID
                 const deviceType = t.closest('#main-controls-tx') ? 'tx' : 'rx';
 
                 if (deviceType === 'tx') {
@@ -857,8 +843,12 @@
                     sendCommand('tx', cmd);
                     if (action === 'cc' || action === 'label') setTimeout(() => sendCommand('tx', 'get_settings'), 200);
                 } else if (deviceType === 'rx' && action === 'rx_esb_ch') {
-                    const channelValue = parseInt(t.value);
-                    sendChannelToRX(channelValue);
+                    // Snap RX ESB Channel value to the nearest 5
+                    const rawValue = parseInt(t.value);
+                    const snappedValue = Math.round(rawValue / 5) * 5;
+                    t.value = snappedValue; // Update slider position
+                    rxEsbChannelValueElCol.textContent = snappedValue; // Update display
+                    sendChannelToRX(snappedValue);
                 }
             }
         });
@@ -879,37 +869,34 @@
             }
         });
 
-        // Initial tab setup and auto-connect start on load
+        // Initial setup on window load
         window.onload = () => {
             activateTab('tx'); // Default to TX tab
             updateButtonStates(); // Set initial button states
             updateUIVisibility(); // Set initial UI visibility
-            startAutoReconnect(); // Start the auto-reconnect loop
+            startAutoReconnect(); // Start the alternating auto-reconnect loop
         };
 
         // USB device connect/disconnect event listeners for the browser
         navigator.usb.addEventListener('connect', (event) => {
             const device = event.device;
             log(`USB Device connected: ${device.productName} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)})`);
-            // Trigger auto-reconnect to try and re-establish connection
-            startAutoReconnect();
+            startAutoReconnect(); // Restart auto-reconnect on any USB connect event
         });
 
         navigator.usb.addEventListener('disconnect', (event) => {
             const device = event.device;
             log(`USB Device disconnected: ${device.productName} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)})`);
-            // Mark devices as disconnected and trigger auto-reconnect
             if (device.vendorId === TX_VID && device.productId === TX_PID) {
                 txDevice = null;
                 txKeepReading = false;
-                txWasConnected = false; // Reset wasConnected on disconnect
+                txWasConnected = false;
                 setConnectionStatus('tx', false);
             } else if (device.vendorId === RX_VID && device.productId === RX_PID) {
                 rxDevice = null;
                 rxKeepReading = false;
-                rxWasConnected = false; // Reset wasConnected on disconnect
+                rxWasConnected = false;
                 setConnectionStatus('rx', false);
-                // Reset RX specific UI
                 rxEsbChannelSliderCol.value = 0;
                 rxEsbChannelValueElCol.textContent = '';
                 rxRssiValueElCol.textContent = '-- dBm';
@@ -920,9 +907,7 @@
             startAutoReconnect(); // Always restart auto-reconnect
         });
 
-        // Tab activation logic (simplified as only TX tab remains in left column)
         const activateTab = (tabName) => {
-            // No tab buttons for RX anymore, only TX is a tab in this layout
             tabTx.classList.add('border-teal-400', 'text-white');
             tabContentTx.classList.remove('hidden');
         };
