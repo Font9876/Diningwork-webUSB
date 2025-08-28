@@ -669,7 +669,8 @@
                     // This will trigger the browser's device selection pop-up for manual connection.
                     if (!isAutoReconnect) {
                         log(`Device (VID: 0x${vendorId.toString(16)}, PID: 0x${productId.toString(16)}) not found. Requesting permission...`);
-                        deviceObj = await navigator.usb.requestDevice({ filters: [{ vendorId: vendorId, productId: productId }] });
+                        // MODIFIED: Removed filters to allow user to select any device
+                        deviceObj = await navigator.usb.requestDevice(); 
                     } else {
                         // For auto-reconnect, if not found and not previously connected, just fail silently.
                         setConnectionStatus(deviceType, false);
