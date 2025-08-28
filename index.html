@@ -252,7 +252,7 @@
             <div id="monitor-header" class="flex justify-between items-baseline pb-4 mb-4 border-b border-slate-800" style="display: none;">
                 <h2 class="text-2xl font-bold text-teal-300">Real-time Monitor</h2>
                 <div class="text-right">
-                    <p class="text-xs text-slate-400 uppercase font-medium tracking-wider">Last MIDI Value</p>
+                    <p id="last-cc-sent-label" class="text-xs text-slate-400 uppercase font-medium tracking-wider">Last MIDI Value</p>
                     <p id="last-cc-sent" class="font-mono text-3xl text-white font-extrabold">-</p>
                 </div>
             </div>
@@ -298,6 +298,8 @@
         const ccPotsContainer = document.getElementById('cc-pots-container');
         const ccBtnsContainer = document.getElementById('cc-btns-container');
         const lastCcSentEl = document.getElementById('last-cc-sent');
+        const lastCcSentLabel = document.getElementById('last-cc-sent-label');
+
 
         // RX Elements
         const mainControlsRx = document.getElementById('main-controls-rx');
@@ -328,6 +330,14 @@
         const RECONNECT_INTERVAL_MS = 250;
         let reconnectIntervalId = null;
 
+        // Flags to track if a device was ever successfully connected
+        let txWasConnected = false;
+        let rxWasConnected = false;
+
+        // Flags to stop auto-reconnect if initial manual connection failed
+        let txInitialConnectFailed = false;
+        let rxInitialConnectFailed = false;
+
         // --- BLE Button Content ---
         const bleOnIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 2.293a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 4.414V17a1 1 0 11-2 0V4.414L5.707 7.707a1 1 0 01-1.414-1.414l4-4z" clip-rule="evenodd" /></svg> Disable BLE`;
         const bleOffIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.27 6.957 14.54 4 10 4c-1.255 0-2.443.29-3.536.81l-2.064-2.065zM10 12a2 2 0 110-4 2 2 0 010 4z" clip-rule="evenodd" /><path d="M2 10s3.923-6 8-6 8 6 8 6-3.923 6-8 6-8-6-8-6zm7.885-1.462A3.004 3.004 0 0010 12a3 3 0 100-6 3.004 3.004 0 00-2.115.888l2.115 2.115z" /></svg> Enable BLE`;
@@ -347,14 +357,22 @@
 
         const setConnectionStatus = (deviceType, connected) => {
             const statusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusEl;
+            let wasConnectedFlag = deviceType === 'tx' ? txWasConnected : rxWasConnected;
+
             if (connected) {
                 statusEl.textContent = 'Connected';
-                statusEl.classList.remove('text-red-400', 'animate-pulse');
+                statusEl.classList.remove('text-red-400', 'text-yellow-400', 'animate-pulse');
                 statusEl.classList.add('text-green-400');
+                if (deviceType === 'tx') txWasConnected = true;
+                else if (deviceType === 'rx') rxWasConnected = true;
             } else {
                 statusEl.textContent = 'Disconnected';
-                statusEl.classList.remove('text-green-400');
-                statusEl.classList.add('text-red-400', 'animate-pulse');
+                statusEl.classList.remove('text-green-400', 'text-yellow-400');
+                statusEl.classList.add('text-red-400');
+                // Only add pulse if it was previously connected and now disconnected
+                if (wasConnectedFlag) {
+                    statusEl.classList.add('animate-pulse');
+                }
             }
         };
 
@@ -473,7 +491,7 @@
                     });
                 }
 
-                if (isPot) {
+                if (i < 8) { // Potentiometers
                     const barWrapper = document.createElement('div');
                     barWrapper.className = 'visualizer-item relative flex flex-col items-center h-full group';
                     barWrapper.innerHTML = `
@@ -485,7 +503,7 @@
                         <span class="absolute -bottom-6 text-sm font-semibold text-slate-300 truncate w-20 text-center">${label}</span>
                     `;
                     ccPotsContainer.appendChild(barWrapper);
-                } else {
+                } else { // Buttons
                     const btnWrapper = document.createElement('div');
                     btnWrapper.className = 'visualizer-item relative flex flex-col items-center h-full justify-end group';
                     btnWrapper.innerHTML = `
@@ -579,7 +597,19 @@
                                 } else {
                                     log(`RX: ${line}`);
                                 }
-                            } else {
+                            } else if (line.startsWith('Channel set to:')) { // NEW: Handle RX channel updates
+                                if (deviceType === 'rx') {
+                                    const channelMatch = line.match(/Channel set to: (\d+)/);
+                                    if (channelMatch && channelMatch[1]) {
+                                        const newChannel = parseInt(channelMatch[1]);
+                                        rxEsbChannelSlider.value = newChannel;
+                                        rxEsbChannelValueEl.textContent = newChannel;
+                                        log(`RX ESB Channel updated to: ${newChannel}`);
+                                    }
+                                }
+                                log(`${deviceType.toUpperCase()}: ${line}`);
+                            }
+                            else {
                                 log(`${deviceType.toUpperCase()}: ${line}`);
                             }
                         }
@@ -598,17 +628,44 @@
             }
         }
 
-        const connectDevice = async (deviceType, vendorId) => {
+        const connectDevice = async (deviceType, vendorId, isAutoReconnect = false) => {
             let deviceObj, interfaceNum, endpointInNum, endpointOutNum;
             let connectionStatusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusEl;
+            let wasConnectedFlag = deviceType === 'tx' ? txWasConnected : rxWasConnected;
+            let initialConnectFailedFlag = deviceType === 'tx' ? txInitialConnectFailed : rxInitialConnectFailed;
 
-            log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)})...`);
-            connectionStatusEl.textContent = 'Connecting...';
-            connectionStatusEl.classList.remove('text-green-400', 'text-red-400');
-            connectionStatusEl.classList.add('text-yellow-400', 'animate-pulse');
+            // Only show "Connecting..." status for manual attempts or first auto-reconnect attempt
+            // Also, don't show "Connecting..." if the initial manual attempt failed for this device and it's an auto-reconnect.
+            if (!isAutoReconnect || (isAutoReconnect && !initialConnectFailedFlag && !wasConnectedFlag)) {
+                log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)})...`);
+                connectionStatusEl.textContent = 'Connecting...';
+                connectionStatusEl.classList.remove('text-green-400', 'text-red-400', 'animate-pulse');
+                connectionStatusEl.classList.add('text-yellow-400');
+                if (!isAutoReconnect && !wasConnectedFlag) { // Only pulse for initial manual connect
+                    connectionStatusEl.classList.add('animate-pulse');
+                }
+            } else if (isAutoReconnect && initialConnectFailedFlag) {
+                // If it's an auto-reconnect and the initial manual connect failed, perform silently
+                // No UI update here for background retries
+                return false; // Skip this device for now, it failed its first visible attempt
+            } else if (isAutoReconnect && wasConnectedFlag) {
+                // If it's an auto-reconnect and it was previously connected, perform silently
+                // No UI update here for background retries
+                return false; // Let the auto-reconnect handle the silent retry
+            }
+
 
             try {
-                deviceObj = await navigator.usb.requestDevice({ filters: [{ vendorId: vendorId }] });
+                // Try to get an already granted device first
+                const devices = await navigator.usb.getDevices();
+                deviceObj = devices.find(d => d.vendorId === vendorId);
+
+                if (!deviceObj) {
+                    // If not already granted, request new device. This will show the browser prompt.
+                    // This is the only place a browser pop-up is expected for new devices.
+                    deviceObj = await navigator.usb.requestDevice({ filters: [{ vendorId: vendorId }] });
+                }
+
                 await deviceObj.open();
                 if (deviceObj.configuration === null) await deviceObj.selectConfiguration(1);
 
@@ -637,6 +694,8 @@
                     txEndpointIn = endpointInNum;
                     txEndpointOut = endpointOutNum;
                     txKeepReading = true;
+                    txWasConnected = true; // Mark as successfully connected at least once
+                    txInitialConnectFailed = false; // Reset failure flag
                     readLoop('tx');
                     await sendCommand('tx', "get_settings");
                 } else if (deviceType === 'rx') {
@@ -645,15 +704,20 @@
                     rxEndpointIn = endpointInNum;
                     rxEndpointOut = endpointOutNum;
                     rxKeepReading = true;
+                    rxWasConnected = true; // Mark as successfully connected at least once
+                    rxInitialConnectFailed = false; // Reset failure flag
                     readLoop('rx');
-                    // RX doesn't need get_settings, but we can set its default channel
-                    sendChannelToRX(parseInt(rxEsbChannelSlider.value || 0));
+                    sendChannelToRX(parseInt(rxEsbChannelSlider.value || 0)); // Set RX channel on connect
                 }
 
                 return true; // Connection successful
             } catch (error) {
                 log(`Connection failed for ${deviceType.toUpperCase()}: ${error.message}`);
                 setConnectionStatus(deviceType, false);
+                if (!isAutoReconnect) { // If it was a manual connect attempt that failed
+                    if (deviceType === 'tx') txInitialConnectFailed = true;
+                    else if (deviceType === 'rx') rxInitialConnectFailed = true;
+                }
                 return false; // Connection failed
             }
         };
@@ -690,56 +754,67 @@
         };
 
         const autoReconnect = async () => {
-            if (!txDevice && !txKeepReading) { // Only try to connect if not already connected or trying to read
-                await connectDevice('tx', TX_VID);
+            // Attempt to connect TX if not connected and either no initial failure or it was connected before
+            if (!txDevice && !txKeepReading && (!txInitialConnectFailed || txWasConnected)) {
+                await connectDevice('tx', TX_VID, true); // true for isAutoReconnect
             }
-            if (!rxDevice && !rxKeepReading) {
-                await connectDevice('rx', RX_VID);
+            // Attempt to connect RX if not connected and either no initial failure or it was connected before
+            if (!rxDevice && !rxKeepReading && (!rxInitialConnectFailed || rxWasConnected)) {
+                await connectDevice('rx', RX_VID, true); // true for isAutoReconnect
             }
 
-            // If both are connected, we can hide the welcome message and show controls
-            if (txDevice && rxDevice) {
+            // Check overall connection state
+            const allConnected = txDevice && rxDevice;
+            const allDisconnectedAndFailed = (!txDevice && txInitialConnectFailed) && (!rxDevice && rxInitialConnectFailed);
+
+            if (allConnected) {
                 welcomeMessage.style.display = 'none';
                 monitorHeader.style.display = 'flex';
                 visualizer.style.display = 'flex';
-                mainControlsTx.classList.add('fade-in');
-                mainControlsRx.classList.add('fade-in');
-                clearInterval(reconnectIntervalId); // Stop auto-reconnect once both are connected
+                // No fade-in classes here, as they are applied on initial successful connection
+                clearInterval(reconnectIntervalId);
                 reconnectIntervalId = null;
                 connectAllButton.disabled = true;
                 disconnectAllButton.disabled = false;
+            } else if (allDisconnectedAndFailed) {
+                // If both failed initial connection, stop auto-reconnect and show welcome message
+                welcomeMessage.style.display = 'flex';
+                monitorHeader.style.display = 'none';
+                visualizer.style.display = 'none';
+                connectAllButton.disabled = false;
+                disconnectAllButton.disabled = true;
+                clearInterval(reconnectIntervalId);
+                reconnectIntervalId = null;
             } else {
-                // If at least one is connected, show the interface
-                if (txDevice || rxDevice) {
-                    welcomeMessage.style.display = 'none';
-                    monitorHeader.style.display = 'flex';
-                    visualizer.style.display = 'flex';
-                    connectAllButton.disabled = true;
-                    disconnectAllButton.disabled = false;
-                } else {
-                    // If neither is connected, show welcome message
-                    welcomeMessage.style.display = 'flex';
-                    monitorHeader.style.display = 'none';
-                    visualizer.style.display = 'none';
-                    connectAllButton.disabled = false;
-                    disconnectAllButton.disabled = true;
-                }
+                // If at least one is connected or still trying, keep UI active
+                welcomeMessage.style.display = 'none';
+                monitorHeader.style.display = 'flex';
+                visualizer.style.display = 'flex';
+                connectAllButton.disabled = true;
+                disconnectAllButton.disabled = false;
             }
         };
 
         // --- Event Listeners ---
         connectAllButton.addEventListener('click', async () => {
             connectAllButton.disabled = true;
-            disconnectAllButton.disabled = true; // Disable until connection attempts are made
+            disconnectAllButton.disabled = true;
             log("Initiating connection to all devices...");
 
-            // Start auto-reconnect loop
-            if (reconnectIntervalId) clearInterval(reconnectIntervalId);
-            reconnectIntervalId = setInterval(autoReconnect, RECONNECT_INTERVAL_MS);
-            await autoReconnect(); // Run immediately
+            // Reset initial failure flags and wasConnected state for a fresh attempt
+            txInitialConnectFailed = false;
+            rxInitialConnectFailed = false;
+            txWasConnected = false;
+            rxWasConnected = false;
 
-            // Show default TX tab
-            activateTab('tx');
+            // Clear any existing auto-reconnect interval
+            if (reconnectIntervalId) clearInterval(reconnectIntervalId);
+
+            // Start auto-reconnect loop immediately
+            reconnectIntervalId = setInterval(autoReconnect, RECONNECT_INTERVAL_MS);
+            await autoReconnect(); // Run immediately to start connection attempts
+
+            activateTab('tx'); // Show default TX tab
         });
 
         disconnectAllButton.addEventListener('click', async () => {
