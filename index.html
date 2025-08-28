@@ -29,8 +29,6 @@
             animation: fadeIn 0.5s ease-out forwards;
         }
 
-        /* Removed TX-specific styles related to cc-bar-container, cc-bar, btn-indicator, visualizer-item, bank-btn */
-
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
@@ -103,11 +101,11 @@
                     <p class="text-slate-400 text-sm mb-6">MIDI Control Dashboard &amp; Configuration (RX Only)</p>
 
                     <div class="flex flex-wrap gap-3 sm:gap-4 items-center">
-                        <button id="connectAllButton" class="flex-1 px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2">
+                        <button id="connectRxButton" class="flex-1 px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
                             Connect RX Device
                         </button>
-                        <button id="disconnectAllButton" disabled class="flex-1 px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base inline-flex items-center justify-center gap-2">
+                        <button id="disconnectRxButton" disabled class="flex-1 px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base inline-flex items-center justify-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                             Disconnect RX
                         </button>
@@ -148,7 +146,7 @@
 
         <!-- Right Panel: Activity Log -->
         <main class="w-full bg-slate-900 p-4 sm:p-6 lg:p-8 flex flex-col border-t border-slate-800">
-            <div id="welcome-message" class="flex flex-col items-center justify-center h-full text-center" style="display: none;">
+            <div id="welcome-message" class="flex flex-col items-center justify-center h-full text-center" style="display: flex;">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-slate-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 <h2 class="text-3xl font-bold text-slate-300">Awaiting Connection</h2>
                 <p class="text-slate-500 mt-2 max-w-sm">Please click "Connect RX Device" to begin.</p>
@@ -163,12 +161,13 @@
 
     <script>
         // --- Device Vendor IDs & Product IDs ---
+        // RX now uses VID 0x000a and PID 0x001a (as defined in your RX Arduino sketch)
         const RX_VID = 0x000a;
         const RX_PID = 0x001a; 
 
         // --- DOM Elements ---
-        const connectAllButton = document.getElementById('connectAllButton');
-        const disconnectAllButton = document.getElementById('disconnectAllButton');
+        const connectRxButton = document.getElementById('connectRxButton'); // Renamed
+        const disconnectRxButton = document.getElementById('disconnectRxButton'); // Renamed
         const welcomeMessage = document.getElementById('welcome-message');
         const logArea = document.getElementById('log-area');
 
@@ -312,7 +311,6 @@
                                     log(`JSON Parse Error (${deviceType.toUpperCase()}): ${e.message}`);
                                 }
                             }
-                            // Removed TX-specific parsing (cc:, bank_changed:)
                             else {
                                 // log(`${deviceType.toUpperCase()}: ${line}`); // Suppress general logging if not JSON
                             }
@@ -333,7 +331,7 @@
 
         const connectDevice = async (deviceType, vendorId, productId, isAutoReconnect = false) => {
             let deviceObj, interfaceNum, endpointInNum, endpointOutNum;
-            let connectionStatusEl = rxConnectionStatusEl; // Only RX status now
+            let connectionStatusEl = rxConnectionStatusEl;
             let wasConnectedFlag = rxWasConnected;
             let initialConnectFailedFlag = rxInitialConnectFailed;
 
@@ -442,31 +440,27 @@
 
             if (anyConnected) {
                 welcomeMessage.style.display = 'none';
-                // monitorHeader.style.display = 'flex'; // No monitor header for RX only
-                // visualizer.style.display = 'flex'; // No visualizer for RX only
                 clearInterval(reconnectIntervalId);
                 reconnectIntervalId = null;
-                connectAllButton.disabled = true;
-                disconnectAllButton.disabled = false;
+                connectRxButton.disabled = true; // Renamed
+                disconnectRxButton.disabled = false; // Renamed
             } else if (allDisconnectedAndFailed) {
                 welcomeMessage.style.display = 'flex';
-                // monitorHeader.style.display = 'none';
-                // visualizer.style.display = 'none';
-                connectAllButton.disabled = false;
-                disconnectAllButton.disabled = true;
+                connectRxButton.disabled = false; // Renamed
+                disconnectRxButton.disabled = true; // Renamed
                 clearInterval(reconnectIntervalId);
                 reconnectIntervalId = null;
             } else {
-                welcomeMessage.style.display = 'flex'; // Show welcome message while trying to connect
-                connectAllButton.disabled = false;
-                disconnectAllButton.disabled = true;
+                welcomeMessage.style.display = 'flex';
+                connectRxButton.disabled = false; // Renamed
+                disconnectRxButton.disabled = true; // Renamed
             }
         };
 
         // --- Event Listeners ---
-        connectAllButton.addEventListener('click', async () => {
-            connectAllButton.disabled = true;
-            disconnectAllButton.disabled = true;
+        connectRxButton.addEventListener('click', async () => { // Renamed
+            connectRxButton.disabled = true; // Renamed
+            disconnectRxButton.disabled = true; // Renamed
             log("Initiating connection to RX device...");
 
             rxInitialConnectFailed = false;
@@ -476,12 +470,9 @@
 
             reconnectIntervalId = setInterval(autoReconnect, RECONNECT_INTERVAL_MS);
             await autoReconnect();
-
-            // No tabs needed for RX only, but ensure the RX content is visible
-            // document.getElementById('tab-content-rx').classList.remove('hidden');
         });
 
-        disconnectAllButton.addEventListener('click', async () => {
+        disconnectRxButton.addEventListener('click', async () => { // Renamed
             if (reconnectIntervalId) {
                 clearInterval(reconnectIntervalId);
                 reconnectIntervalId = null;
@@ -489,8 +480,8 @@
             await disconnectDevice('rx');
 
             welcomeMessage.style.display = 'flex';
-            connectAllButton.disabled = false;
-            disconnectAllButton.disabled = true;
+            connectRxButton.disabled = false; // Renamed
+            disconnectRxButton.disabled = true; // Renamed
             log("RX device disconnected.");
         });
 
@@ -510,8 +501,6 @@
                 }
             }
         });
-
-        // Removed click listener for bank-btn, bleToggleButton, startCalButton, tabs
 
         // USB device connect/disconnect event listeners for the browser
         navigator.usb.addEventListener('connect', (event) => {
