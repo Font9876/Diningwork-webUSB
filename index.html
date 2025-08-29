@@ -841,6 +841,7 @@
 
         // Modified autoReconnectStep to use navigator.usb.getDevices() for already-permitted devices
         const autoReconnectStep = async () => {
+            // Stop if both devices are connected.
             if (txDevice && rxDevice) {
                 if (autoReconnectIntervalId) {
                     clearInterval(autoReconnectIntervalId);
@@ -852,18 +853,22 @@
 
             const availableDevices = await navigator.usb.getDevices();
 
-            if (nextDeviceToAttempt === 'tx' && !txDevice) {
+            // Attempt to connect TX if not already connected
+            if (!txDevice) {
                 const foundTx = availableDevices.find(d => d.vendorId === TX_VID && d.productId === TX_PID);
                 if (foundTx) {
+                    log("Found TX device in getDevices(). Attempting to connect...");
                     await connectDevice('tx', TX_VID, TX_PID, foundTx); // Pass the found device
                 }
-                nextDeviceToAttempt = 'rx';
-            } else if (nextDeviceToAttempt === 'rx' && !rxDevice) {
+            }
+
+            // Attempt to connect RX if not already connected
+            if (!rxDevice) {
                 const foundRx = availableDevices.find(d => d.vendorId === RX_VID && d.productId === RX_PID);
                 if (foundRx) {
+                    log("Found RX device in getDevices(). Attempting to connect...");
                     await connectDevice('rx', RX_VID, RX_PID, foundRx); // Pass the found device
                 }
-                nextDeviceToAttempt = 'tx';
             }
 
             updateButtonStates();
@@ -936,6 +941,8 @@
             updateButtonStates(); // Set initial button states
             updateUIVisibility(); // Set initial UI visibility
             startAutoReconnect(); // Start the alternating auto-reconnect loop
+            // Immediately attempt an auto-reconnect step when the page loads
+            autoReconnectStep();
         };
 
         // USB device connect/disconnect event listeners for the browser
@@ -982,4 +989,3 @@
     </script>
 </body>
 </html>
-
