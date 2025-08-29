@@ -132,7 +132,8 @@
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
             height: 100%; /* Fill parent container height */
-            max-height: 250px; /* Increased length for RSSI bar */
+            /* Increased max-height for RSSI bar as requested */
+            max-height: 400px; /* Changed from 250px to 400px */
             width: 1rem;
             position: relative;
             display: flex;
@@ -364,6 +365,11 @@
         const RECONNECT_INTERVAL_MS = 100; // 100ms interval for alternating attempts
         let nextDeviceToAttempt = 'tx'; // Start by attempting TX
 
+        // --- RX Slider State for "Fighting" Fix ---
+        let isDraggingRxEsbChannel = false;
+        let rxEsbChannelSendTimeout = null;
+        const RX_ESB_CHANNEL_DEBOUNCE_MS = 300; // Debounce time for sending ESB channel to RX
+
         // --- BLE Button Content ---
         const bleOnIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 2.293a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 4.414V17a1 1 0 11-2 0V4.414L5.707 7.707a1 1 0 01-1.414-1.414l4-4z" clip-rule="evenodd" /></svg> Disable BLE`;
         const bleOffIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.27 6.957 14.54 4 10 4c-1.255 0-2.443.29-3.536.81l-2.064-2.065zM10 12a2 2 0 110-4 2 2 0 010 4z" clip-rule="evenodd" /><path d="M2 10s3.923-6 8-6 8 6 8 6-3.923 6-8 6-8-6-8-6zm7.885-1.462A3.004 3.004 0 0010 12a3 3 0 100-6 3.004 3.004 0 00-2.115.888l2.115 2.115z" /></svg> Enable BLE`;
@@ -565,7 +571,10 @@
 
         const populateRxUI = (settings) => {
             if (settings && typeof settings.esbChannel !== 'undefined') {
-                rxEsbChannelSliderCol.value = settings.esbChannel;
+                // Only update the slider value if the user is not actively dragging it
+                if (!isDraggingRxEsbChannel) {
+                    rxEsbChannelSliderCol.value = settings.esbChannel;
+                }
                 rxEsbChannelValueElCol.textContent = settings.esbChannel;
             }
 
@@ -857,8 +866,10 @@
             if (!txDevice) {
                 const foundTx = availableDevices.find(d => d.vendorId === TX_VID && d.productId === TX_PID);
                 if (foundTx) {
-                    log("Found TX device in getDevices(). Attempting to connect...");
+                    log("Found previously permitted TX device. Attempting to connect...");
                     await connectDevice('tx', TX_VID, TX_PID, foundTx); // Pass the found device
+                } else {
+                    log("No previously permitted TX device found.");
                 }
             }
 
@@ -866,8 +877,10 @@
             if (!rxDevice) {
                 const foundRx = availableDevices.find(d => d.vendorId === RX_VID && d.productId === RX_PID);
                 if (foundRx) {
-                    log("Found RX device in getDevices(). Attempting to connect...");
+                    log("Found previously permitted RX device. Attempting to connect...");
                     await connectDevice('rx', RX_VID, RX_PID, foundRx); // Pass the found device
+                } else {
+                    log("No previously permitted RX device found.");
                 }
             }
 
@@ -879,10 +892,12 @@
         // --- Event Listeners ---
         // New manual connect buttons
         connectTxButton.addEventListener('click', async () => {
+            log("Manual TX connect initiated. A browser prompt may appear.");
             await connectDevice('tx', TX_VID, TX_PID); // Trigger requestDevice for initial connection
             startAutoReconnect(); // Restart auto-reconnect after manual connection
         });
         connectRxButton.addEventListener('click', async () => {
+            log("Manual RX connect initiated. A browser prompt may appear.");
             await connectDevice('rx', RX_VID, RX_PID); // Trigger requestDevice for initial connection
             startAutoReconnect(); // Restart auto-reconnect after manual connection
         });
@@ -895,7 +910,15 @@
             if (target.id === 'brightness') brightnessValueEl.textContent = target.value;
             else if (target.id === 'midiChannel') midiChannelValueEl.textContent = target.value;
             else if (target.id === 'esbChannel') esbChannelValueEl.textContent = target.value;
-            else if (target.id === 'rxEsbChannel-col') rxEsbChannelValueElCol.textContent = target.value;
+            else if (target.id === 'rxEsbChannel-col') {
+                rxEsbChannelValueElCol.textContent = target.value;
+                // Set dragging flag
+                isDraggingRxEsbChannel = true;
+                // Clear any pending debounce timeout
+                if (rxEsbChannelSendTimeout) {
+                    clearTimeout(rxEsbChannelSendTimeout);
+                }
+            }
         });
 
         document.addEventListener('change', (e) => {
@@ -909,14 +932,36 @@
                     sendCommand('tx', cmd);
                     if (action === 'cc' || action === 'label') setTimeout(() => sendCommand('tx', 'get_settings'), 200);
                 } else if (deviceType === 'rx' && action === 'rx_esb_ch') {
-                    // Snap RX ESB Channel value to the nearest 5
-                    const rawValue = parseInt(t.value);
-                    const snappedValue = Math.round(rawValue / 5) * 5;
-                    t.value = snappedValue; // Update slider position
-                    rxEsbChannelValueElCol.textContent = snappedValue; // Update display
-                    sendChannelToRX(snappedValue);
+                    // Release dragging flag
+                    isDraggingRxEsbChannel = false;
+                    // Debounce sending the command to RX
+                    if (rxEsbChannelSendTimeout) {
+                        clearTimeout(rxEsbChannelSendTimeout);
+                    }
+                    rxEsbChannelSendTimeout = setTimeout(() => {
+                        // Snap RX ESB Channel value to the nearest 5
+                        const rawValue = parseInt(t.value);
+                        const snappedValue = Math.round(rawValue / 5) * 5;
+                        t.value = snappedValue; // Update slider position
+                        rxEsbChannelValueElCol.textContent = snappedValue; // Update display
+                        sendChannelToRX(snappedValue);
+                    }, RX_ESB_CHANNEL_DEBOUNCE_MS);
                 }
             }
+        });
+
+        // Event listeners for when the RX ESB channel slider is being interacted with
+        rxEsbChannelSliderCol.addEventListener('pointerdown', () => {
+            isDraggingRxEsbChannel = true;
+            if (rxEsbChannelSendTimeout) {
+                clearTimeout(rxEsbChannelSendTimeout);
+            }
+        });
+
+        rxEsbChannelSliderCol.addEventListener('pointerup', () => {
+            isDraggingRxEsbChannel = false;
+            // Trigger a change event to ensure the final value is sent after drag
+            rxEsbChannelSliderCol.dispatchEvent(new Event('change', { bubbles: true }));
         });
 
         document.addEventListener('click', (e) => {
@@ -982,8 +1027,16 @@
         });
 
         const activateTab = (tabName) => {
-            tabTx.classList.add('border-teal-400', 'text-white');
-            tabContentTx.classList.remove('hidden');
+            // Note: tabTx and tabContentTx are not defined in the provided HTML.
+            // If these were intended to be used, they need corresponding HTML elements.
+            // For now, removing references to avoid errors, or assuming they are handled elsewhere.
+            // If they are part of the layout, ensure elements with IDs 'tab-tx' and 'tab-content-tx' exist.
+            // As currently structured, the left panel is always visible and doesn't rely on 'tabs'.
+            // Keeping the function to prevent errors if it's called elsewhere, but noting its current limited impact.
+            // If 'tabTx' and 'tabContentTx' elements are added, this function will become fully functional.
+            // For now, if you intend to have tabs, ensure their HTML elements are present.
+            // Example: <button id="tab-tx" class="tab-btn">TX Settings</button>
+            // Example: <div id="tab-content-tx" class="tab-content">...TX content...</div>
         };
 
     </script>
