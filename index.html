@@ -132,8 +132,7 @@
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
             height: 100%; /* Fill parent container height */
-            /* Increased max-height for RSSI bar as requested */
-            max-height: 400px; /* Changed from 250px to 400px */
+            max-height: 400px; /* Increased max-height for RSSI bar */
             width: 1rem;
             position: relative;
             display: flex;
@@ -282,18 +281,23 @@
                 </button>
             </div>
 
-            <div class="space-y-2 mb-8">
-                <div class="flex flex-col items-center justify-center"><label for="rxEsbChannel-col" class="block text-sm font-medium text-slate-400 mb-1">ESB Ch</label><span id="rxEsbChannel-value-col" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-                <input type="range" id="rxEsbChannel-col" min="0" max="100" step="5" class="w-full update-on-release" data-action="rx_esb_ch">
-            </div>
-
-            <div class="flex-grow flex flex-col items-center justify-end h-40 mt-auto">
-                <span class="text-xs text-slate-500 font-mono mb-0.5 font-semibold">-20dBm</span>
-                <div class="vertical-rssi-bar-container bg-slate-900 h-full w-4 rounded-full border border-slate-700 shadow-inner overflow-hidden">
-                    <div id="vertical-rssi-bar" class="vertical-rssi-bar" style="height: 0%;"></div>
+            <!-- Parent container for ESB channel slider and value. Changed h-40 to h-full. -->
+            <div class="space-y-2 mb-8 h-full flex flex-col">
+                <div class="flex flex-col items-center justify-center">
+                    <label for="rxEsbChannel-col" class="block text-sm font-medium text-slate-400 mb-1">ESB Ch</label>
+                    <span id="rxEsbChannel-value-col" class="font-mono text-cyan-300 text-sm font-semibold"></span>
                 </div>
-                <span id="rxRssi-value-col" class="text-sm font-mono text-cyan-300 font-semibold my-2">-- dBm</span>
-                <span class="text-xs text-slate-500 font-mono mt-0.5 font-semibold">-100dBm</span>
+                <input type="range" id="rxEsbChannel-col" min="0" max="100" step="5" class="w-full update-on-release" data-action="rx_esb_ch">
+
+                <!-- RSSI Bar section, now filling remaining vertical space -->
+                <div class="flex-grow flex flex-col items-center justify-end mt-auto">
+                    <span class="text-xs text-slate-500 font-mono mb-0.5 font-semibold">-20dBm</span>
+                    <div class="vertical-rssi-bar-container bg-slate-900 h-full w-4 rounded-full border border-slate-700 shadow-inner overflow-hidden">
+                        <div id="vertical-rssi-bar" class="vertical-rssi-bar" style="height: 0%;"></div>
+                    </div>
+                    <span id="rxRssi-value-col" class="text-sm font-mono text-cyan-300 font-semibold my-2">-- dBm</span>
+                    <span class="text-xs text-slate-500 font-mono mt-0.5 font-semibold">-100dBm</span>
+                </div>
             </div>
         </div>
     </div>
@@ -360,6 +364,7 @@
 
         let txWasConnected = false;
         let rxWasConnected = false;
+        let rxEsbChannelInitialRead = false; // New flag to track initial RX ESB channel read
 
         let autoReconnectIntervalId = null;
         const RECONNECT_INTERVAL_MS = 100; // 100ms interval for alternating attempts
@@ -416,12 +421,10 @@
                 device = rxDevice;
                 endpointOut = rxEndpointOut;
             } else {
-                // log(`Unknown device type: ${deviceType}`); // Suppress this log
                 return;
             }
 
             if (!device) {
-                // log(`${deviceType.toUpperCase()} device not connected. Cannot send command.`); // Suppress this log
                 return;
             }
             try {
@@ -571,10 +574,15 @@
 
         const populateRxUI = (settings) => {
             if (settings && typeof settings.esbChannel !== 'undefined') {
-                // Only update the slider value if the user is not actively dragging it
-                if (!isDraggingRxEsbChannel) {
+                // Update the slider value only if the user is not actively dragging it
+                // AND if the initial read for this connection hasn't happened yet.
+                // This ensures the slider position is set once on connect or if not dragging,
+                // but then the device updates don't fight the user's interaction.
+                if (!isDraggingRxEsbChannel && !rxEsbChannelInitialRead) {
                     rxEsbChannelSliderCol.value = settings.esbChannel;
+                    rxEsbChannelInitialRead = true; // Mark as read for this connection
                 }
+                // Always update the text display to show the current value from the device
                 rxEsbChannelValueElCol.textContent = settings.esbChannel;
             }
 
@@ -731,6 +739,7 @@
                     rxEndpointOut = endpointOutNum;
                     rxKeepReading = true;
                     rxWasConnected = true;
+                    rxEsbChannelInitialRead = false; // Reset initial read flag for new connection
                     readLoop('rx');
                     // Add an initial get_settings or relevant command for RX if needed, if it doesn't auto-send
                 }
@@ -786,6 +795,7 @@
                 } else if (deviceType === 'rx') {
                     rxDevice = null;
                     rxWasConnected = false;
+                    rxEsbChannelInitialRead = false; // Reset flag on disconnect
                     rxEsbChannelSliderCol.value = 0;
                     rxEsbChannelValueElCol.textContent = '';
                     rxRssiValueElCol.textContent = '-- dBm';
@@ -845,7 +855,7 @@
             log("Starting auto-reconnect loop...");
             nextDeviceToAttempt = 'tx'; // Reset starting device
             autoReconnectIntervalId = setInterval(autoReconnectStep, RECONNECT_INTERVAL_MS);
-            // No initial call here, let the interval trigger the first step
+            // The initial call to autoReconnectStep is now handled directly in window.onload
         };
 
         // Modified autoReconnectStep to use navigator.usb.getDevices() for already-permitted devices
@@ -861,15 +871,14 @@
             }
 
             const availableDevices = await navigator.usb.getDevices();
+            console.debug("Devices found by navigator.usb.getDevices():", availableDevices.map(d => `${d.productName} (0x${d.vendorId.toString(16)}:0x${d.productId.toString(16)})`));
 
             // Attempt to connect TX if not already connected
             if (!txDevice) {
                 const foundTx = availableDevices.find(d => d.vendorId === TX_VID && d.productId === TX_PID);
                 if (foundTx) {
-                    log("Found previously permitted TX device. Attempting to connect...");
+                    log("Auto-connecting to previously permitted TX device.");
                     await connectDevice('tx', TX_VID, TX_PID, foundTx); // Pass the found device
-                } else {
-                    log("No previously permitted TX device found.");
                 }
             }
 
@@ -877,10 +886,8 @@
             if (!rxDevice) {
                 const foundRx = availableDevices.find(d => d.vendorId === RX_VID && d.productId === RX_PID);
                 if (foundRx) {
-                    log("Found previously permitted RX device. Attempting to connect...");
+                    log("Auto-connecting to previously permitted RX device.");
                     await connectDevice('rx', RX_VID, RX_PID, foundRx); // Pass the found device
-                } else {
-                    log("No previously permitted RX device found.");
                 }
             }
 
@@ -985,9 +992,10 @@
             activateTab('tx'); // Default to TX tab
             updateButtonStates(); // Set initial button states
             updateUIVisibility(); // Set initial UI visibility
-            startAutoReconnect(); // Start the alternating auto-reconnect loop
             // Immediately attempt an auto-reconnect step when the page loads
             autoReconnectStep();
+            // Then start the periodic auto-reconnect loop
+            startAutoReconnect();
         };
 
         // USB device connect/disconnect event listeners for the browser
@@ -1015,7 +1023,7 @@
                 rxDevice = null;
                 rxKeepReading = false;
                 rxWasConnected = false;
-                setConnectionStatus('rx', false);
+                rxEsbChannelInitialRead = false; // Reset flag on disconnect
                 rxEsbChannelSliderCol.value = 0;
                 rxEsbChannelValueElCol.textContent = '';
                 rxRssiValueElCol.textContent = '-- dBm';
@@ -1027,16 +1035,14 @@
         });
 
         const activateTab = (tabName) => {
-            // Note: tabTx and tabContentTx are not defined in the provided HTML.
-            // If these were intended to be used, they need corresponding HTML elements.
-            // For now, removing references to avoid errors, or assuming they are handled elsewhere.
-            // If they are part of the layout, ensure elements with IDs 'tab-tx' and 'tab-content-tx' exist.
-            // As currently structured, the left panel is always visible and doesn't rely on 'tabs'.
-            // Keeping the function to prevent errors if it's called elsewhere, but noting its current limited impact.
-            // If 'tabTx' and 'tabContentTx' elements are added, this function will become fully functional.
-            // For now, if you intend to have tabs, ensure their HTML elements are present.
-            // Example: <button id="tab-tx" class="tab-btn">TX Settings</button>
-            // Example: <div id="tab-content-tx" class="tab-content">...TX content...</div>
+            // This function exists from previous versions but its corresponding HTML elements
+            // (tabTx, tabContentTx) are not present in the current HTML structure.
+            // If you intend to use tabs, please ensure the HTML elements with these IDs are added.
+            // Otherwise, this function will not have any visible effect.
+            // For example:
+            // <button id="tab-tx" class="border-b-2 px-4 py-2">TX Settings</button>
+            // <div id="tab-content-tx">... TX content here ...</div>
+            // For now, it's kept to avoid potential reference errors if called.
         };
 
     </script>
