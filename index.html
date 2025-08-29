@@ -132,7 +132,7 @@
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
             height: 100%; /* Fill parent container height */
-            max-height: 400px; /* Increased max-height for RSSI bar */
+            /* Removed max-height to allow it to scale freely within its flex container */
             width: 1rem;
             position: relative;
             display: flex;
@@ -146,6 +146,13 @@
             /* Gradient from red (bad) to yellow to green (good) */
             background-image: linear-gradient(to top, #ef4444, #f59e0b, #22c55e);
             transition: height 0.2s ease-out;
+        }
+
+        /* New style for dimming disconnected sections */
+        .dimmed-section {
+            opacity: 0.4;
+            pointer-events: none; /* Disables interaction */
+            filter: grayscale(50%); /* Optional: visually indicate dullness */
         }
     </style>
 </head>
@@ -322,6 +329,7 @@
 
         // TX Elements
         const txConnectionStatusEl = document.getElementById('tx-connection-status');
+        const mainControlsTx = document.getElementById('main-controls-tx'); // Get the main TX controls container
         const bankSelectionGrid = document.getElementById('bank-selection-grid');
         const brightnessSlider = document.getElementById('brightness');
         const brightnessValueEl = document.getElementById('brightness-value');
@@ -645,7 +653,7 @@
                                     log(`JSON Parse Error (${deviceType.toUpperCase()}): ${e.message}`);
                                 }
                             } else if (line.startsWith('cc:')) {
-                                if (deviceType === 'tx') {
+                                if (deviceType === 'tx') { // Only TX sends CC data to the dashboard
                                     const parts = line.substring(3).split(',');
                                     if (parts.length === 2) updateCCVisualizer(parseInt(parts[0]), parseInt(parts[1]));
                                 }
@@ -845,6 +853,15 @@
                 visualizer.style.display = 'none';
                 lastCcSentEl.textContent = '-';
             }
+
+            // Dim TX controls if TX device is not connected
+            if (mainControlsTx) { // Check if element exists
+                if (txDevice) {
+                    mainControlsTx.classList.remove('dimmed-section');
+                } else {
+                    mainControlsTx.classList.add('dimmed-section');
+                }
+            }
         };
 
         // Auto-reconnect loop functions
@@ -871,7 +888,7 @@
             }
 
             const availableDevices = await navigator.usb.getDevices();
-            console.debug("Devices found by navigator.usb.getDevices():", availableDevices.map(d => `${d.productName} (0x${d.vendorId.toString(16)}:0x${d.productId.toString(16)})`));
+            // console.debug removed to avoid flooding logs: "Devices found by navigator.usb.getDevices():", availableDevices.map(d => `${d.productName} (0x${d.vendorId.toString(16)}:0x${d.productId.toString(16)})`);
 
             // Attempt to connect TX if not already connected
             if (!txDevice) {
@@ -1026,7 +1043,6 @@
                 rxEsbChannelInitialRead = false; // Reset flag on disconnect
                 rxEsbChannelSliderCol.value = 0;
                 rxEsbChannelValueElCol.textContent = '';
-                rxRssiValueElCol.textContent = '-- dBm';
                 verticalRssiBar.style.height = '0%';
             }
             updateButtonStates();
