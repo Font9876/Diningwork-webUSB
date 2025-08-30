@@ -26,7 +26,7 @@
 
     /* New dimming class for disconnected state */
     .disconnected {
-      filter: grayscale(100%) blur(0.5px) opacity(0.6);
+      filter: grayscale(100%) blur(0.2px) opacity(0.6);
       pointer-events: none;
       transition: filter 0.5s ease-in-out;
     }
@@ -190,7 +190,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
               Connect TX
             </button>
-            <button id="disconnectTxButton" disabled class="w-full px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base inline-flex items-center justify-center gap-2 hidden">
+            <button id="disconnectTxButton" class="w-full px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
               Disconnect TX
             </button>
@@ -290,7 +290,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
           Connect RX
         </button>
-        <button id="disconnectRxButton" disabled class="w-full px-4 py-2 bg-slate-600 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none inline-flex items-center justify-center gap-2 hidden">
+        <button id="disconnectRxButton" class="w-full px-4 py-2 bg-slate-600 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 inline-flex items-center justify-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
           Disconnect RX
         </button>
@@ -644,17 +644,18 @@
       }
     }
 
-    // Modified connectDevice function to support both initial request and auto-reconnect
-    const connectDevice = async (deviceType, vendorId, productId) => {
+    const connectDevice = async (deviceType) => {
+        let vendorId, productId;
+        if (deviceType === 'tx') {
+            vendorId = TX_VID;
+            productId = TX_PID;
+        } else if (deviceType === 'rx') {
+            vendorId = RX_VID;
+            productId = RX_PID;
+        }
+
         let deviceObj, interfaceNum, endpointInNum, endpointOutNum;
         let connectionStatusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusElCol;
-        let deviceRef = deviceType === 'tx' ? txDevice : rxDevice;
-        let keepReadingRef = deviceType === 'tx' ? txKeepReading : rxKeepReading;
-
-        // If already connected, no need to proceed
-        if (deviceRef && deviceRef.opened && keepReadingRef()) {
-            return true;
-        }
 
         log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)}, PID: 0x${productId.toString(16)})...`);
         connectionStatusEl.textContent = 'Connecting...';
@@ -713,11 +714,11 @@
         } catch (error) {
             if (error.message.includes("User cancelled") || error.message.includes("No device selected")) {
                 log(`Connection for ${deviceType.toUpperCase()} cancelled by user.`);
-            } else if (!(deviceRef && error.message.includes("disconnected"))) {
+            } else if (!((deviceType === 'tx' ? txDevice : rxDevice) && error.message.includes("disconnected"))) {
                 log(`Connection failed for ${deviceType.toUpperCase()}: ${error.message}`);
             }
 
-            if (deviceRef && error.message.includes("disconnected")) {
+            if ((deviceType === 'tx' ? txDevice : rxDevice) && error.message.includes("disconnected")) {
                 if (deviceType === 'tx') txDevice = null;
                 else if (deviceType === 'rx') rxDevice = null;
             }
@@ -729,7 +730,6 @@
             updateUIVisibility();
         }
     };
-
 
     const disconnectDevice = async (deviceType) => {
       let deviceObj, interfaceNum;
@@ -776,32 +776,46 @@
     const updateButtonStates = () => {
         // TX Buttons
         if (txDevice) {
-            connectTxButton.classList.add('hidden');
-            disconnectTxButton.classList.remove('hidden');
+            connectTxButton.disabled = true;
             disconnectTxButton.disabled = false;
             txPanel.classList.remove('disconnected');
-            txPanel.classList.add('undimmed');
         } else {
-            connectTxButton.classList.remove('hidden');
-            disconnectTxButton.classList.add('hidden');
-            connectTxButton.disabled = false; // Always allow manual connect if disconnected
+            connectTxButton.disabled = false;
+            disconnectTxButton.disabled = true;
             txPanel.classList.add('disconnected');
-            txPanel.classList.remove('undimmed');
         }
 
         // RX Buttons
         if (rxDevice) {
-            connectRxButton.classList.add('hidden');
-            disconnectRxButton.classList.remove('hidden');
+            connectRxButton.disabled = true;
             disconnectRxButton.disabled = false;
             rxPanel.classList.remove('disconnected');
-            rxPanel.classList.add('undimmed');
         } else {
-            connectRxButton.classList.remove('hidden');
-            disconnectRxButton.classList.add('hidden');
-            connectRxButton.disabled = false; // Always allow manual connect if disconnected
+            connectRxButton.disabled = false;
+            disconnectRxButton.disabled = true;
             rxPanel.classList.add('disconnected');
-            rxPanel.classList.remove('undimmed');
+        }
+
+        // Ensure connect buttons are never dimmed or disabled
+        connectTxButton.disabled = false;
+        connectRxButton.disabled = false;
+        connectTxButton.classList.remove('hidden');
+        connectRxButton.classList.remove('hidden');
+
+        if (txDevice) {
+          connectTxButton.classList.add('hidden');
+          disconnectTxButton.classList.remove('hidden');
+        } else {
+          connectTxButton.classList.remove('hidden');
+          disconnectTxButton.classList.add('hidden');
+        }
+        
+        if (rxDevice) {
+          connectRxButton.classList.add('hidden');
+          disconnectRxButton.classList.remove('hidden');
+        } else {
+          connectRxButton.classList.remove('hidden');
+          disconnectRxButton.classList.add('hidden');
         }
     };
 
@@ -831,9 +845,9 @@
       log(`USB Device connected: ${device.productName} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)})`);
       // Attempt to connect newly connected device if it matches our VIDs/PIDs
       if (device.vendorId === TX_VID && device.productId === TX_PID) {
-        connectDevice('tx', TX_VID, TX_PID, device);
+        connectDevice('tx', device);
       } else if (device.vendorId === RX_VID && device.productId === RX_PID) {
-        connectDevice('rx', RX_VID, RX_PID, device);
+        connectDevice('rx', device);
       }
     });
 
