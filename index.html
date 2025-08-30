@@ -145,13 +145,19 @@
       background-image: linear-gradient(to top, #ef4444, #f59e0b, #22c55e);
       transition: height 0.2s ease-out;
     }
+
+    .disabled-overlay {
+      pointer-events: none;
+      opacity: 0.4;
+      transition: opacity 0.3s ease-in-out;
+    }
   </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
   <div class="flex flex-col lg:flex-row w-full max-w-screen-2xl bg-slate-900/70 backdrop-blur-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-700/80">
 
     <!-- Left Panel: Header, TX Settings (45%) -->
-    <aside class="w-full lg:w-[45%] bg-slate-800/50 p-4 sm:p-6 lg:p-8 flex flex-col justify-between border-r border-slate-700">
+    <aside id="tx-panel" class="w-full lg:w-[45%] bg-slate-800/50 p-4 sm:p-6 lg:p-8 flex flex-col justify-between border-r border-slate-700">
       <div>
         <!-- Header and Connection Controls (now just status) -->
         <header class="pb-6 mb-6 border-b border-slate-700">
@@ -251,6 +257,13 @@
       <div id="visualizer" class="flex-grow flex flex-col justify-end min-h-[150px] pb-8" style="display: none;">
         <div id="cc-pots-container" class="grid grid-cols-4 md:grid-cols-8 gap-x-6 gap-y-2 flex-grow items-end"></div>
         <div id="cc-btns-container" class="grid grid-cols-2 sm:grid-cols-4 gap-4 h-16 items-end pt-8 border-t border-slate-800"></div>
+        
+        <!-- New RX Real-time MIDI Display -->
+        <div id="rx-midi-monitor" class="mt-8 pt-8 border-t border-slate-800 hidden">
+          <h3 class="text-xl font-bold mb-4 text-cyan-300">RX MIDI Monitor</h3>
+          <p class="text-slate-400">Last received CC:</p>
+          <p id="rx-last-cc-received" class="font-mono text-2xl text-white font-extrabold">--</p>
+        </div>
       </div>
 
       <div class="mt-auto flex flex-col-reverse">
@@ -260,7 +273,7 @@
     </main>
 
     <!-- Rightmost Thin Panel: RX Status & Vertical RSSI (10%) -->
-    <div class="w-full lg:w-[10%] bg-slate-800/50 p-4 sm:p-6 flex flex-col justify-start border-l border-slate-700">
+    <div id="rx-panel" class="w-full lg:w-[10%] bg-slate-800/50 p-4 sm:p-6 flex flex-col justify-start border-l border-slate-700">
       <h2 class="text-xl font-bold text-teal-300 text-center mb-4 lg:mb-6">RX</h2>
       <div id="rx-column-status" class="text-center text-sm mb-4 lg:mb-6">
         <p class="text-slate-400 uppercase font-medium text-xs tracking-wider">RX Status</p>
@@ -314,6 +327,7 @@
     const logArea = document.getElementById('log-area');
 
     // TX Elements
+    const txPanel = document.getElementById('tx-panel');
     const txConnectionStatusEl = document.getElementById('tx-connection-status');
     const bankSelectionGrid = document.getElementById('bank-selection-grid');
     const brightnessSlider = document.getElementById('brightness');
@@ -330,11 +344,14 @@
     const lastCcSentEl = document.getElementById('last-cc-sent');
 
     // RX Elements
+    const rxPanel = document.getElementById('rx-panel');
     const rxConnectionStatusElCol = document.getElementById('rx-connection-status-col');
     const rxEsbChannelSliderCol = document.getElementById('rxEsbChannel-col');
     const rxEsbChannelValueElCol = document.getElementById('rxEsbChannel-value-col');
     const rxRssiValueElCol = document.getElementById('rxRssi-value-col');
     const verticalRssiBar = document.getElementById('vertical-rssi-bar');
+    const rxMidiMonitor = document.getElementById('rx-midi-monitor');
+    const rxLastCcReceivedEl = document.getElementById('rx-last-cc-received');
     
     // Tab Elements (only TX settings remain as a conceptual "tab" in the left column)
     const tabTx = document.getElementById('tab-tx');
@@ -381,18 +398,21 @@
 
     const setConnectionStatus = (deviceType, connected) => {
       const statusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusElCol;
+      const panelEl = deviceType === 'tx' ? txPanel : rxPanel;
       let wasConnectedFlag = deviceType === 'tx' ? txWasConnected : rxWasConnected;
 
       if (connected) {
         statusEl.textContent = 'Connected';
         statusEl.classList.remove('text-red-400', 'text-yellow-400', 'animate-pulse');
         statusEl.classList.add('text-green-400');
+        panelEl.classList.remove('disabled-overlay');
         if (deviceType === 'tx') txWasConnected = true;
         else if (deviceType === 'rx') rxWasConnected = true;
       } else {
         statusEl.textContent = 'Disconnected';
         statusEl.classList.remove('text-green-400', 'text-yellow-400');
         statusEl.classList.add('text-red-400');
+        panelEl.classList.add('disabled-overlay');
         if (wasConnectedFlag) {
           statusEl.classList.add('animate-pulse');
         }
@@ -565,6 +585,18 @@
       if (settings && typeof settings.esbChannel !== 'undefined') {
         rxEsbChannelSliderCol.value = settings.esbChannel;
         rxEsbChannelValueElCol.textContent = settings.esbChannel;
+      }
+      
+      if (settings && typeof settings.midiCcStatus !== 'undefined' && typeof settings.midiCcNumber !== 'undefined' && typeof settings.midiCcValue !== 'undefined') {
+        const midiCcStatus = settings.midiCcStatus;
+        const midiCcNumber = settings.midiCcNumber;
+        const midiCcValue = settings.midiCcValue;
+
+        // Check if the message is a Control Change message (0xB0 to 0xBF)
+        if (midiCcStatus >= 0xB0 && midiCcStatus <= 0xBF) {
+            const channel = (midiCcStatus & 0x0F) + 1; // Extract MIDI channel (1-16)
+            rxLastCcReceivedEl.textContent = `Ch:${channel}, CC:${midiCcNumber}, Val:${midiCcValue}`;
+        }
       }
 
       if (settings && typeof settings.rssi !== 'undefined') {
@@ -828,11 +860,30 @@
         welcomeMessage.style.display = 'none';
         monitorHeader.style.display = 'flex';
         visualizer.style.display = 'flex';
+        if (rxDevice) {
+          rxMidiMonitor.classList.remove('hidden');
+        } else {
+          rxMidiMonitor.classList.add('hidden');
+        }
       } else {
         welcomeMessage.style.display = 'flex';
         monitorHeader.style.display = 'none';
         visualizer.style.display = 'none';
+        rxMidiMonitor.classList.add('hidden');
         lastCcSentEl.textContent = '-';
+      }
+
+      // Add dimming classes
+      if (txDevice) {
+        txPanel.classList.remove('disabled-overlay');
+      } else {
+        txPanel.classList.add('disabled-overlay');
+      }
+
+      if (rxDevice) {
+        rxPanel.classList.remove('disabled-overlay');
+      } else {
+        rxPanel.classList.add('disabled-overlay');
       }
     };
 
