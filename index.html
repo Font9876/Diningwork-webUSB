@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
+  <meta charset="UTF-8">
   <title>MIDI Control Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Tailwind CSS CDN for utility classes -->
@@ -13,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
   <!-- Refined and enhanced custom styles -->
-  <style type="text/css">
+  <style>
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: #0f172a; /* Slate 900 */
@@ -128,25 +127,23 @@
 
     /* Custom style for vertical RSSI bar */
     .vertical-rssi-bar-container {
-        border-radius: 9999px; /* Fully rounded capsule */
-        overflow: hidden;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        height: 100%; /* Fill parent container height */
-        max-height: 250px; /* Increased length for RSSI bar */
-        width: 1rem;
-        position: relative;
-        display: flex;
-        align-items: flex-end; /* Ensure the bar fills from the bottom */
-        justify-content: center;
+      border-radius: 9999px; /* Fully rounded capsule */
+      overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      width: 1rem;
+      /* Remove fixed height to allow vertical growth */
+      position: relative;
+      display: flex;
+      align-items: flex-end; /* Ensure the bar fills from the bottom */
+      justify-content: center;
     }
-
     .vertical-rssi-bar {
-        width: 100%;
-        border-radius: 9999px;
-        /* Gradient from red (bad) to yellow to green (good) */
-        background-image: linear-gradient(to top, #ef4444, #f59e0b, #22c55e);
-        transition: height 0.2s ease-out;
+      width: 100%;
+      border-radius: 9999px;
+      /* Gradient from red (bad) to yellow to green (good) */
+      background-image: linear-gradient(to top, #ef4444, #f59e0b, #22c55e);
+      transition: height 0.2s ease-out;
     }
   </style>
 </head>
@@ -284,10 +281,10 @@
 
       <div class="space-y-2 mb-8">
         <div class="flex flex-col items-center justify-center"><label for="rxEsbChannel-col" class="block text-sm font-medium text-slate-400 mb-1">ESB Ch</label><span id="rxEsbChannel-value-col" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-        <input type="range" id="rxEsbChannel-col" min="0" max="100" step="5" class="w-full" data-action="rx_esb_ch">
+        <input type="range" id="rxEsbChannel-col" min="0" max="100" step="5" class="w-full update-on-release" data-action="rx_esb_ch">
       </div>
 
-      <div class="flex-grow flex flex-col items-center justify-end h-40 mt-auto">
+      <div class="flex-grow flex flex-col items-center justify-end">
         <span class="text-xs text-slate-500 font-mono mb-0.5 font-semibold">-20dBm</span>
         <div class="vertical-rssi-bar-container bg-slate-900 h-full w-4 rounded-full border border-slate-700 shadow-inner overflow-hidden">
           <div id="vertical-rssi-bar" class="vertical-rssi-bar" style="height: 0%;"></div>
@@ -338,10 +335,11 @@
     const rxEsbChannelValueElCol = document.getElementById('rxEsbChannel-value-col');
     const rxRssiValueElCol = document.getElementById('rxRssi-value-col');
     const verticalRssiBar = document.getElementById('vertical-rssi-bar');
-
+    
     // Tab Elements (only TX settings remain as a conceptual "tab" in the left column)
     const tabTx = document.getElementById('tab-tx');
     const tabContentTx = document.getElementById('tab-content-tx');
+
 
     // --- WebUSB State ---
     let txDevice = null;
@@ -359,7 +357,7 @@
 
     let txWasConnected = false;
     let rxWasConnected = false;
-    
+
     let autoReconnectIntervalId = null;
     const RECONNECT_INTERVAL_MS = 100; // 100ms interval for alternating attempts
     let nextDeviceToAttempt = 'tx'; // Start by attempting TX
@@ -428,19 +426,18 @@
     };
 
     const sendChannelToRX = async (channel) => {
-        if (!rxDevice) {
-            log("RX device not connected. Cannot send channel.");
-            return;
-        }
-        try {
-            const data = new Uint8Array([0x43, channel]); // 0x43 is ASCII for 'C'
-            await rxDevice.transferOut(rxEndpointOut, data);
-            log(`Sent RX ESB Channel: ${channel}`);
-        } catch (error) {
-            console.error("Send channel to RX error:", error);
-            log(`Error sending channel to RX: ${error.message}`);
-            setConnectionStatus('rx', false);
-        }
+      if (!rxDevice) {
+        log("RX device not connected. Cannot send channel.");
+        return;
+      }
+      try {
+        const data = new Uint8Array([0x43, channel]); // 0x43 is ASCII for 'C'
+        await rxDevice.transferOut(rxEndpointOut, data);
+      } catch (error) {
+        console.error("Send channel to RX error:", error);
+        log(`Error sending channel to RX: ${error.message}`);
+        setConnectionStatus('rx', false);
+      }
     };
 
     const populateTxUI = (settings) => {
@@ -502,16 +499,16 @@
 
         const ccInput = card.querySelector(`input[data-action="cc"][data-index="${i}"]`);
         if (ccInput) {
-            ccInput.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                let val = parseInt(e.target.value);
-                if (e.deltaY < 0) val = Math.min(127, val + 1);
-                else if (e.deltaY > 0) val = Math.max(0, val - 1);
-                if (val !== parseInt(e.target.value)) {
-                    e.target.value = val;
-                    e.target.dispatchEvent(new Event('change'));
-                }
-            });
+          ccInput.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            let val = parseInt(e.target.value);
+            if (e.deltaY < 0) val = Math.min(127, val + 1);
+            else if (e.deltaY > 0) val = Math.max(0, val - 1);
+            if (val !== parseInt(e.target.value)) {
+              e.target.value = val;
+              e.target.dispatchEvent(new Event('change'));
+            }
+          });
         }
 
         if (i < 8) { // Potentiometers
@@ -541,31 +538,42 @@
           }
         }
       }
+
+      if (settings.currentPotValues) {
+        settings.currentPotValues.forEach((value, index) => {
+          updateCCVisualizer(settings.ccs[index], value);
+        });
+      }
     };
 
     const updateRxRSSI = (rssiValue) => {
-        if (rxRssiValueElCol) rxRssiValueElCol.textContent = `${rssiValue} dBm`;
+      if (rxRssiValueElCol) rxRssiValueElCol.textContent = `${rssiValue} dBm`;
 
-        if (verticalRssiBar) {
-            // Map RSSI from -100 to -20 to a 0-100% height
-            const minRssi = -100;
-            const maxRssi = -20;
-            const range = maxRssi - minRssi;
-            const clampedRssi = Math.max(minRssi, Math.min(maxRssi, rssiValue));
-            const percentage = ((clampedRssi - minRssi) / range) * 100;
-            verticalRssiBar.style.height = `${percentage}%`;
-        }
+      if (verticalRssiBar) {
+        // Map RSSI from -100 to -20 to a 0-100% height
+        const minRssi = -100;
+        const maxRssi = -20;
+        const range = maxRssi - minRssi;
+        const clampedRssi = Math.max(minRssi, Math.min(maxRssi, rssiValue));
+        const percentage = ((clampedRssi - minRssi) / range) * 100;
+        verticalRssiBar.style.height = `${percentage}%`;
+      }
     };
 
 
     const populateRxUI = (settings) => {
-        if (settings && typeof settings.esbChannel !== 'undefined') {
-            rxEsbChannelSliderCol.value = settings.esbChannel;
-            rxEsbChannelValueElCol.textContent = settings.esbChannel;
-            log(`RX ESB Channel set to ${settings.esbChannel}`);
-        }
-    };
+      if (settings && typeof settings.esbChannel !== 'undefined') {
+        rxEsbChannelSliderCol.value = settings.esbChannel;
+        rxEsbChannelValueElCol.textContent = settings.esbChannel;
+      }
 
+      if (settings && typeof settings.rssi !== 'undefined') {
+        updateRxRSSI(settings.rssi);
+      } else {
+        rxRssiValueElCol.textContent = `-- dBm`;
+        verticalRssiBar.style.height = '0%';
+      }
+    };
 
     const updateCCVisualizer = (cc, value) => {
       const index = ccMap[cc];
@@ -612,11 +620,7 @@
                   if (deviceType === 'tx') {
                     populateTxUI(parsedJson);
                   } else if (deviceType === 'rx') {
-                    if (parsedJson.rssi !== undefined) {
-                      updateRxRSSI(parsedJson.rssi);
-                    } else {
-                      populateRxUI(parsedJson);
-                    }
+                    populateRxUI(parsedJson);
                   }
                 } catch (e) {
                   log(`JSON Parse Error (${deviceType.toUpperCase()}): ${e.message}`);
@@ -717,7 +721,7 @@
           rxKeepReading = true;
           rxWasConnected = true;
           readLoop('rx');
-          // No need to send an initial command, as the device now sends its settings on connect.
+          // Add an initial get_settings or relevant command for RX if needed, if it doesn't auto-send
         }
         return true;
       } catch (error) {
@@ -731,7 +735,7 @@
           if (deviceType === 'tx') txDevice = null;
           else if (deviceType === 'rx') rxDevice = null;
         }
-
+        
         setConnectionStatus(deviceType, false);
         return false;
       } finally {
@@ -859,10 +863,10 @@
         }
         nextDeviceToAttempt = 'tx';
       }
+
       updateButtonStates();
       updateUIVisibility();
     };
-
 
     // --- Event Listeners ---
     // New manual connect buttons
@@ -886,26 +890,24 @@
       else if (target.id === 'rxEsbChannel-col') rxEsbChannelValueElCol.textContent = target.value;
     });
 
-    // The 'change' event listener is now responsible for sending commands
-    // when a control's value is finalized (e.g., mouse release for sliders)
     document.addEventListener('change', (e) => {
       const t = e.target;
-      const action = t.dataset.action;
-      const deviceType = t.closest('#main-controls-tx') ? 'tx' : 'rx';
+      if (t.classList.contains('update-on-release') || t.classList.contains('update-on-change')) {
+        const action = t.dataset.action;
+        const deviceType = t.closest('#main-controls-tx') ? 'tx' : 'rx';
 
-      if (deviceType === 'tx') {
-        let cmd = `set_${action}=${t.dataset.index ? t.dataset.index + ',' : ''}${t.value}`;
-        sendCommand('tx', cmd);
-        if (action === 'cc' || action === 'label') setTimeout(() => sendCommand('tx', 'get_settings'), 200);
-      } else if (deviceType === 'rx' && action === 'rx_esb_ch') {
-        // Snap RX ESB Channel value to the nearest 5
-        const rawValue = parseInt(t.value);
-        const snappedValue = Math.round(rawValue / 5) * 5;
-        t.value = snappedValue; // Update slider position
-        rxEsbChannelValueElCol.textContent = snappedValue; // Update display
-        
-        // Send the single command to set the channel on release
-        sendChannelToRX(snappedValue);
+        if (deviceType === 'tx') {
+          let cmd = `set_${action}=${t.dataset.index ? t.dataset.index + ',' : ''}${t.value}`;
+          sendCommand('tx', cmd);
+          if (action === 'cc' || action === 'label') setTimeout(() => sendCommand('tx', 'get_settings'), 200);
+        } else if (deviceType === 'rx' && action === 'rx_esb_ch') {
+          // Snap RX ESB Channel value to the nearest 5
+          const rawValue = parseInt(t.value);
+          const snappedValue = Math.round(rawValue / 5) * 5;
+          t.value = snappedValue; // Update slider position
+          rxEsbChannelValueElCol.textContent = snappedValue; // Update display
+          sendChannelToRX(snappedValue);
+        }
       }
     });
 
@@ -927,7 +929,7 @@
 
     // Initial setup on window load
     window.onload = () => {
-      activateTab('tx'); // Default to TX tab
+      // activateTab('tx'); // Default to TX tab
       updateButtonStates(); // Set initial button states
       updateUIVisibility(); // Set initial UI visibility
       startAutoReconnect(); // Start the alternating auto-reconnect loop
@@ -958,7 +960,6 @@
         rxDevice = null;
         rxKeepReading = false;
         rxWasConnected = false;
-        setConnectionStatus('rx', false);
         rxEsbChannelSliderCol.value = 0;
         rxEsbChannelValueElCol.textContent = '';
         rxRssiValueElCol.textContent = '-- dBm';
