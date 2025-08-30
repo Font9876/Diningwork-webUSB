@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
   <title>MIDI Control Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Tailwind CSS CDN for utility classes -->
@@ -12,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
   <!-- Refined and enhanced custom styles -->
-  <style>
+  <style type="text/css">
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: #0f172a; /* Slate 900 */
@@ -127,29 +128,25 @@
 
     /* Custom style for vertical RSSI bar */
     .vertical-rssi-bar-container {
-      border-radius: 9999px; /* Fully rounded capsule */
-      overflow: hidden;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      width: 1rem;
-      /* Remove fixed height to allow vertical growth */
-      position: relative;
-      display: flex;
-      align-items: flex-end; /* Ensure the bar fills from the bottom */
-      justify-content: center;
-    }
-    .vertical-rssi-bar {
-      width: 100%;
-      border-radius: 9999px;
-      /* Gradient from red (bad) to yellow to green (good) */
-      background-image: linear-gradient(to top, #ef4444, #f59e0b, #22c55e);
-      transition: height 0.2s ease-out;
+        border-radius: 9999px; /* Fully rounded capsule */
+        overflow: hidden;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        height: 100%; /* Fill parent container height */
+        max-height: 250px; /* Increased length for RSSI bar */
+        width: 1rem;
+        position: relative;
+        display: flex;
+        align-items: flex-end; /* Ensure the bar fills from the bottom */
+        justify-content: center;
     }
 
-    .disabled-overlay {
-      pointer-events: none;
-      opacity: 0.4;
-      transition: opacity 0.3s ease-in-out;
+    .vertical-rssi-bar {
+        width: 100%;
+        border-radius: 9999px;
+        /* Gradient from red (bad) to yellow to green (good) */
+        background-image: linear-gradient(to top, #ef4444, #f59e0b, #22c55e);
+        transition: height 0.2s ease-out;
     }
   </style>
 </head>
@@ -157,7 +154,7 @@
   <div class="flex flex-col lg:flex-row w-full max-w-screen-2xl bg-slate-900/70 backdrop-blur-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-700/80">
 
     <!-- Left Panel: Header, TX Settings (45%) -->
-    <aside id="tx-panel" class="w-full lg:w-[45%] bg-slate-800/50 p-4 sm:p-6 lg:p-8 flex flex-col justify-between border-r border-slate-700">
+    <aside class="w-full lg:w-[45%] bg-slate-800/50 p-4 sm:p-6 lg:p-8 flex flex-col justify-between border-r border-slate-700">
       <div>
         <!-- Header and Connection Controls (now just status) -->
         <header class="pb-6 mb-6 border-b border-slate-700">
@@ -198,7 +195,7 @@
 
           <section class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 shadow-lg">
             <h2 class="text-xl font-bold mb-4 text-teal-300 flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.532 1.532 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.532 1.532 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 010 6z" clip-rule="evenodd" /></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.532 1.532 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.532 1.532 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>
               Device Settings
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
@@ -257,23 +254,16 @@
       <div id="visualizer" class="flex-grow flex flex-col justify-end min-h-[150px] pb-8" style="display: none;">
         <div id="cc-pots-container" class="grid grid-cols-4 md:grid-cols-8 gap-x-6 gap-y-2 flex-grow items-end"></div>
         <div id="cc-btns-container" class="grid grid-cols-2 sm:grid-cols-4 gap-4 h-16 items-end pt-8 border-t border-slate-800"></div>
-        
-        <!-- New RX Real-time MIDI Display -->
-        <div id="rx-midi-monitor" class="mt-8 pt-8 border-t border-slate-800 hidden">
-          <h3 class="text-xl font-bold mb-4 text-cyan-300">RX MIDI Monitor</h3>
-          <p class="text-slate-400">Last received CC:</p>
-          <p id="rx-last-cc-received" class="font-mono text-2xl text-white font-extrabold">--</p>
-        </div>
       </div>
 
-      <div class="mt-auto flex flex-col-reverse">
-        <div id="log-area" class="rounded-xl shadow-inner"></div>
+      <div class="mt-auto">
         <p class="text-white font-semibold mb-2 text-sm">Activity Log:</p>
+        <div id="log-area" class="rounded-xl shadow-inner"></div>
       </div>
     </main>
 
     <!-- Rightmost Thin Panel: RX Status & Vertical RSSI (10%) -->
-    <div id="rx-panel" class="w-full lg:w-[10%] bg-slate-800/50 p-4 sm:p-6 flex flex-col justify-start border-l border-slate-700">
+    <div class="w-full lg:w-[10%] bg-slate-800/50 p-4 sm:p-6 flex flex-col justify-start border-l border-slate-700">
       <h2 class="text-xl font-bold text-teal-300 text-center mb-4 lg:mb-6">RX</h2>
       <div id="rx-column-status" class="text-center text-sm mb-4 lg:mb-6">
         <p class="text-slate-400 uppercase font-medium text-xs tracking-wider">RX Status</p>
@@ -297,7 +287,7 @@
         <input type="range" id="rxEsbChannel-col" min="0" max="100" step="5" class="w-full" data-action="rx_esb_ch">
       </div>
 
-      <div class="flex-grow flex flex-col items-center justify-end">
+      <div class="flex-grow flex flex-col items-center justify-end h-40 mt-auto">
         <span class="text-xs text-slate-500 font-mono mb-0.5 font-semibold">-20dBm</span>
         <div class="vertical-rssi-bar-container bg-slate-900 h-full w-4 rounded-full border border-slate-700 shadow-inner overflow-hidden">
           <div id="vertical-rssi-bar" class="vertical-rssi-bar" style="height: 0%;"></div>
@@ -327,7 +317,6 @@
     const logArea = document.getElementById('log-area');
 
     // TX Elements
-    const txPanel = document.getElementById('tx-panel');
     const txConnectionStatusEl = document.getElementById('tx-connection-status');
     const bankSelectionGrid = document.getElementById('bank-selection-grid');
     const brightnessSlider = document.getElementById('brightness');
@@ -344,19 +333,15 @@
     const lastCcSentEl = document.getElementById('last-cc-sent');
 
     // RX Elements
-    const rxPanel = document.getElementById('rx-panel');
     const rxConnectionStatusElCol = document.getElementById('rx-connection-status-col');
     const rxEsbChannelSliderCol = document.getElementById('rxEsbChannel-col');
     const rxEsbChannelValueElCol = document.getElementById('rxEsbChannel-value-col');
     const rxRssiValueElCol = document.getElementById('rxRssi-value-col');
     const verticalRssiBar = document.getElementById('vertical-rssi-bar');
-    const rxMidiMonitor = document.getElementById('rx-midi-monitor');
-    const rxLastCcReceivedEl = document.getElementById('rx-last-cc-received');
-    
+
     // Tab Elements (only TX settings remain as a conceptual "tab" in the left column)
     const tabTx = document.getElementById('tab-tx');
     const tabContentTx = document.getElementById('tab-content-tx');
-
 
     // --- WebUSB State ---
     let txDevice = null;
@@ -374,7 +359,7 @@
 
     let txWasConnected = false;
     let rxWasConnected = false;
-
+    
     let autoReconnectIntervalId = null;
     const RECONNECT_INTERVAL_MS = 100; // 100ms interval for alternating attempts
     let nextDeviceToAttempt = 'tx'; // Start by attempting TX
@@ -398,21 +383,18 @@
 
     const setConnectionStatus = (deviceType, connected) => {
       const statusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusElCol;
-      const panelEl = deviceType === 'tx' ? txPanel : rxPanel;
       let wasConnectedFlag = deviceType === 'tx' ? txWasConnected : rxWasConnected;
 
       if (connected) {
         statusEl.textContent = 'Connected';
         statusEl.classList.remove('text-red-400', 'text-yellow-400', 'animate-pulse');
         statusEl.classList.add('text-green-400');
-        panelEl.classList.remove('disabled-overlay');
         if (deviceType === 'tx') txWasConnected = true;
         else if (deviceType === 'rx') rxWasConnected = true;
       } else {
         statusEl.textContent = 'Disconnected';
         statusEl.classList.remove('text-green-400', 'text-yellow-400');
         statusEl.classList.add('text-red-400');
-        panelEl.classList.add('disabled-overlay');
         if (wasConnectedFlag) {
           statusEl.classList.add('animate-pulse');
         }
@@ -446,18 +428,19 @@
     };
 
     const sendChannelToRX = async (channel) => {
-      if (!rxDevice) {
-        log("RX device not connected. Cannot send channel.");
-        return;
-      }
-      try {
-        const data = new Uint8Array([0x43, channel]); // 0x43 is ASCII for 'C'
-        await rxDevice.transferOut(rxEndpointOut, data);
-      } catch (error) {
-        console.error("Send channel to RX error:", error);
-        log(`Error sending channel to RX: ${error.message}`);
-        setConnectionStatus('rx', false);
-      }
+        if (!rxDevice) {
+            log("RX device not connected. Cannot send channel.");
+            return;
+        }
+        try {
+            const data = new Uint8Array([0x43, channel]); // 0x43 is ASCII for 'C'
+            await rxDevice.transferOut(rxEndpointOut, data);
+            log(`Sent RX ESB Channel: ${channel}`);
+        } catch (error) {
+            console.error("Send channel to RX error:", error);
+            log(`Error sending channel to RX: ${error.message}`);
+            setConnectionStatus('rx', false);
+        }
     };
 
     const populateTxUI = (settings) => {
@@ -519,16 +502,16 @@
 
         const ccInput = card.querySelector(`input[data-action="cc"][data-index="${i}"]`);
         if (ccInput) {
-          ccInput.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            let val = parseInt(e.target.value);
-            if (e.deltaY < 0) val = Math.min(127, val + 1);
-            else if (e.deltaY > 0) val = Math.max(0, val - 1);
-            if (val !== parseInt(e.target.value)) {
-              e.target.value = val;
-              e.target.dispatchEvent(new Event('change'));
-            }
-          });
+            ccInput.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                let val = parseInt(e.target.value);
+                if (e.deltaY < 0) val = Math.min(127, val + 1);
+                else if (e.deltaY > 0) val = Math.max(0, val - 1);
+                if (val !== parseInt(e.target.value)) {
+                    e.target.value = val;
+                    e.target.dispatchEvent(new Event('change'));
+                }
+            });
         }
 
         if (i < 8) { // Potentiometers
@@ -558,54 +541,31 @@
           }
         }
       }
-
-      if (settings.currentPotValues) {
-        settings.currentPotValues.forEach((value, index) => {
-          updateCCVisualizer(settings.ccs[index], value);
-        });
-      }
     };
 
     const updateRxRSSI = (rssiValue) => {
-      if (rxRssiValueElCol) rxRssiValueElCol.textContent = `${rssiValue} dBm`;
+        if (rxRssiValueElCol) rxRssiValueElCol.textContent = `${rssiValue} dBm`;
 
-      if (verticalRssiBar) {
-        // Map RSSI from -100 to -20 to a 0-100% height
-        const minRssi = -100;
-        const maxRssi = -20;
-        const range = maxRssi - minRssi;
-        const clampedRssi = Math.max(minRssi, Math.min(maxRssi, rssiValue));
-        const percentage = ((clampedRssi - minRssi) / range) * 100;
-        verticalRssiBar.style.height = `${percentage}%`;
-      }
+        if (verticalRssiBar) {
+            // Map RSSI from -100 to -20 to a 0-100% height
+            const minRssi = -100;
+            const maxRssi = -20;
+            const range = maxRssi - minRssi;
+            const clampedRssi = Math.max(minRssi, Math.min(maxRssi, rssiValue));
+            const percentage = ((clampedRssi - minRssi) / range) * 100;
+            verticalRssiBar.style.height = `${percentage}%`;
+        }
     };
 
 
     const populateRxUI = (settings) => {
-      if (settings && typeof settings.esbChannel !== 'undefined') {
-        rxEsbChannelSliderCol.value = settings.esbChannel;
-        rxEsbChannelValueElCol.textContent = settings.esbChannel;
-      }
-      
-      if (settings && typeof settings.midiCcStatus !== 'undefined' && typeof settings.midiCcNumber !== 'undefined' && typeof settings.midiCcValue !== 'undefined') {
-        const midiCcStatus = settings.midiCcStatus;
-        const midiCcNumber = settings.midiCcNumber;
-        const midiCcValue = settings.midiCcValue;
-
-        // Check if the message is a Control Change message (0xB0 to 0xBF)
-        if (midiCcStatus >= 0xB0 && midiCcStatus <= 0xBF) {
-            const channel = (midiCcStatus & 0x0F) + 1; // Extract MIDI channel (1-16)
-            rxLastCcReceivedEl.textContent = `Ch:${channel}, CC:${midiCcNumber}, Val:${midiCcValue}`;
+        if (settings && typeof settings.esbChannel !== 'undefined') {
+            rxEsbChannelSliderCol.value = settings.esbChannel;
+            rxEsbChannelValueElCol.textContent = settings.esbChannel;
+            log(`RX ESB Channel set to ${settings.esbChannel}`);
         }
-      }
-
-      if (settings && typeof settings.rssi !== 'undefined') {
-        updateRxRSSI(settings.rssi);
-      } else {
-        rxRssiValueElCol.textContent = `-- dBm`;
-        verticalRssiBar.style.height = '0%';
-      }
     };
+
 
     const updateCCVisualizer = (cc, value) => {
       const index = ccMap[cc];
@@ -639,13 +599,7 @@
       let incomingData = "";
       while (keepReadingFlag()) {
         try {
-          const readPromise = device.transferIn(endpointIn, 512);
-          const timeoutPromise = new Promise((resolve, reject) => {
-            setTimeout(() => reject(new Error('TransferIn timeout')), 1000); // 1 second timeout
-          });
-          
-          const result = await Promise.race([readPromise, timeoutPromise]);
-
+          let result = await device.transferIn(endpointIn, 512);
           if (result.status === 'ok' && result.data.byteLength > 0) {
             incomingData += textDecoder.decode(result.data, { stream: true });
             let newlineIndex;
@@ -658,7 +612,11 @@
                   if (deviceType === 'tx') {
                     populateTxUI(parsedJson);
                   } else if (deviceType === 'rx') {
-                    populateRxUI(parsedJson);
+                    if (parsedJson.rssi !== undefined) {
+                      updateRxRSSI(parsedJson.rssi);
+                    } else {
+                      populateRxUI(parsedJson);
+                    }
                   }
                 } catch (e) {
                   log(`JSON Parse Error (${deviceType.toUpperCase()}): ${e.message}`);
@@ -676,12 +634,8 @@
             }
           }
         } catch (error) {
-          if (error.message.includes("disconnected") || error.message.includes("timeout")) {
-            if (error.message.includes("timeout")) {
-              log(`Read loop timeout (${deviceType.toUpperCase()}). Disconnecting.`);
-            } else {
-              log(`${deviceType.toUpperCase()} device disconnected.`);
-            }
+          if (error.message.includes("disconnected")) {
+            log(`${deviceType.toUpperCase()} device disconnected.`);
             setConnectionStatus(deviceType, false);
           } else {
             log(`Read loop error (${deviceType.toUpperCase()}): ${error.message}`);
@@ -763,7 +717,7 @@
           rxKeepReading = true;
           rxWasConnected = true;
           readLoop('rx');
-          // Add an initial get_settings or relevant command for RX if needed, if it doesn't auto-send
+          // No need to send an initial command, as the device now sends its settings on connect.
         }
         return true;
       } catch (error) {
@@ -777,7 +731,7 @@
           if (deviceType === 'tx') txDevice = null;
           else if (deviceType === 'rx') rxDevice = null;
         }
-        
+
         setConnectionStatus(deviceType, false);
         return false;
       } finally {
@@ -860,30 +814,11 @@
         welcomeMessage.style.display = 'none';
         monitorHeader.style.display = 'flex';
         visualizer.style.display = 'flex';
-        if (rxDevice) {
-          rxMidiMonitor.classList.remove('hidden');
-        } else {
-          rxMidiMonitor.classList.add('hidden');
-        }
       } else {
         welcomeMessage.style.display = 'flex';
         monitorHeader.style.display = 'none';
         visualizer.style.display = 'none';
-        rxMidiMonitor.classList.add('hidden');
         lastCcSentEl.textContent = '-';
-      }
-
-      // Add dimming classes
-      if (txDevice) {
-        txPanel.classList.remove('disabled-overlay');
-      } else {
-        txPanel.classList.add('disabled-overlay');
-      }
-
-      if (rxDevice) {
-        rxPanel.classList.remove('disabled-overlay');
-      } else {
-        rxPanel.classList.add('disabled-overlay');
       }
     };
 
@@ -924,10 +859,10 @@
         }
         nextDeviceToAttempt = 'tx';
       }
-
       updateButtonStates();
       updateUIVisibility();
     };
+
 
     // --- Event Listeners ---
     // New manual connect buttons
@@ -951,24 +886,26 @@
       else if (target.id === 'rxEsbChannel-col') rxEsbChannelValueElCol.textContent = target.value;
     });
 
+    // The 'change' event listener is now responsible for sending commands
+    // when a control's value is finalized (e.g., mouse release for sliders)
     document.addEventListener('change', (e) => {
       const t = e.target;
-      if (t.classList.contains('update-on-release') || t.classList.contains('update-on-change')) {
-        const action = t.dataset.action;
-        const deviceType = t.closest('#main-controls-tx') ? 'tx' : 'rx';
+      const action = t.dataset.action;
+      const deviceType = t.closest('#main-controls-tx') ? 'tx' : 'rx';
 
-        if (deviceType === 'tx') {
-          let cmd = `set_${action}=${t.dataset.index ? t.dataset.index + ',' : ''}${t.value}`;
-          sendCommand('tx', cmd);
-          if (action === 'cc' || action === 'label') setTimeout(() => sendCommand('tx', 'get_settings'), 200);
-        } else if (deviceType === 'rx' && action === 'rx_esb_ch') {
-          // Snap RX ESB Channel value to the nearest 5
-          const rawValue = parseInt(t.value);
-          const snappedValue = Math.round(rawValue / 5) * 5;
-          t.value = snappedValue; // Update slider position
-          rxEsbChannelValueElCol.textContent = snappedValue; // Update display
-          sendChannelToRX(snappedValue);
-        }
+      if (deviceType === 'tx') {
+        let cmd = `set_${action}=${t.dataset.index ? t.dataset.index + ',' : ''}${t.value}`;
+        sendCommand('tx', cmd);
+        if (action === 'cc' || action === 'label') setTimeout(() => sendCommand('tx', 'get_settings'), 200);
+      } else if (deviceType === 'rx' && action === 'rx_esb_ch') {
+        // Snap RX ESB Channel value to the nearest 5
+        const rawValue = parseInt(t.value);
+        const snappedValue = Math.round(rawValue / 5) * 5;
+        t.value = snappedValue; // Update slider position
+        rxEsbChannelValueElCol.textContent = snappedValue; // Update display
+        
+        // Send the single command to set the channel on release
+        sendChannelToRX(snappedValue);
       }
     });
 
@@ -990,7 +927,7 @@
 
     // Initial setup on window load
     window.onload = () => {
-      // activateTab('tx'); // Default to TX tab
+      activateTab('tx'); // Default to TX tab
       updateButtonStates(); // Set initial button states
       updateUIVisibility(); // Set initial UI visibility
       startAutoReconnect(); // Start the alternating auto-reconnect loop
@@ -1021,6 +958,7 @@
         rxDevice = null;
         rxKeepReading = false;
         rxWasConnected = false;
+        setConnectionStatus('rx', false);
         rxEsbChannelSliderCol.value = 0;
         rxEsbChannelValueElCol.textContent = '';
         rxRssiValueElCol.textContent = '-- dBm';
