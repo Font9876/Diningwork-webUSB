@@ -1,11 +1,9 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta http-equiv="Content-Style-Type" content="text/css">
   <title>MIDI Control Dashboard</title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2575.7">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Tailwind CSS CDN for utility classes -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -13,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  
+
   <!-- Refined and enhanced custom styles -->
   <style type="text/css">
     body {
@@ -22,19 +20,6 @@
       background-image: radial-gradient(ellipse at top, #1e293b, #0f172a);
       color: #e2e8f0; /* Light gray text for contrast */
       cursor: default;
-    }
-
-    /* New dimming class for disconnected state */
-    .disconnected {
-      filter: grayscale(100%) blur(0.2px) opacity(0.6);
-      pointer-events: none;
-      transition: filter 0.5s ease-in-out;
-    }
-    
-    .undimmed {
-        filter: grayscale(0%) blur(0px) opacity(1);
-        pointer-events: auto;
-        transition: filter 0.5s ease-in-out;
     }
 
     @keyframes fadeIn {
@@ -143,24 +128,25 @@
 
     /* Custom style for vertical RSSI bar */
     .vertical-rssi-bar-container {
-      border-radius: 9999px; /* Fully rounded capsule */
-      overflow: hidden;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      width: 1rem;
-      height: 100%; /* Fill parent container height */
-      position: relative;
-      display: flex;
-      align-items: flex-end; /* Ensure the bar fills from the bottom */
-      justify-content: center;
+        border-radius: 9999px; /* Fully rounded capsule */
+        overflow: hidden;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        height: 100%; /* Fill parent container height */
+        max-height: 250px; /* Increased length for RSSI bar */
+        width: 1rem;
+        position: relative;
+        display: flex;
+        align-items: flex-end; /* Ensure the bar fills from the bottom */
+        justify-content: center;
     }
 
     .vertical-rssi-bar {
-      width: 100%;
-      border-radius: 9999px;
-      /* Gradient from red (bad) to yellow to green (good) */
-      background-image: linear-gradient(to top, #ef4444, #f59e0b, #22c55e);
-      transition: height 0.2s ease-out;
+        width: 100%;
+        border-radius: 9999px;
+        /* Gradient from red (bad) to yellow to green (good) */
+        background-image: linear-gradient(to top, #ef4444, #f59e0b, #22c55e);
+        transition: height 0.2s ease-out;
     }
   </style>
 </head>
@@ -168,7 +154,7 @@
   <div class="flex flex-col lg:flex-row w-full max-w-screen-2xl bg-slate-900/70 backdrop-blur-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-700/80">
 
     <!-- Left Panel: Header, TX Settings (45%) -->
-    <aside id="tx-panel" class="w-full lg:w-[45%] bg-slate-800/50 p-4 sm:p-6 lg:p-8 flex flex-col justify-between border-r border-slate-700 transition-all duration-500">
+    <aside class="w-full lg:w-[45%] bg-slate-800/50 p-4 sm:p-6 lg:p-8 flex flex-col justify-between border-r border-slate-700">
       <div>
         <!-- Header and Connection Controls (now just status) -->
         <header class="pb-6 mb-6 border-b border-slate-700">
@@ -186,11 +172,11 @@
           </div>
           <!-- TX Connect/Disconnect Button -->
           <div id="tx-connection-buttons" class="mt-4">
-            <button id="connectTxButton" class="w-full px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2">
+            <button id="connectTxButton" class="w-full px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2 hidden">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
               Connect TX
             </button>
-            <button id="disconnectTxButton" class="w-full px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2">
+            <button id="disconnectTxButton" disabled class="w-full px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base inline-flex items-center justify-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
               Disconnect TX
             </button>
@@ -277,7 +263,7 @@
     </main>
 
     <!-- Rightmost Thin Panel: RX Status & Vertical RSSI (10%) -->
-    <div id="rx-panel" class="w-full lg:w-[10%] bg-slate-800/50 p-4 sm:p-6 flex flex-col justify-start border-l border-slate-700 transition-all duration-500">
+    <div class="w-full lg:w-[10%] bg-slate-800/50 p-4 sm:p-6 flex flex-col justify-start border-l border-slate-700">
       <h2 class="text-xl font-bold text-teal-300 text-center mb-4 lg:mb-6">RX</h2>
       <div id="rx-column-status" class="text-center text-sm mb-4 lg:mb-6">
         <p class="text-slate-400 uppercase font-medium text-xs tracking-wider">RX Status</p>
@@ -286,11 +272,11 @@
 
       <!-- RX Connect/Disconnect Button -->
       <div id="rx-connection-buttons" class="mb-8">
-        <button id="connectRxButton" class="w-full px-4 py-2 bg-gradient-to-br from-blue-600 to-blue-700 text-white text-sm font-semibold rounded-lg shadow-md hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 inline-flex items-center justify-center gap-2">
+        <button id="connectRxButton" class="w-full px-4 py-2 bg-gradient-to-br from-blue-600 to-blue-700 text-white text-sm font-semibold rounded-lg shadow-md hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 inline-flex items-center justify-center gap-2 hidden">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
           Connect RX
         </button>
-        <button id="disconnectRxButton" class="w-full px-4 py-2 bg-slate-600 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 inline-flex items-center justify-center gap-2">
+        <button id="disconnectRxButton" disabled class="w-full px-4 py-2 bg-slate-600 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none inline-flex items-center justify-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
           Disconnect RX
         </button>
@@ -324,9 +310,6 @@
     const disconnectTxButton = document.getElementById('disconnectTxButton');
     const connectRxButton = document.getElementById('connectRxButton');
     const disconnectRxButton = document.getElementById('disconnectRxButton');
-    
-    const txPanel = document.getElementById('tx-panel');
-    const rxPanel = document.getElementById('rx-panel');
 
     const welcomeMessage = document.getElementById('welcome-message');
     const monitorHeader = document.getElementById('monitor-header');
@@ -365,17 +348,21 @@
     let rxDevice = null;
     let txInterfaceNumber, txEndpointIn, txEndpointOut;
     let rxInterfaceNumber, rxEndpointIn, rxEndpointOut;
-    
+
     let txKeepReading = false;
     let rxKeepReading = false;
 
-    let txWasConnected = false;
-    let rxWasConnected = false;
-    
     const textEncoder = new TextEncoder();
     const textDecoder = new TextDecoder();
     let ccMap = {};
     let currentTxSettingsCache = {};
+
+    let txWasConnected = false;
+    let rxWasConnected = false;
+    
+    let autoReconnectIntervalId = null;
+    const RECONNECT_INTERVAL_MS = 100; // 100ms interval for alternating attempts
+    let nextDeviceToAttempt = 'tx'; // Start by attempting TX
 
     // --- BLE Button Content ---
     const bleOnIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 2.293a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 4.414V17a1 1 0 11-2 0V4.414L5.707 7.707a1 1 0 01-1.414-1.414l4-4z" clip-rule="evenodd" /></svg> Disable BLE`;
@@ -493,6 +480,7 @@
       ccPotsContainer.innerHTML = '';
       ccBtnsContainer.innerHTML = '';
       ccMap = {};
+
       for (let i = 0; i < 12; i++) {
         const isPot = i < 8;
         const type = isPot ? 'Pot' : 'Btn';
@@ -579,6 +567,21 @@
     };
 
 
+    const updateCCVisualizer = (cc, value) => {
+      const index = ccMap[cc];
+      if (index === undefined) return;
+      lastCcSentEl.textContent = `${cc}:${value}`;
+      if (index < 8) {
+        const bar = document.getElementById(`cc-bar-${index}`);
+        const valLabel = document.getElementById(`cc-val-${index}`);
+        if (bar) bar.style.height = `${(value / 127) * 100}%`;
+        if (valLabel) valLabel.textContent = value;
+      } else {
+        const btn = document.getElementById(`cc-btn-${index}`);
+        if (btn) btn.classList.toggle('active', value > 64);
+      }
+    };
+
     async function readLoop(deviceType) {
       let device, endpointIn, keepReadingFlag;
       if (deviceType === 'tx') {
@@ -644,92 +647,99 @@
       }
     }
 
-    const connectDevice = async (deviceType) => {
-        let vendorId, productId;
+    // Modified connectDevice function to support both initial request and auto-reconnect
+    const connectDevice = async (deviceType, vendorId, productId, deviceToConnect = null) => {
+      let deviceObj, interfaceNum, endpointInNum, endpointOutNum;
+      let connectionStatusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusElCol;
+      let deviceRef = deviceType === 'tx' ? txDevice : rxDevice;
+      let keepReadingRef = deviceType === 'tx' ? txKeepReading : rxKeepReading;
+
+      // If already connected, no need to proceed
+      if (deviceRef && deviceRef.opened && keepReadingRef()) {
+        return true;
+      }
+
+      log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)}, PID: 0x${productId.toString(16)})...`);
+      connectionStatusEl.textContent = 'Connecting...';
+      connectionStatusEl.classList.remove('text-green-400', 'text-red-400', 'animate-pulse');
+      connectionStatusEl.classList.add('text-yellow-400');
+
+      try {
+        if (deviceToConnect) {
+          // Use the device provided (e.g., from auto-reconnect or USB connect event)
+          deviceObj = deviceToConnect;
+        } else {
+          // This is for the *initial* connection via button click: prompt user
+          deviceObj = await navigator.usb.requestDevice({
+            filters: [{ vendorId: vendorId, productId: productId }]
+          });
+          if (!deviceObj) {
+            throw new Error("User cancelled device selection or no device found.");
+          }
+        }
+
+        await deviceObj.open();
+        if (deviceObj.configuration === null) await deviceObj.selectConfiguration(1);
+
+        for (const iface of deviceObj.configuration.interfaces) {
+          for (const alt of iface.alternates) {
+            if (alt.interfaceClass === 0xFF) { // Assuming a vendor-specific class
+              interfaceNum = iface.interfaceNumber;
+              for (const ep of alt.endpoints) {
+                if (ep.direction === 'out') endpointOutNum = ep.endpointNumber;
+                if (ep.direction === 'in') endpointInNum = ep.endpointNumber;
+              }
+            }
+          }
+        }
+        if (interfaceNum === undefined) throw new Error("Interface not found for the selected device.");
+
+        await deviceObj.claimInterface(interfaceNum);
+        await deviceObj.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x01, index: interfaceNum });
+
+        log(`${deviceType.toUpperCase()} device connected successfully!`);
+        setConnectionStatus(deviceType, true);
+
         if (deviceType === 'tx') {
-            vendorId = TX_VID;
-            productId = TX_PID;
+          txDevice = deviceObj;
+          txInterfaceNumber = interfaceNum;
+          txEndpointIn = endpointInNum;
+          txEndpointOut = endpointOutNum;
+          txKeepReading = true;
+          txWasConnected = true;
+          readLoop('tx');
+          await sendCommand('tx', "get_settings");
         } else if (deviceType === 'rx') {
-            vendorId = RX_VID;
-            productId = RX_PID;
+          rxDevice = deviceObj;
+          rxInterfaceNumber = interfaceNum;
+          rxEndpointIn = endpointInNum;
+          rxEndpointOut = endpointOutNum;
+          rxKeepReading = true;
+          rxWasConnected = true;
+          readLoop('rx');
+          // No need to send an initial command, as the device now sends its settings on connect.
+        }
+        return true;
+      } catch (error) {
+        if (error.message.includes("User cancelled") || error.message.includes("No device selected")) {
+          log(`Connection for ${deviceType.toUpperCase()} cancelled by user.`);
+        } else if (!(deviceRef && error.message.includes("disconnected"))) {
+          log(`Connection failed for ${deviceType.toUpperCase()}: ${error.message}`);
         }
 
-        let deviceObj, interfaceNum, endpointInNum, endpointOutNum;
-        let connectionStatusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusElCol;
-
-        log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)}, PID: 0x${productId.toString(16)})...`);
-        connectionStatusEl.textContent = 'Connecting...';
-        connectionStatusEl.classList.remove('text-green-400', 'text-red-400', 'animate-pulse');
-        connectionStatusEl.classList.add('text-yellow-400');
-
-        try {
-            deviceObj = await navigator.usb.requestDevice({
-                filters: [{ vendorId: vendorId, productId: productId }]
-            });
-            if (!deviceObj) {
-                throw new Error("User cancelled device selection or no device found.");
-            }
-
-            await deviceObj.open();
-            if (deviceObj.configuration === null) await deviceObj.selectConfiguration(1);
-
-            for (const iface of deviceObj.configuration.interfaces) {
-                for (const alt of iface.alternates) {
-                    if (alt.interfaceClass === 0xFF) { // Assuming a vendor-specific class
-                        interfaceNum = iface.interfaceNumber;
-                        for (const ep of alt.endpoints) {
-                            if (ep.direction === 'out') endpointOutNum = ep.endpointNumber;
-                            if (ep.direction === 'in') endpointInNum = ep.endpointNumber;
-                        }
-                    }
-                }
-            }
-            if (interfaceNum === undefined) throw new Error("Interface not found for the selected device.");
-
-            await deviceObj.claimInterface(interfaceNum);
-            await deviceObj.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x01, index: interfaceNum });
-
-            log(`${deviceType.toUpperCase()} device connected successfully!`);
-            setConnectionStatus(deviceType, true);
-
-            if (deviceType === 'tx') {
-                txDevice = deviceObj;
-                txInterfaceNumber = interfaceNum;
-                txEndpointIn = endpointInNum;
-                txEndpointOut = endpointOutNum;
-                txKeepReading = true;
-                txWasConnected = true;
-                readLoop('tx');
-                await sendCommand('tx', "get_settings");
-            } else if (deviceType === 'rx') {
-                rxDevice = deviceObj;
-                rxInterfaceNumber = interfaceNum;
-                rxEndpointIn = endpointInNum;
-                rxEndpointOut = endpointOutNum;
-                rxKeepReading = true;
-                rxWasConnected = true;
-                readLoop('rx');
-            }
-            return true;
-        } catch (error) {
-            if (error.message.includes("User cancelled") || error.message.includes("No device selected")) {
-                log(`Connection for ${deviceType.toUpperCase()} cancelled by user.`);
-            } else if (!((deviceType === 'tx' ? txDevice : rxDevice) && error.message.includes("disconnected"))) {
-                log(`Connection failed for ${deviceType.toUpperCase()}: ${error.message}`);
-            }
-
-            if ((deviceType === 'tx' ? txDevice : rxDevice) && error.message.includes("disconnected")) {
-                if (deviceType === 'tx') txDevice = null;
-                else if (deviceType === 'rx') rxDevice = null;
-            }
-
-            setConnectionStatus(deviceType, false);
-            return false;
-        } finally {
-            updateButtonStates();
-            updateUIVisibility();
+        if (deviceRef && error.message.includes("disconnected")) {
+          if (deviceType === 'tx') txDevice = null;
+          else if (deviceType === 'rx') rxDevice = null;
         }
+
+        setConnectionStatus(deviceType, false);
+        return false;
+      } finally {
+        updateButtonStates();
+        updateUIVisibility();
+      }
     };
+
 
     const disconnectDevice = async (deviceType) => {
       let deviceObj, interfaceNum;
@@ -770,53 +780,32 @@
         log(`${deviceType.toUpperCase()} disconnected.`);
         updateButtonStates();
         updateUIVisibility();
+        startAutoReconnect(); // Always restart auto-reconnect
       }
     };
 
     const updateButtonStates = () => {
-        // TX Buttons
-        if (txDevice) {
-            connectTxButton.disabled = true;
-            disconnectTxButton.disabled = false;
-            txPanel.classList.remove('disconnected');
-        } else {
-            connectTxButton.disabled = false;
-            disconnectTxButton.disabled = true;
-            txPanel.classList.add('disconnected');
-        }
-
-        // RX Buttons
-        if (rxDevice) {
-            connectRxButton.disabled = true;
-            disconnectRxButton.disabled = false;
-            rxPanel.classList.remove('disconnected');
-        } else {
-            connectRxButton.disabled = false;
-            disconnectRxButton.disabled = true;
-            rxPanel.classList.add('disconnected');
-        }
-
-        // Ensure connect buttons are never dimmed or disabled
-        connectTxButton.disabled = false;
-        connectRxButton.disabled = false;
+      // TX Buttons
+      if (txDevice) {
+        connectTxButton.classList.add('hidden');
+        disconnectTxButton.classList.remove('hidden');
+        disconnectTxButton.disabled = false;
+      } else {
         connectTxButton.classList.remove('hidden');
-        connectRxButton.classList.remove('hidden');
+        disconnectTxButton.classList.add('hidden');
+        connectTxButton.disabled = false; // Always allow manual connect if disconnected
+      }
 
-        if (txDevice) {
-          connectTxButton.classList.add('hidden');
-          disconnectTxButton.classList.remove('hidden');
-        } else {
-          connectTxButton.classList.remove('hidden');
-          disconnectTxButton.classList.add('hidden');
-        }
-        
-        if (rxDevice) {
-          connectRxButton.classList.add('hidden');
-          disconnectRxButton.classList.remove('hidden');
-        } else {
-          connectRxButton.classList.remove('hidden');
-          disconnectRxButton.classList.add('hidden');
-        }
+      // RX Buttons
+      if (rxDevice) {
+        connectRxButton.classList.add('hidden');
+        disconnectRxButton.classList.remove('hidden');
+        disconnectRxButton.disabled = false;
+      } else {
+        connectRxButton.classList.remove('hidden');
+        disconnectRxButton.classList.add('hidden');
+        connectRxButton.disabled = false; // Always allow manual connect if disconnected
+      }
     };
 
     const updateUIVisibility = () => {
@@ -833,10 +822,115 @@
       }
     };
 
+    // Auto-reconnect loop functions
+    const startAutoReconnect = () => {
+      if (autoReconnectIntervalId) {
+        clearInterval(autoReconnectIntervalId);
+      }
+      log("Starting auto-reconnect loop...");
+      nextDeviceToAttempt = 'tx'; // Reset starting device
+      autoReconnectIntervalId = setInterval(autoReconnectStep, RECONNECT_INTERVAL_MS);
+      // No initial call here, let the interval trigger the first step
+    };
+
+    // Modified autoReconnectStep to use navigator.usb.getDevices() for already-permitted devices
+    const autoReconnectStep = async () => {
+      if (txDevice && rxDevice) {
+        if (autoReconnectIntervalId) {
+          clearInterval(autoReconnectIntervalId);
+          autoReconnectIntervalId = null;
+          log("Both TX and RX connected. Auto-reconnect paused.");
+        }
+        return;
+      }
+
+      const availableDevices = await navigator.usb.getDevices();
+
+      if (nextDeviceToAttempt === 'tx' && !txDevice) {
+        const foundTx = availableDevices.find(d => d.vendorId === TX_VID && d.productId === TX_PID);
+        if (foundTx) {
+          await connectDevice('tx', TX_VID, TX_PID, foundTx); // Pass the found device
+        }
+        nextDeviceToAttempt = 'rx';
+      } else if (nextDeviceToAttempt === 'rx' && !rxDevice) {
+        const foundRx = availableDevices.find(d => d.vendorId === RX_VID && d.productId === RX_PID);
+        if (foundRx) {
+          await connectDevice('rx', RX_VID, RX_PID, foundRx); // Pass the found device
+        }
+        nextDeviceToAttempt = 'tx';
+      }
+      updateButtonStates();
+      updateUIVisibility();
+    };
+
+
+    // --- Event Listeners ---
+    // New manual connect buttons
+    connectTxButton.addEventListener('click', async () => {
+      await connectDevice('tx', TX_VID, TX_PID); // Trigger requestDevice for initial connection
+      startAutoReconnect(); // Restart auto-reconnect after manual connection
+    });
+    connectRxButton.addEventListener('click', async () => {
+      await connectDevice('rx', RX_VID, RX_PID); // Trigger requestDevice for initial connection
+      startAutoReconnect(); // Restart auto-reconnect after manual connection
+    });
+
+    disconnectTxButton.addEventListener('click', () => disconnectDevice('tx'));
+    disconnectRxButton.addEventListener('click', () => disconnectDevice('rx')); // Use the correct button ID for RX
+
+    document.addEventListener('input', (e) => {
+      const target = e.target;
+      if (target.id === 'brightness') brightnessValueEl.textContent = target.value;
+      else if (target.id === 'midiChannel') midiChannelValueEl.textContent = target.value;
+      else if (target.id === 'esbChannel') esbChannelValueEl.textContent = target.value;
+      else if (target.id === 'rxEsbChannel-col') rxEsbChannelValueElCol.textContent = target.value;
+    });
+
+    // The 'change' event listener is now responsible for sending commands
+    // when a control's value is finalized (e.g., mouse release for sliders)
+    document.addEventListener('change', (e) => {
+      const t = e.target;
+      const action = t.dataset.action;
+      const deviceType = t.closest('#main-controls-tx') ? 'tx' : 'rx';
+
+      if (deviceType === 'tx') {
+        let cmd = `set_${action}=${t.dataset.index ? t.dataset.index + ',' : ''}${t.value}`;
+        sendCommand('tx', cmd);
+        if (action === 'cc' || action === 'label') setTimeout(() => sendCommand('tx', 'get_settings'), 200);
+      } else if (deviceType === 'rx' && action === 'rx_esb_ch') {
+        // Snap RX ESB Channel value to the nearest 5
+        const rawValue = parseInt(t.value);
+        const snappedValue = Math.round(rawValue / 5) * 5;
+        t.value = snappedValue; // Update slider position
+        rxEsbChannelValueElCol.textContent = snappedValue; // Update display
+        
+        // Send the single command to set the channel on release
+        sendChannelToRX(snappedValue);
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('button');
+      if (!target) return;
+
+      if (target.classList.contains('bank-btn')) {
+        document.querySelectorAll('.bank-btn').forEach(btn => btn.classList.remove('active'));
+        target.classList.add('active');
+        sendCommand('tx', `set_bank=${target.dataset.bank}`);
+      } else if (target.id === 'bleToggleButton') {
+        sendCommand('tx', 'toggle_ble');
+      } else if (target.id === 'startCalButton') {
+        sendCommand('tx', 'start_cal');
+        log("Calibration started. Follow device instructions.");
+      }
+    });
+
     // Initial setup on window load
     window.onload = () => {
-        updateButtonStates(); // Set initial button states
-        updateUIVisibility(); // Set initial UI visibility
+      activateTab('tx'); // Default to TX tab
+      updateButtonStates(); // Set initial button states
+      updateUIVisibility(); // Set initial UI visibility
+      startAutoReconnect(); // Start the alternating auto-reconnect loop
     };
 
     // USB device connect/disconnect event listeners for the browser
@@ -845,10 +939,11 @@
       log(`USB Device connected: ${device.productName} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)})`);
       // Attempt to connect newly connected device if it matches our VIDs/PIDs
       if (device.vendorId === TX_VID && device.productId === TX_PID) {
-        connectDevice('tx', device);
+        connectDevice('tx', TX_VID, TX_PID, device);
       } else if (device.vendorId === RX_VID && device.productId === RX_PID) {
-        connectDevice('rx', device);
+        connectDevice('rx', RX_VID, RX_PID, device);
       }
+      startAutoReconnect(); // Restart auto-reconnect on any USB connect event
     });
 
     navigator.usb.addEventListener('disconnect', (event) => {
@@ -871,8 +966,13 @@
       }
       updateButtonStates();
       updateUIVisibility();
+      startAutoReconnect(); // Always restart auto-reconnect
     });
 
+    const activateTab = (tabName) => {
+      tabTx.classList.add('border-teal-400', 'text-white');
+      tabContentTx.classList.remove('hidden');
+    };
   </script>
 </body>
 </html>
