@@ -26,7 +26,7 @@
 
     /* New dimming class for disconnected state */
     .disconnected {
-      filter: grayscale(100%) blur(1px) opacity(0.5);
+      filter: grayscale(100%) blur(0.5px) opacity(0.6);
       pointer-events: none;
       transition: filter 0.5s ease-in-out;
     }
@@ -372,9 +372,10 @@
     let txWasConnected = false;
     let rxWasConnected = false;
     
-    let autoReconnectIntervalId = null;
-    const RECONNECT_INTERVAL_MS = 100; // 100ms interval for alternating attempts
-    let nextDeviceToAttempt = 'tx'; // Start by attempting TX
+    const textEncoder = new TextEncoder();
+    const textDecoder = new TextDecoder();
+    let ccMap = {};
+    let currentTxSettingsCache = {};
 
     // --- BLE Button Content ---
     const bleOnIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 2.293a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 4.414V17a1 1 0 11-2 0V4.414L5.707 7.707a1 1 0 01-1.414-1.414l4-4z" clip-rule="evenodd" /></svg> Disable BLE`;
@@ -644,7 +645,7 @@
     }
 
     // Modified connectDevice function to support both initial request and auto-reconnect
-    const connectDevice = async (deviceType, vendorId, productId, deviceToConnect = null) => {
+    const connectDevice = async (deviceType, vendorId, productId) => {
         let deviceObj, interfaceNum, endpointInNum, endpointOutNum;
         let connectionStatusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusElCol;
         let deviceRef = deviceType === 'tx' ? txDevice : rxDevice;
@@ -661,17 +662,11 @@
         connectionStatusEl.classList.add('text-yellow-400');
 
         try {
-            if (deviceToConnect) {
-                // Use the device provided (e.g., from auto-reconnect or USB connect event)
-                deviceObj = deviceToConnect;
-            } else {
-                // This is for the *initial* connection via button click: prompt user
-                deviceObj = await navigator.usb.requestDevice({
-                    filters: [{ vendorId: vendorId, productId: productId }]
-                });
-                if (!deviceObj) {
-                    throw new Error("User cancelled device selection or no device found.");
-                }
+            deviceObj = await navigator.usb.requestDevice({
+                filters: [{ vendorId: vendorId, productId: productId }]
+            });
+            if (!deviceObj) {
+                throw new Error("User cancelled device selection or no device found.");
             }
 
             await deviceObj.open();
@@ -775,7 +770,6 @@
         log(`${deviceType.toUpperCase()} disconnected.`);
         updateButtonStates();
         updateUIVisibility();
-        startAutoReconnect(); // Always restart auto-reconnect
       }
     };
 
@@ -825,114 +819,10 @@
       }
     };
 
-    // Auto-reconnect loop functions
-    const startAutoReconnect = () => {
-        if (autoReconnectIntervalId) {
-            clearInterval(autoReconnectIntervalId);
-        }
-        log("Starting auto-reconnect loop...");
-        nextDeviceToAttempt = 'tx'; // Reset starting device
-        autoReconnectIntervalId = setInterval(autoReconnectStep, RECONNECT_INTERVAL_MS);
-        // No initial call here, let the interval trigger the first step
-    };
-
-    // Modified autoReconnectStep to use navigator.usb.getDevices() for already-permitted devices
-    const autoReconnectStep = async () => {
-      if (txDevice && rxDevice) {
-        if (autoReconnectIntervalId) {
-          clearInterval(autoReconnectIntervalId);
-          autoReconnectIntervalId = null;
-          log("Both TX and RX connected. Auto-reconnect paused.");
-        }
-        return;
-      }
-
-      const availableDevices = await navigator.usb.getDevices();
-
-      if (nextDeviceToAttempt === 'tx' && !txDevice) {
-        const foundTx = availableDevices.find(d => d.vendorId === TX_VID && d.productId === TX_PID);
-        if (foundTx) {
-          await connectDevice('tx', TX_VID, TX_PID, foundTx); // Pass the found device
-        }
-        nextDeviceToAttempt = 'rx';
-      } else if (nextDeviceToAttempt === 'rx' && !rxDevice) {
-        const foundRx = availableDevices.find(d => d.vendorId === RX_VID && d.productId === RX_PID);
-        if (foundRx) {
-          await connectDevice('rx', RX_VID, RX_PID, foundRx); // Pass the found device
-        }
-        nextDeviceToAttempt = 'tx';
-      }
-      updateButtonStates();
-      updateUIVisibility();
-    };
-
-
-    // --- Event Listeners ---
-    // New manual connect buttons
-    connectTxButton.addEventListener('click', async () => {
-        await connectDevice('tx', TX_VID, TX_PID); // Trigger requestDevice for initial connection
-        startAutoReconnect(); // Restart auto-reconnect after manual connection
-    });
-    connectRxButton.addEventListener('click', async () => {
-        await connectDevice('rx', RX_VID, RX_PID); // Trigger requestDevice for initial connection
-        startAutoReconnect(); // Restart auto-reconnect after manual connection
-    });
-
-    disconnectTxButton.addEventListener('click', () => disconnectDevice('tx'));
-    disconnectRxButton.addEventListener('click', () => disconnectDevice('rx')); // Use the correct button ID for RX
-
-    document.addEventListener('input', (e) => {
-      const target = e.target;
-      if (target.id === 'brightness') brightnessValueEl.textContent = target.value;
-      else if (target.id === 'midiChannel') midiChannelValueEl.textContent = target.value;
-      else if (target.id === 'esbChannel') esbChannelValueEl.textContent = target.value;
-      else if (target.id === 'rxEsbChannel-col') rxEsbChannelValueElCol.textContent = target.value;
-    });
-
-    // The 'change' event listener is now responsible for sending commands
-    // when a control's value is finalized (e.g., mouse release for sliders)
-    document.addEventListener('change', (e) => {
-      const t = e.target;
-      const action = t.dataset.action;
-      const deviceType = t.closest('#main-controls-tx') ? 'tx' : 'rx';
-
-      if (deviceType === 'tx') {
-        let cmd = `set_${action}=${t.dataset.index ? t.dataset.index + ',' : ''}${t.value}`;
-        sendCommand('tx', cmd);
-        if (action === 'cc' || action === 'label') setTimeout(() => sendCommand('tx', 'get_settings'), 200);
-      } else if (deviceType === 'rx' && action === 'rx_esb_ch') {
-        // Snap RX ESB Channel value to the nearest 5
-        const rawValue = parseInt(t.value);
-        const snappedValue = Math.round(rawValue / 5) * 5;
-        t.value = snappedValue; // Update slider position
-        rxEsbChannelValueElCol.textContent = snappedValue; // Update display
-    
-        // Send the single command to set the channel on release
-        sendChannelToRX(snappedValue);
-      }
-    });
-
-    document.addEventListener('click', (e) => {
-      const target = e.target.closest('button');
-      if (!target) return;
-
-      if (target.classList.contains('bank-btn')) {
-        document.querySelectorAll('.bank-btn').forEach(btn => btn.classList.remove('active'));
-        target.classList.add('active');
-        sendCommand('tx', `set_bank=${target.dataset.bank}`);
-      } else if (target.id === 'bleToggleButton') {
-        sendCommand('tx', 'toggle_ble');
-      } else if (target.id === 'startCalButton') {
-        sendCommand('tx', 'start_cal');
-        log("Calibration started. Follow device instructions.");
-      }
-    });
-
     // Initial setup on window load
     window.onload = () => {
         updateButtonStates(); // Set initial button states
         updateUIVisibility(); // Set initial UI visibility
-        startAutoReconnect(); // Start the alternating auto-reconnect loop
     };
 
     // USB device connect/disconnect event listeners for the browser
@@ -945,7 +835,6 @@
       } else if (device.vendorId === RX_VID && device.productId === RX_PID) {
         connectDevice('rx', RX_VID, RX_PID, device);
       }
-      startAutoReconnect(); // Restart auto-reconnect on any USB connect event
     });
 
     navigator.usb.addEventListener('disconnect', (event) => {
@@ -968,7 +857,6 @@
       }
       updateButtonStates();
       updateUIVisibility();
-      startAutoReconnect(); // Always restart auto-reconnect
     });
 
   </script>
