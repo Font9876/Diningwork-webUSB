@@ -174,19 +174,19 @@
           </div>
           <!-- Connection Buttons -->
           <div id="connection-buttons" class="mt-4 grid grid-cols-2 gap-4">
-            <button id="connectTxButton" class="px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2 hidden">
+            <button id="connectTxButton" class="px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
               Connect TX
             </button>
-            <button id="disconnectTxButton" disabled class="px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base inline-flex items-center justify-center gap-2">
+            <button id="disconnectTxButton" disabled class="px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base inline-flex items-center justify-center gap-2 hidden">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
               Disconnect TX
             </button>
-            <button id="connectRxButton" class="px-6 py-3 bg-gradient-to-br from-green-600 to-green-700 text-white font-semibold rounded-xl shadow-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-4 focus:ring-green-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2 hidden">
+            <button id="connectRxButton" class="px-6 py-3 bg-gradient-to-br from-green-600 to-green-700 text-white font-semibold rounded-xl shadow-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-4 focus:ring-green-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
               Connect RX
             </button>
-            <button id="disconnectRxButton" disabled class="px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base inline-flex items-center justify-center gap-2">
+            <button id="disconnectRxButton" disabled class="px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base inline-flex items-center justify-center gap-2 hidden">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
               Disconnect RX
             </button>
@@ -329,22 +329,66 @@
           </div>
           <p class="mt-2 text-sm text-slate-400">Pot 0: <span>0</span></p>
         </div>
-        <!-- Repeat for Pots 1-7 with similar structure -->
         <div class="visualizer-item flex flex-col items-center">
           <div class="cc-bar-container h-32 bg-slate-700">
             <div class="cc-bar h-0 bg-teal-400"></div>
           </div>
           <p class="mt-2 text-sm text-slate-400">Pot 1: <span>0</span></p>
         </div>
-        <!-- ... Add the other pots ... -->
+        <div class="visualizer-item flex flex-col items-center">
+          <div class="cc-bar-container h-32 bg-slate-700">
+            <div class="cc-bar h-0 bg-teal-400"></div>
+          </div>
+          <p class="mt-2 text-sm text-slate-400">Pot 2: <span>0</span></p>
+        </div>
+        <div class="visualizer-item flex flex-col items-center">
+          <div class="cc-bar-container h-32 bg-slate-700">
+            <div class="cc-bar h-0 bg-teal-400"></div>
+          </div>
+          <p class="mt-2 text-sm text-slate-400">Pot 3: <span>0</span></p>
+        </div>
+        <div class="visualizer-item flex flex-col items-center">
+          <div class="cc-bar-container h-32 bg-slate-700">
+            <div class="cc-bar h-0 bg-teal-400"></div>
+          </div>
+          <p class="mt-2 text-sm text-slate-400">Pot 4: <span>0</span></p>
+        </div>
+        <div class="visualizer-item flex flex-col items-center">
+          <div class="cc-bar-container h-32 bg-slate-700">
+            <div class="cc-bar h-0 bg-teal-400"></div>
+          </div>
+          <p class="mt-2 text-sm text-slate-400">Pot 5: <span>0</span></p>
+        </div>
+        <div class="visualizer-item flex flex-col items-center">
+          <div class="cc-bar-container h-32 bg-slate-700">
+            <div class="cc-bar h-0 bg-teal-400"></div>
+          </div>
+          <p class="mt-2 text-sm text-slate-400">Pot 6: <span>0</span></p>
+        </div>
+        <div class="visualizer-item flex flex-col items-center">
+          <div class="cc-bar-container h-32 bg-slate-700">
+            <div class="cc-bar h-0 bg-teal-400"></div>
+          </div>
+          <p class="mt-2 text-sm text-slate-400">Pot 7: <span>0</span></p>
+        </div>
 
         <!-- Button Indicators (0-3) -->
         <div class="visualizer-item flex flex-col items-center">
           <div class="btn-indicator w-8 h-8 rounded-full bg-slate-700"></div>
           <p class="mt-2 text-sm text-slate-400">Button 0</p>
         </div>
-        <!-- Repeat for Buttons 1-3 -->
-        <!-- ... -->
+        <div class="visualizer-item flex flex-col items-center">
+          <div class="btn-indicator w-8 h-8 rounded-full bg-slate-700"></div>
+          <p class="mt-2 text-sm text-slate-400">Button 1</p>
+        </div>
+        <div class="visualizer-item flex flex-col items-center">
+          <div class="btn-indicator w-8 h-8 rounded-full bg-slate-700"></div>
+          <p class="mt-2 text-sm text-slate-400">Button 2</p>
+        </div>
+        <div class="visualizer-item flex flex-col items-center">
+          <div class="btn-indicator w-8 h-8 rounded-full bg-slate-700"></div>
+          <p class="mt-2 text-sm text-slate-400">Button 3</p>
+        </div>
       </div>
 
       <!-- RX Controls Section -->
@@ -383,9 +427,9 @@
     let nextDeviceToAttempt = 'tx';
     let isRelayMode = false; // True if connected to RX for relay to TX
     let txStatus = 'disconnected'; // Track TX status from RX
-    let vendorInterfaceNumber = -1;
-    let bulkOutEndpoint = -1;
-    let bulkInEndpoint = -1;
+    let interfaceNumber = undefined;
+    let endpointIn = undefined;
+    let endpointOut = undefined;
 
     const connectTxButton = document.getElementById('connectTxButton');
     const disconnectTxButton = document.getElementById('disconnectTxButton');
@@ -421,21 +465,26 @@
       if (connected && deviceType === 'rx') requestStatusFromRx();
     };
 
+    const findVendorInterfaceAndEndpoints = (device) => {
+      interfaceNumber = undefined;
+      endpointIn = undefined;
+      endpointOut = undefined;
 
-for (const iface of deviceObj.configuration.interfaces) {
-  for (const alt of iface.alternates) {
-    if (alt.interfaceClass === 0xFF) {                // Vendor-specific (WebUSB)
-      interfaceNum = iface.interfaceNumber;
-
-      for (const ep of alt.endpoints) {
-        if (ep.direction === 'out') endpointOutNum = ep.endpointNumber;
-        if (ep.direction === 'in')  endpointInNum  = ep.endpointNumber;
+      for (const iface of device.configuration.interfaces) {
+        iface.alternates.forEach(alt => {
+          if (alt.interfaceClass === 0xff) { // Vendor-specific
+            interfaceNumber = iface.interfaceNumber;
+            alt.endpoints.forEach(ep => {
+              if (ep.direction === 'out') endpointOut = ep.endpointNumber;
+              if (ep.direction === 'in') endpointIn = ep.endpointNumber;
+            });
+          }
+        });
+        if (interfaceNumber !== undefined) break;
       }
-      break;   // take the first 0xFF interface found
-    }
-  }
-  if (interfaceNum !== undefined) break;
-}
+      if (interfaceNumber === undefined) throw new Error('No vendor-specific interface found');
+      if (endpointIn === undefined || endpointOut === undefined) throw new Error('Endpoints not found');
+    };
 
     const connectDevice = async (deviceType, vid, pid, preselectedDevice = null) => {
       try {
@@ -446,9 +495,10 @@ for (const iface of deviceObj.configuration.interfaces) {
           [device] = await navigator.usb.requestDevice({ filters: [{ vendorId: vid, productId: pid }] });
         }
         await device.open();
+        if (device.configuration === null) await device.selectConfiguration(1);
         await findVendorInterfaceAndEndpoints(device);
-        await device.claimInterface(vendorInterfaceNumber);
-        log(`${deviceType.toUpperCase()} connected. Interface ${vendorInterfaceNumber} claimed. Endpoints: Out ${bulkOutEndpoint}, In ${bulkInEndpoint}`);
+        await device.claimInterface(interfaceNumber);
+        log(`${deviceType.toUpperCase()} connected. Interface ${interfaceNumber} claimed. Endpoints: Out ${endpointOut}, In ${endpointIn}`);
         setConnectionStatus(deviceType, true);
         if (deviceType === 'tx') {
           txDevice = device;
@@ -475,7 +525,7 @@ for (const iface of deviceObj.configuration.interfaces) {
         if (deviceType === 'rx') clearInterval(rxRssiInterval);
         const keepReadingFlag = deviceType === 'tx' ? 'txKeepReading' : 'rxKeepReading';
         window[keepReadingFlag] = false;
-        await device.releaseInterface(vendorInterfaceNumber);
+        await device.releaseInterface(interfaceNumber);
         await device.close();
       } catch (error) {
         log(`Disconnect error for ${deviceType.toUpperCase()}: ${error.message}`);
@@ -499,39 +549,18 @@ for (const iface of deviceObj.configuration.interfaces) {
     };
 
     const updateButtonStates = () => {
-      if (txDevice) {
-        connectTxButton.classList.add('hidden');
-        disconnectTxButton.classList.remove('hidden');
-        disconnectTxButton.disabled = false;
-      } else {
-        connectTxButton.classList.remove('hidden');
-        disconnectTxButton.classList.add('hidden');
-        connectTxButton.disabled = false;
-      }
-
-      if (rxDevice) {
-        connectRxButton.classList.add('hidden');
-        disconnectRxButton.classList.remove('hidden');
-        disconnectRxButton.disabled = false;
-      } else {
-        connectRxButton.classList.remove('hidden');
-        disconnectRxButton.classList.add('hidden');
-        connectRxButton.disabled = false;
-      }
+      connectTxButton.disabled = !!txDevice;
+      disconnectTxButton.disabled = !txDevice;
+      connectRxButton.disabled = !!rxDevice;
+      disconnectRxButton.disabled = !rxDevice;
     };
 
     const updateUIVisibility = () => {
       const anyConnected = txDevice || rxDevice;
-      if (anyConnected) {
-        welcomeMessage.style.display = 'none';
-        monitorHeader.style.display = 'flex';
-        visualizer.style.display = 'flex';
-      } else {
-        welcomeMessage.style.display = 'flex';
-        monitorHeader.style.display = 'none';
-        visualizer.style.display = 'none';
-        lastCcSentEl.textContent = '-';
-      }
+      welcomeMessage.style.display = anyConnected ? 'none' : 'flex';
+      monitorHeader.style.display = anyConnected ? 'flex' : 'none';
+      visualizer.style.display = anyConnected ? 'flex' : 'none';
+      if (!anyConnected) lastCcSentEl.textContent = '-';
     };
 
     const startAutoReconnect = () => {
@@ -567,10 +596,10 @@ for (const iface of deviceObj.configuration.interfaces) {
     const readLoop = async (deviceType) => {
       const device = deviceType === 'tx' ? txDevice : rxDevice;
       const keepReading = deviceType === 'tx' ? txKeepReading : rxKeepReading;
-      if (!keepReading || !device || bulkInEndpoint === -1) return;
+      if (!keepReading || !device || endpointIn === undefined) return;
 
       try {
-        const result = await device.transferIn(bulkInEndpoint, 64);
+        const result = await device.transferIn(endpointIn, 64);
         const decoder = new TextDecoder();
         const data = decoder.decode(result.data);
         processIncomingData(deviceType, data);
@@ -613,7 +642,7 @@ for (const iface of deviceObj.configuration.interfaces) {
 
     const sendCommand = async (deviceType, cmd) => {
       const device = deviceType === 'tx' ? txDevice : rxDevice;
-      if (!device || bulkOutEndpoint === -1) return;
+      if (!device || endpointOut === undefined) return;
 
       if (isRelayMode && deviceType === 'tx') {
         let byteArray;
@@ -641,10 +670,10 @@ for (const iface of deviceObj.configuration.interfaces) {
         } else if (cmd === 'get_settings') {
           byteArray = new Uint8Array(['G'.charCodeAt(0)]);
         }
-        if (byteArray) await device.transferOut(bulkOutEndpoint, byteArray);
+        if (byteArray) await device.transferOut(endpointOut, byteArray);
       } else {
         const encoder = new TextEncoder();
-        await device.transferOut(bulkOutEndpoint, encoder.encode(cmd + '\n'));
+        await device.transferOut(endpointOut, encoder.encode(cmd + '\n'));
       }
     };
 
@@ -653,14 +682,14 @@ for (const iface of deviceObj.configuration.interfaces) {
     };
 
     const requestStatusFromRx = async () => {
-      if (rxDevice && bulkOutEndpoint !== -1) {
+      if (rxDevice && endpointOut !== undefined) {
         const byteArray = new Uint8Array(['R'.charCodeAt(0)]);
-        await rxDevice.transferOut(bulkOutEndpoint, byteArray);
+        await rxDevice.transferOut(endpointOut, byteArray);
       }
     };
 
     const startRssiPolling = () => {
-      setInterval(requestStatusFromRx, 2000);
+      rxRssiInterval = setInterval(requestStatusFromRx, 2000);
     };
 
     // Event Listeners
