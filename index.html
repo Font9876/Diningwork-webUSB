@@ -421,25 +421,21 @@
       if (connected && deviceType === 'rx') requestStatusFromRx();
     };
 
-    const findVendorInterfaceAndEndpoints = async (device) => {
-      await device.selectConfiguration(1);
-      const config = device.configuration;
-      if (!config) throw new Error('No configuration selected');
 
-      for (const iface of config.interfaces) {
-        if (iface.alternate.interfaceClass === 0xff) { // Vendor-specific class
-          vendorInterfaceNumber = iface.interfaceNumber;
-          for (const ep of iface.alternate.endpoints) {
-            if (ep.type === 'bulk') {
-              if (ep.direction === 'out') bulkOutEndpoint = ep.endpointNumber;
-              if (ep.direction === 'in') bulkInEndpoint = ep.endpointNumber;
-            }
-          }
-          return;
-        }
+for (const iface of deviceObj.configuration.interfaces) {
+  for (const alt of iface.alternates) {
+    if (alt.interfaceClass === 0xFF) {                // Vendor-specific (WebUSB)
+      interfaceNum = iface.interfaceNumber;
+
+      for (const ep of alt.endpoints) {
+        if (ep.direction === 'out') endpointOutNum = ep.endpointNumber;
+        if (ep.direction === 'in')  endpointInNum  = ep.endpointNumber;
       }
-      throw new Error('No vendor interface found');
-    };
+      break;   // take the first 0xFF interface found
+    }
+  }
+  if (interfaceNum !== undefined) break;
+}
 
     const connectDevice = async (deviceType, vid, pid, preselectedDevice = null) => {
       try {
