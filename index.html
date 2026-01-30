@@ -453,7 +453,7 @@
 
     const log = (message) => {
       const p = document.createElement('p');
-      p.textContent = message;
+      p.textContent = new Date().toLocaleString() + ' - ' + message;  // Add timestamp for better debugging
       logArea.appendChild(p);
       logArea.scrollTop = logArea.scrollHeight;
     };
@@ -635,13 +635,17 @@
             updateTxStatusUI();
           } else if (json.esbChannel) {
             document.getElementById('rxEsbChannelValue-col').textContent = json.esbChannel;
+            document.getElementById('esbChannel').value = json.esbChannel;
+            esbChannelValueEl.textContent = json.esbChannel;  // Sync TX slider if needed
           } else if (json.rssi !== undefined) {
             rxRssiValueElCol.textContent = `${json.rssi} dBm`;
             const height = Math.min(Math.max((json.rssi + 100) / 70 * 100, 0), 100);
             verticalRssiBar.style.height = `${height}%`;
+          } else {
+            log(`Received data from RX: ${data}`);
           }
         } catch (e) {
-          log(`Parse error from RX: ${e.message}`);
+          log(`Parse error from RX: ${e.message} - Raw data: ${data}`);
         }
       } else {
         log(`From TX: ${data}`);
@@ -685,25 +689,35 @@
         } else if (cmd === 'get_settings') {
           byteArray = new Uint8Array(['G'.charCodeAt(0)]);
         }
-        if (byteArray) await device.transferOut(endpointOut, byteArray);
+        if (byteArray) {
+          await device.transferOut(endpointOut, byteArray);
+          log(`Sent byte command to RX for TX: ${cmd}`);
+        }
       } else {
         const encoder = new TextEncoder();
         await device.transferOut(endpointOut, encoder.encode(cmd + '\n'));
+        log(`Sent string command to ${deviceType.toUpperCase()}: ${cmd}`);
       }
     };
 
     const sendChannelToRX = async (value) => {
-      sendCommand('rx', `set_rx_esb_ch=${value}`);
+      if (rxDevice && endpointOut !== undefined) {
+        const byteArray = new Uint8Array(['C'.charCodeAt(0), value]);
+        await rxDevice.transferOut(endpointOut, byteArray);
+        log(`Sent ESB channel change to RX: ${value}`);
+      }
     };
 
     const requestStatusFromRx = async () => {
       if (rxDevice && endpointOut !== undefined) {
         const byteArray = new Uint8Array(['R'.charCodeAt(0)]);
         await rxDevice.transferOut(endpointOut, byteArray);
+        log('Requested status from RX');
       }
     };
 
     const startRssiPolling = () => {
+      requestStatusFromRx(); // Initial request
       rxRssiInterval = setInterval(requestStatusFromRx, 2000);
     };
 
