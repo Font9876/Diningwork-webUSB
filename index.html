@@ -430,6 +430,7 @@
     let interfaceNumber = undefined;
     let endpointIn = undefined;
     let endpointOut = undefined;
+    let rxRssiInterval = null;
 
     const connectTxButton = document.getElementById('connectTxButton');
     const disconnectTxButton = document.getElementById('disconnectTxButton');
@@ -522,7 +523,7 @@
       if (!device) return;
 
       try {
-        if (deviceType === 'rx') clearInterval(rxRssiInterval);
+        if (deviceType === 'rx' && rxRssiInterval) clearInterval(rxRssiInterval);
         const keepReadingFlag = deviceType === 'tx' ? 'txKeepReading' : 'rxKeepReading';
         window[keepReadingFlag] = false;
         await device.releaseInterface(interfaceNumber);
@@ -553,6 +554,20 @@
       disconnectTxButton.disabled = !txDevice;
       connectRxButton.disabled = !!rxDevice;
       disconnectRxButton.disabled = !rxDevice;
+      if (txDevice) {
+        connectTxButton.classList.add('hidden');
+        disconnectTxButton.classList.remove('hidden');
+      } else {
+        connectTxButton.classList.remove('hidden');
+        disconnectTxButton.classList.add('hidden');
+      }
+      if (rxDevice) {
+        connectRxButton.classList.add('hidden');
+        disconnectRxButton.classList.remove('hidden');
+      } else {
+        connectRxButton.classList.remove('hidden');
+        disconnectRxButton.classList.add('hidden');
+      }
     };
 
     const updateUIVisibility = () => {
@@ -737,6 +752,7 @@
 
     // Initial setup
     window.onload = () => {
+      log("Dashboard loaded. Ready for connections.");
       updateButtonStates();
       updateUIVisibility();
       startAutoReconnect();
