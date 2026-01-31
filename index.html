@@ -574,7 +574,7 @@
       const anyConnected = txDevice || rxDevice;
       welcomeMessage.style.display = anyConnected ? 'none' : 'flex';
       monitorHeader.style.display = anyConnected ? 'flex' : 'none';
-      visualizer.style.display = anyConnected ? 'flex' : 'none';
+      visualizer.style.display = anyConnected ? 'grid' : 'none';
       if (!anyConnected) lastCcSentEl.textContent = '-';
     };
 
@@ -616,7 +616,8 @@
       try {
         const result = await device.transferIn(endpointIn, 64);
         const decoder = new TextDecoder();
-        const data = decoder.decode(result.data);
+        let data = decoder.decode(result.data);
+        log(`Raw data received from ${deviceType}: ${data}`);
         processIncomingData(deviceType, data);
       } catch (error) {
         if (error.message.includes('detached')) return;
@@ -664,35 +665,9 @@
       if (!device || endpointOut === undefined) return;
 
       if (isRelayMode && deviceType === 'tx') {
-        let byteArray;
-        if (cmd.startsWith('set_esb_ch=')) {
-          const value = parseInt(cmd.split('=')[1]);
-          byteArray = new Uint8Array(['C'.charCodeAt(0), value]);
-        } else if (cmd.startsWith('set_brightness=')) {
-          const value = parseInt(cmd.split('=')[1]);
-          byteArray = new Uint8Array(['B'.charCodeAt(0), value]);
-        } else if (cmd.startsWith('set_midi_ch=')) {
-          const value = parseInt(cmd.split('=')[1]);
-          byteArray = new Uint8Array(['M'.charCodeAt(0), value]);
-        } else if (cmd.startsWith('set_bank=')) {
-          const value = parseInt(cmd.split('=')[1]);
-          byteArray = new Uint8Array(['K'.charCodeAt(0), value]);
-        } else if (cmd.startsWith('set_cc=')) {
-          const parts = cmd.split('=')[1].split(',');
-          const index = parseInt(parts[0]);
-          const value = parseInt(parts[1]);
-          byteArray = new Uint8Array(['I'.charCodeAt(0), index, value]);
-        } else if (cmd === 'toggle_ble') {
-          byteArray = new Uint8Array(['T'.charCodeAt(0)]);
-        } else if (cmd === 'start_cal') {
-          byteArray = new Uint8Array(['S'.charCodeAt(0)]);
-        } else if (cmd === 'get_settings') {
-          byteArray = new Uint8Array(['G'.charCodeAt(0)]);
-        }
-        if (byteArray) {
-          await device.transferOut(endpointOut, byteArray);
-          log(`Sent byte command to RX for TX: ${cmd}`);
-        }
+        const encoder = new TextEncoder();
+        await device.transferOut(endpointOut, encoder.encode(cmd + '\n'));
+        log(`Relayed string command to RX for TX: ${cmd}`);
       } else {
         const encoder = new TextEncoder();
         await device.transferOut(endpointOut, encoder.encode(cmd + '\n'));
@@ -701,11 +676,7 @@
     };
 
     const sendChannelToRX = async (value) => {
-      if (rxDevice && endpointOut !== undefined) {
-        const byteArray = new Uint8Array(['C'.charCodeAt(0), value]);
-        await rxDevice.transferOut(endpointOut, byteArray);
-        log(`Sent ESB channel change to RX: ${value}`);
-      }
+      sendCommand('rx', `set_esb_ch=${value}`);
     };
 
     const requestStatusFromRx = async () => {
