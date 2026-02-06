@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/html">
+  <meta http-equiv="Content-Style-Type" content="text/css">
   <title>MIDI Control Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Tailwind CSS CDN for utility classes -->
@@ -146,43 +146,6 @@
         background-image: linear-gradient(to top, #ef4444, #f59e0b, #22c55e);
         transition: height 0.2s ease-out;
     }
-
-    /* Additional responsiveness for different aspect ratios */
-    @media (min-aspect-ratio: 16/9) {
-      .visualizer {
-        grid-template-columns: repeat(6, minmax(0, 1fr)); /* Wider layout for 16:9 */
-      }
-    }
-
-    @media (max-aspect-ratio: 4/3) {
-      .visualizer {
-        grid-template-columns: repeat(3, minmax(0, 1fr)); /* More compact for 4:3 */
-      }
-    }
-
-    @media (max-aspect-ratio: 1/1) {
-      .visualizer {
-        grid-template-columns: repeat(2, minmax(0, 1fr)); /* Square or taller */
-      }
-    }
-
-    @media (max-aspect-ratio: 8/9) {
-      .visualizer {
-        grid-template-columns: repeat(1, minmax(0, 1fr)); /* Half screen or portrait */
-      }
-    }
-
-    @media (max-width: 640px) { /* iPhone/mobile adjustments */
-      .grid-cols-4 {
-        grid-template-columns: repeat(2, minmax(0, 1fr)); /* Stack banks on mobile */
-      }
-      .grid-cols-2 {
-        grid-template-columns: repeat(1, minmax(0, 1fr)); /* Stack inputs */
-      }
-      .flex gap-4 {
-        flex-direction: column; /* Stack buttons vertically */
-      }
-    }
   </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
@@ -198,277 +161,149 @@
           </h1>
           <p class="text-slate-400 text-sm mb-6">MIDI Control Dashboard &amp; Configuration</p>
 
-          <!-- Device Status Indicators -->
-          <div class="mt-4 grid grid-cols-2 gap-4">
+          <!-- Device Status Indicators for TX only -->
+          <div class="mt-4 grid grid-cols-1 gap-4">
             <div id="tx-status" class="text-center text-sm">
               <p class="text-slate-400 uppercase font-medium text-xs tracking-wider">TX Status</p>
               <p id="tx-connection-status" class="font-semibold text-red-400 text-lg">Disconnected</p>
             </div>
-            <div id="rx-status" class="text-center text-sm">
-              <p class="text-slate-400 uppercase font-medium text-xs tracking-wider">RX Status</p>
-              <p id="rx-connection-status" class="font-semibold text-red-400 text-lg">Disconnected</p>
-            </div>
           </div>
-          <!-- Connection Buttons -->
-          <div id="connection-buttons" class="mt-4 grid grid-cols-2 gap-4">
-            <button id="connectTxButton" class="px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2">
+          <!-- TX Connect/Disconnect Button -->
+          <div id="tx-connection-buttons" class="mt-4">
+            <button id="connectTxButton" class="w-full px-6 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2 hidden">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
               Connect TX
             </button>
-            <button id="disconnectTxButton" disabled class="px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base inline-flex items-center justify-center gap-2 hidden">
+            <button id="disconnectTxButton" disabled class="w-full px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base inline-flex items-center justify-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
               Disconnect TX
-            </button>
-            <button id="connectRxButton" class="px-6 py-3 bg-gradient-to-br from-green-600 to-green-700 text-white font-semibold rounded-xl shadow-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-4 focus:ring-green-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 text-base inline-flex items-center justify-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
-              Connect RX
-            </button>
-            <button id="disconnectRxButton" disabled class="px-6 py-3 bg-slate-600 text-white font-semibold rounded-xl shadow-lg hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-base inline-flex items-center justify-center gap-2 hidden">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-              Disconnect RX
             </button>
           </div>
         </header>
 
-        <!-- TX Controls Section -->
-        <section id="main-controls-tx">
-          <!-- Bank Selection -->
-          <div class="mb-6">
-            <h2 class="text-xl font-bold text-white mb-4">Bank Selection</h2>
-            <div class="grid grid-cols-4 gap-2 sm:gap-4">
-              <button class="bank-btn px-4 py-2 bg-slate-700 rounded-lg text-sm font-medium hover:bg-slate-600 active" data-bank="0">Bank 0</button>
-              <button class="bank-btn px-4 py-2 bg-slate-700 rounded-lg text-sm font-medium hover:bg-slate-600" data-bank="1">Bank 1</button>
-              <button class="bank-btn px-4 py-2 bg-slate-700 rounded-lg text-sm font-medium hover:bg-slate-600" data-bank="2">Bank 2</button>
-              <button class="bank-btn px-4 py-2 bg-slate-700 rounded-lg text-sm font-medium hover:bg-slate-600" data-bank="3">Bank 3</button>
-              <button class="bank-btn px-4 py-2 bg-slate-700 rounded-lg text-sm font-medium hover:bg-slate-600" data-bank="4">Bank 4</button>
-              <button class="bank-btn px-4 py-2 bg-slate-700 rounded-lg text-sm font-medium hover:bg-slate-600" data-bank="5">Bank 5</button>
-              <button class="bank-btn px-4 py-2 bg-slate-700 rounded-lg text-sm font-medium hover:bg-slate-600" data-bank="6">Bank 6</button>
-              <button class="bank-btn px-4 py-2 bg-slate-700 rounded-lg text-sm font-medium hover:bg-slate-600" data-bank="7">Bank 7</button>
-              <button class="bank-btn px-4 py-2 bg-slate-700 rounded-lg text-sm font-medium hover:bg-slate-600" data-bank="8">Bank 8</button>
-              <button class="bank-btn px-4 py-2 bg-slate-700 rounded-lg text-sm font-medium hover:bg-slate-600" data-bank="9">Bank 9</button>
-              <button class="bank-btn px-4 py-2 bg-slate-700 rounded-lg text-sm font-medium hover:bg-slate-600" data-bank="10">Bank 10</button>
-              <button class="bank-btn px-4 py-2 bg-slate-700 rounded-lg text-sm font-medium hover:bg-slate-600" data-bank="11">Bank 11</button>
-            </div>
-          </div>
+        <!-- TX Settings Content -->
+        <div id="main-controls-tx" class="space-y-6">
+          <section class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 shadow-lg">
+            <h2 class="text-xl font-bold mb-4 text-teal-300 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" /></svg>
+              Bank Selection
+            </h2>
+            <div id="bank-selection-grid" class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-6 gap-3"></div>
+          </section>
 
-          <!-- MIDI Channel Slider -->
-          <div class="mb-6">
-            <h2 class="text-xl font-bold text-white mb-4">MIDI Channel</h2>
-            <input type="range" id="midiChannel" min="1" max="16" value="1" class="w-full" data-action="midi_ch">
-            <p class="text-center text-slate-400 mt-2">Value: <span id="midiChannelValue">1</span></p>
-          </div>
-
-          <!-- Display Brightness Slider -->
-          <div class="mb-6">
-            <h2 class="text-xl font-bold text-white mb-4">Display Brightness</h2>
-            <input type="range" id="brightness" min="3" max="255" value="200" class="w-full" data-action="brightness">
-            <p class="text-center text-slate-400 mt-2">Value: <span id="brightnessValue">200</span></p>
-          </div>
-
-          <!-- ESB Channel Slider -->
-          <div class="mb-6">
-            <h2 class="text-xl font-bold text-white mb-4">ESB Channel</h2>
-            <input type="range" id="esbChannel" min="0" max="100" step="5" value="42" class="w-full" data-action="esb_ch">
-            <p class="text-center text-slate-400 mt-2">Value: <span id="esbChannelValue">42</span></p>
-          </div>
-
-          <!-- Input Assignments (CC and Labels) -->
-          <div class="mb-6">
-            <h2 class="text-xl font-bold text-white mb-4">Input Assignments</h2>
-            <!-- Pots 0-7 CC -->
-            <div class="grid grid-cols-2 gap-4">
-              <div class="flex flex-col">
-                <label class="text-sm text-slate-400 mb-1">Pot 0 CC</label>
-                <input type="number" data-action="cc" data-index="0" min="0" max="127" value="0" class="px-3 py-2 rounded-lg">
+          <section class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 shadow-lg">
+            <h2 class="text-xl font-bold mb-4 text-teal-300 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.532 1.532 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.532 1.532 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>
+              Device Settings
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+              <div class="space-y-2">
+                <div class="flex justify-between items-center"><label for="brightness" class="block text-sm font-medium text-slate-400">Display Brightness</label><span id="brightness-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                <input type="range" id="brightness" min="3" max="255" class="w-full update-on-release" data-action="brightness">
               </div>
-              <div class="flex flex-col">
-                <label class="text-sm text-slate-400 mb-1">Pot 1 CC</label>
-                <input type="number" data-action="cc" data-index="1" min="0" max="127" value="0" class="px-3 py-2 rounded-lg">
+              <div class="space-y-2">
+                <div class="flex justify-between items-center"><label for="midiChannel" class="block text-sm font-medium text-slate-400">MIDI Channel</label><span id="midiChannel-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                <input type="range" id="midiChannel" min="1" max="16" class="w-full update-on-release" data-action="midi_ch">
               </div>
-              <div class="flex flex-col">
-                <label class="text-sm text-slate-400 mb-1">Pot 2 CC</label>
-                <input type="number" data-action="cc" data-index="2" min="0" max="127" value="0" class="px-3 py-2 rounded-lg">
+              <div class="space-y-2 custom-select">
+                <label for="buttonMode" class="block text-sm font-medium text-slate-400">Button Mode</label>
+                <select id="buttonMode" class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 py-2.5 px-3 text-sm update-on-release cursor-pointer" data-action="button_mode"><option value="0">Momentary</option><option value="1">Toggle</option></select>
               </div>
-              <div class="flex flex-col">
-                <label class="text-sm text-slate-400 mb-1">Pot 3 CC</label>
-                <input type="number" data-action="cc" data-index="3" min="0" max="127" value="0" class="px-3 py-2 rounded-lg">
+              <div class="space-y-2">
+                <div class="flex justify-between items-center"><label for="esbChannel" class="block text-sm font-medium text-slate-400">ESB Channel</label><span id="esbChannel-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                <input type="range" id="esbChannel" min="0" max="100" class="w-full update-on-release" data-action="esb_ch">
               </div>
-              <div class="flex flex-col">
-                <label class="text-sm text-slate-400 mb-1">Pot 4 CC</label>
-                <input type="number" data-action="cc" data-index="4" min="0" max="127" value="0" class="px-3 py-2 rounded-lg">
+              <div class="space-y-2 flex flex-col justify-end">
+                <button id="bleToggleButton" class="w-full px-5 py-2.5 text-white font-semibold rounded-lg shadow-md transition-all duration-200 mt-auto inline-flex items-center justify-center gap-2"></button>
               </div>
-              <div class="flex flex-col">
-                <label class="text-sm text-slate-400 mb-1">Pot 5 CC</label>
-                <input type="number" data-action="cc" data-index="5" min="0" max="127" value="0" class="px-3 py-2 rounded-lg">
-              </div>
-              <div class="flex flex-col">
-                <label class="text-sm text-slate-400 mb-1">Pot 6 CC</label>
-                <input type="number" data-action="cc" data-index="6" min="0" max="127" value="0" class="px-3 py-2 rounded-lg">
-              </div>
-              <div class="flex flex-col">
-                <label class="text-sm text-slate-400 mb-1">Pot 7 CC</label>
-                <input type="number" data-action="cc" data-index="7" min="0" max="127" value="0" class="px-3 py-2 rounded-lg">
+              <div class="space-y-2 flex flex-col justify-end">
+                <button id="startCalButton" class="w-full px-5 py-2.5 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/75 transition-colors duration-200 mt-auto inline-flex items-center justify-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.055 11H5a2 2 0 012 2v1a1 1 0 001 1h4a1 1 0 001-1v-1a2 2 0 012-2h1.945a8.002 8.002 0 00-11.89 0zM10 2a8 8 0 100 16 8 8 0 000-16zM6.343 6.343a.75.75 0 011.06 0l2.25 2.25a.75.75 0 01-1.06 1.06L6.343 7.404a.75.75 0 010-1.06zm7.314 0a.75.75 0 010 1.06l-2.25 2.25a.75.75 0 11-1.06-1.06l2.25-2.25a.75.75 0 011.06 0z" clip-rule="evenodd" /></svg>
+                  Start EasyCal
+                </button>
               </div>
             </div>
-            <!-- Buttons 0-3 CC (indices 8-11) -->
-            <div class="grid grid-cols-2 gap-4 mt-4">
-              <div class="flex flex-col">
-                <label class="text-sm text-slate-400 mb-1">Button 0 CC</label>
-                <input type="number" data-action="cc" data-index="8" min="0" max="127" value="0" class="px-3 py-2 rounded-lg">
-              </div>
-              <div class="flex flex-col">
-                <label class="text-sm text-slate-400 mb-1">Button 1 CC</label>
-                <input type="number" data-action="cc" data-index="9" min="0" max="127" value="0" class="px-3 py-2 rounded-lg">
-              </div>
-              <div class="flex flex-col">
-                <label class="text-sm text-slate-400 mb-1">Button 2 CC</label>
-                <input type="number" data-action="cc" data-index="10" min="0" max="127" value="0" class="px-3 py-2 rounded-lg">
-              </div>
-              <div class="flex flex-col">
-                <label class="text-sm text-slate-400 mb-1">Button 3 CC</label>
-                <input type="number" data-action="cc" data-index="11" min="0" max="127" value="0" class="px-3 py-2 rounded-lg">
-              </div>
-            </div>
-          </div>
+          </section>
 
-          <!-- BLE Toggle and Calibration -->
-          <div class="flex gap-4">
-            <button id="bleToggleButton" class="px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700">Toggle BLE</button>
-            <button id="startCalButton" class="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700">Start Calibration</button>
-          </div>
-        </section>
+          <section class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 shadow-lg">
+            <h2 class="text-xl font-bold mb-4 text-teal-300">Input Assignments (Current Bank)</h2>
+            <div id="assignments-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+          </section>
+        </div>
       </div>
-
-      <!-- Log Area -->
-      <div id="log-area" class="mt-6 p-4 rounded-xl"></div>
     </aside>
 
-    <!-- Right Panel: RX Settings and Visualizer (55%) -->
-    <main class="w-full lg:w-[55%] p-4 sm:p-6 lg:p-8 flex flex-col">
-      <!-- Welcome Message -->
+    <!-- Middle Panel: Visualizer & Logs (45%) -->
+    <main class="w-full lg:w-[45%] bg-slate-900 p-4 sm:p-6 lg:p-8 flex flex-col border-l border-slate-800">
       <div id="welcome-message" class="flex flex-col items-center justify-center h-full text-center">
-        <h2 class="text-2xl font-bold text-white mb-4">Connect a Device</h2>
-        <p class="text-slate-400">Connect TX or RX to start configuring and monitoring.</p>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-slate-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+        <h2 class="text-3xl font-bold text-slate-300">Awaiting Connection</h2>
+        <p class="text-slate-500 mt-2 max-w-sm">Attempting to connect to devices...</p>
       </div>
 
-      <!-- Monitor Header -->
-      <header id="monitor-header" class="flex items-center justify-between mb-6" style="display: none;">
-        <h2 class="text-2xl font-bold text-white">MIDI Monitor</h2>
-        <p class="text-slate-400">Last CC Sent: <span id="last-cc-sent">-</span></p>
-      </header>
-
-      <!-- Visualizer -->
-      <div id="visualizer" class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6" style="display: none;">
-        <!-- Pot Visualizers (0-7) -->
-        <div class="visualizer-item flex flex-col items-center">
-          <div class="cc-bar-container h-32 bg-slate-700">
-            <div class="cc-bar h-0 bg-teal-400"></div>
-          </div>
-          <p class="mt-2 text-sm text-slate-400">Pot 0: <span class="pot-value" data-index="0">0</span></p>
-        </div>
-        <div class="visualizer-item flex flex-col items-center">
-          <div class="cc-bar-container h-32 bg-slate-700">
-            <div class="cc-bar h-0 bg-teal-400"></div>
-          </div>
-          <p class="mt-2 text-sm text-slate-400">Pot 1: <span class="pot-value" data-index="1">0</span></p>
-        </div>
-        <div class="visualizer-item flex flex-col items-center">
-          <div class="cc-bar-container h-32 bg-slate-700">
-            <div class="cc-bar h-0 bg-teal-400"></div>
-          </div>
-          <p class="mt-2 text-sm text-slate-400">Pot 2: <span class="pot-value" data-index="2">0</span></p>
-        </div>
-        <div class="visualizer-item flex flex-col items-center">
-          <div class="cc-bar-container h-32 bg-slate-700">
-            <div class="cc-bar h-0 bg-teal-400"></div>
-          </div>
-          <p class="mt-2 text-sm text-slate-400">Pot 3: <span class="pot-value" data-index="3">0</span></p>
-        </div>
-        <div class="visualizer-item flex flex-col items-center">
-          <div class="cc-bar-container h-32 bg-slate-700">
-            <div class="cc-bar h-0 bg-teal-400"></div>
-          </div>
-          <p class="mt-2 text-sm text-slate-400">Pot 4: <span class="pot-value" data-index="4">0</span></p>
-        </div>
-        <div class="visualizer-item flex flex-col items-center">
-          <div class="cc-bar-container h-32 bg-slate-700">
-            <div class="cc-bar h-0 bg-teal-400"></div>
-          </div>
-          <p class="mt-2 text-sm text-slate-400">Pot 5: <span class="pot-value" data-index="5">0</span></p>
-        </div>
-        <div class="visualizer-item flex flex-col items-center">
-          <div class="cc-bar-container h-32 bg-slate-700">
-            <div class="cc-bar h-0 bg-teal-400"></div>
-          </div>
-          <p class="mt-2 text-sm text-slate-400">Pot 6: <span class="pot-value" data-index="6">0</span></p>
-        </div>
-        <div class="visualizer-item flex flex-col items-center">
-          <div class="cc-bar-container h-32 bg-slate-700">
-            <div class="cc-bar h-0 bg-teal-400"></div>
-          </div>
-          <p class="mt-2 text-sm text-slate-400">Pot 7: <span class="pot-value" data-index="7">0</span></p>
-        </div>
-
-        <!-- Button Indicators (0-3) -->
-        <div class="visualizer-item flex flex-col items-center">
-          <div class="btn-indicator w-8 h-8 rounded-full bg-slate-700"></div>
-          <p class="mt-2 text-sm text-slate-400">Button 0</p>
-        </div>
-        <div class="visualizer-item flex flex-col items-center">
-          <div class="btn-indicator w-8 h-8 rounded-full bg-slate-700"></div>
-          <p class="mt-2 text-sm text-slate-400">Button 1</p>
-        </div>
-        <div class="visualizer-item flex flex-col items-center">
-          <div class="btn-indicator w-8 h-8 rounded-full bg-slate-700"></div>
-          <p class="mt-2 text-sm text-slate-400">Button 2</p>
-        </div>
-        <div class="visualizer-item flex flex-col items-center">
-          <div class="btn-indicator w-8 h-8 rounded-full bg-slate-700"></div>
-          <p class="mt-2 text-sm text-slate-400">Button 3</p>
+      <div id="monitor-header" class="flex justify-between items-baseline pb-4 mb-4 border-b border-slate-800" style="display: none;">
+        <h2 class="text-2xl font-bold text-teal-300">Real-time Monitor</h2>
+        <div class="text-right">
+          <p id="last-cc-sent-label" class="text-xs text-slate-400 uppercase font-medium tracking-wider">Last MIDI Value</p>
+          <p id="last-cc-sent" class="font-mono text-3xl text-white font-extrabold">-</p>
         </div>
       </div>
 
-      <!-- RX Controls Section -->
-      <section id="main-controls-rx" class="mt-6">
-        <!-- RX ESB Channel Slider -->
-        <div class="mb-6">
-          <h2 class="text-xl font-bold text-white mb-4">RX ESB Channel</h2>
-          <input type="range" id="rxEsbChannel-col" min="0" max="100" step="5" value="42" class="w-full" data-action="rx_esb_ch">
-          <p class="text-center text-slate-400 mt-2">Value: <span id="rxEsbChannelValue-col">42</span></p>
-        </div>
+      <div id="visualizer" class="flex-grow flex flex-col justify-end min-h-[150px] pb-8" style="display: none;">
+        <div id="cc-pots-container" class="grid grid-cols-4 md:grid-cols-8 gap-x-6 gap-y-2 flex-grow items-end"></div>
+        <div id="cc-btns-container" class="grid grid-cols-2 sm:grid-cols-4 gap-4 h-16 items-end pt-8 border-t border-slate-800"></div>
+      </div>
 
-        <!-- RSSI Indicator -->
-        <div class="flex items-center gap-4">
-          <div class="vertical-rssi-bar-container h-32 bg-slate-700">
-            <div class="vertical-rssi-bar h-0"></div>
-          </div>
-          <p class="text-slate-400">RSSI: <span id="rxRssiValue-col">-- dBm</span></p>
-        </div>
-      </section>
+      <div class="mt-auto">
+        <p class="text-white font-semibold mb-2 text-sm">Activity Log:</p>
+        <div id="log-area" class="rounded-xl shadow-inner"></div>
+      </div>
     </main>
+
+    <!-- Rightmost Thin Panel: RX Status & Vertical RSSI (10%) -->
+    <div class="w-full lg:w-[10%] bg-slate-800/50 p-4 sm:p-6 flex flex-col justify-start border-l border-slate-700">
+      <h2 class="text-xl font-bold text-teal-300 text-center mb-4 lg:mb-6">RX</h2>
+      <div id="rx-column-status" class="text-center text-sm mb-4 lg:mb-6">
+        <p class="text-slate-400 uppercase font-medium text-xs tracking-wider">RX Status</p>
+        <p id="rx-connection-status-col" class="font-semibold text-red-400 text-lg">Disconnected</p>
+      </div>
+
+      <!-- RX Connect/Disconnect Button -->
+      <div id="rx-connection-buttons" class="mb-8">
+        <button id="connectRxButton" class="w-full px-4 py-2 bg-gradient-to-br from-blue-600 to-blue-700 text-white text-sm font-semibold rounded-lg shadow-md hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 inline-flex items-center justify-center gap-2 hidden">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" /></svg>
+          Connect RX
+        </button>
+        <button id="disconnectRxButton" disabled class="w-full px-4 py-2 bg-slate-600 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500/50 transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none inline-flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+          Disconnect RX
+        </button>
+      </div>
+
+      <div class="space-y-2 mb-8">
+        <div class="flex flex-col items-center justify-center"><label for="rxEsbChannel-col" class="block text-sm font-medium text-slate-400 mb-1">ESB Ch</label><span id="rxEsbChannel-value-col" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+        <input type="range" id="rxEsbChannel-col" min="0" max="100" step="5" class="w-full" data-action="rx_esb_ch">
+      </div>
+
+      <div class="flex-grow flex flex-col items-center justify-center mt-4">
+        <span class="text-xs text-slate-500 font-mono mb-2 font-semibold">-20dBm</span>
+        <div class="vertical-rssi-bar-container bg-slate-900 flex-grow w-4 rounded-full border border-slate-700 shadow-inner overflow-hidden">
+          <div id="vertical-rssi-bar" class="vertical-rssi-bar" style="height: 0%;"></div>
+        </div>
+        <span id="rxRssi-value-col" class="text-sm font-mono text-cyan-300 font-semibold my-2">-- dBm</span>
+        <span class="text-xs text-slate-500 font-mono mt-2 font-semibold">-100dBm</span>
+      </div>
+    </div>
   </div>
 
   <script>
-    // Constants for VID/PID - Adjust these to your actual values
+    // --- Device Vendor IDs & Product IDs ---
     const TX_VID = 0x000a;
     const TX_PID = 0x000a;
     const RX_VID = 0x000a;
     const RX_PID = 0x001a;
 
-    const RECONNECT_INTERVAL_MS = 1000;
-
-    let txDevice = null, rxDevice = null;
-    let txKeepReading = false, rxKeepReading = false;
-    let txWasConnected = false, rxWasConnected = false;
-    let autoReconnectIntervalId = null;
-    let nextDeviceToAttempt = 'tx';
-    let isRelayMode = false; // True if connected to RX for relay to TX
-    let txStatus = 'disconnected'; // Track TX status from RX
-    let interfaceNumber = undefined;
-    let endpointIn = undefined;
-    let endpointOut = undefined;
-    let rxRssiInterval = null;
-
+    // --- DOM Elements ---
     const connectTxButton = document.getElementById('connectTxButton');
     const disconnectTxButton = document.getElementById('disconnectTxButton');
     const connectRxButton = document.getElementById('connectRxButton');
@@ -477,94 +312,473 @@
     const welcomeMessage = document.getElementById('welcome-message');
     const monitorHeader = document.getElementById('monitor-header');
     const visualizer = document.getElementById('visualizer');
-    const lastCcSentEl = document.getElementById('last-cc-sent');
-
-    const brightnessValueEl = document.getElementById('brightnessValue');
-    const midiChannelValueEl = document.getElementById('midiChannelValue');
-    const esbChannelValueEl = document.getElementById('esbChannelValue');
-    const rxEsbChannelValueElCol = document.getElementById('rxEsbChannelValue-col');
-    const rxRssiValueElCol = document.getElementById('rxRssiValue-col');
-    const verticalRssiBar = document.querySelector('.vertical-rssi-bar');
-
     const logArea = document.getElementById('log-area');
 
-    const log = (message) => {
+    // TX Elements
+    const txConnectionStatusEl = document.getElementById('tx-connection-status');
+    const bankSelectionGrid = document.getElementById('bank-selection-grid');
+    const brightnessSlider = document.getElementById('brightness');
+    const brightnessValueEl = document.getElementById('brightness-value');
+    const midiChannelSlider = document.getElementById('midiChannel');
+    const midiChannelValueEl = document.getElementById('midiChannel-value');
+    const buttonModeSelect = document.getElementById('buttonMode');
+    const esbChannelSlider = document.getElementById('esbChannel');
+    const esbChannelValueEl = document.getElementById('esbChannel-value');
+    const bleToggleButton = document.getElementById('bleToggleButton');
+    const assignmentsGrid = document.getElementById('assignments-grid');
+    const ccPotsContainer = document.getElementById('cc-pots-container');
+    const ccBtnsContainer = document.getElementById('cc-btns-container');
+    const lastCcSentEl = document.getElementById('last-cc-sent');
+
+    // RX Elements
+    const rxConnectionStatusElCol = document.getElementById('rx-connection-status-col');
+    const rxEsbChannelSliderCol = document.getElementById('rxEsbChannel-col');
+    const rxEsbChannelValueElCol = document.getElementById('rxEsbChannel-value-col');
+    const rxRssiValueElCol = document.getElementById('rxRssi-value-col');
+    const verticalRssiBar = document.getElementById('vertical-rssi-bar');
+
+    // --- WebUSB State ---
+    let txDevice = null;
+    let rxDevice = null;
+    let txInterfaceNumber, txEndpointIn, txEndpointOut;
+    let rxInterfaceNumber, rxEndpointIn, rxEndpointOut;
+    let rxRssiInterval = null; // Interval ID for polling RSSI
+
+    let txKeepReading = false;
+    let rxKeepReading = false;
+
+    const textEncoder = new TextEncoder();
+    const textDecoder = new TextDecoder();
+    let ccMap = {};
+    let currentTxSettingsCache = {};
+
+    let txWasConnected = false;
+    let rxWasConnected = false;
+    
+    let autoReconnectIntervalId = null;
+    const RECONNECT_INTERVAL_MS = 100; // 100ms interval for alternating attempts
+    let nextDeviceToAttempt = 'tx'; // Start by attempting TX
+
+    // --- BLE Button Content ---
+    const bleOnIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 2.293a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 4.414V17a1 1 0 11-2 0V4.414L5.707 7.707a1 1 0 01-1.414-1.414l4-4z" clip-rule="evenodd" /></svg> Disable BLE`;
+    const bleOffIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.27 6.957 14.54 4 10 4c-1.255 0-2.443.29-3.536.81l-2.064-2.065zM10 12a2 2 0 110-4 2 2 0 010 4z" clip-rule="evenodd" /><path d="M2 10s3.923-6 8-6 8 6 8 6-3.923 6-8 6-8-6-8-6zm7.885-1.462A3.004 3.004 0 0010 12a3 3 0 100-6 3.004 3.004 0 00-2.115.888l2.115 2.115z" /></svg> Enable BLE`;
+
+    // --- Utility Functions ---
+    const log = (msg) => {
+      console.log(`[SYS] ${msg}`);
       const p = document.createElement('p');
-      p.textContent = new Date().toLocaleString() + ' - ' + message;  // Add timestamp for better debugging
-      logArea.appendChild(p);
-      logArea.scrollTop = logArea.scrollHeight;
+      const timestamp = `[${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'})}] `;
+      const textNode = document.createTextNode(timestamp + msg);
+      p.appendChild(textNode);
+      logArea.prepend(p);
+      while (logArea.children.length > 50) {
+        logArea.removeChild(logArea.lastChild);
+      }
     };
 
     const setConnectionStatus = (deviceType, connected) => {
-      const statusEl = document.getElementById(`${deviceType}-connection-status`);
-      statusEl.textContent = connected ? 'Connected' : 'Disconnected';
-      statusEl.className = `font-semibold text-${connected ? 'green' : 'red'}-400 text-lg`;
-      if (deviceType === 'rx') isRelayMode = connected;
-      if (connected && deviceType === 'rx') requestStatusFromRx();
-    };
+      const statusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusElCol;
+      let wasConnectedFlag = deviceType === 'tx' ? txWasConnected : rxWasConnected;
 
-    const findVendorInterfaceAndEndpoints = (device) => {
-      interfaceNumber = undefined;
-      endpointIn = undefined;
-      endpointOut = undefined;
-
-      for (const iface of device.configuration.interfaces) {
-        iface.alternates.forEach(alt => {
-          if (alt.interfaceClass === 0xff) { // Vendor-specific
-            interfaceNumber = iface.interfaceNumber;
-            alt.endpoints.forEach(ep => {
-              if (ep.direction === 'out') endpointOut = ep.endpointNumber;
-              if (ep.direction === 'in') endpointIn = ep.endpointNumber;
-            });
-          }
-        });
-        if (interfaceNumber !== undefined) break;
+      if (connected) {
+        statusEl.textContent = 'Connected';
+        statusEl.classList.remove('text-red-400', 'text-yellow-400', 'animate-pulse');
+        statusEl.classList.add('text-green-400');
+        if (deviceType === 'tx') txWasConnected = true;
+        else if (deviceType === 'rx') rxWasConnected = true;
+      } else {
+        statusEl.textContent = 'Disconnected';
+        statusEl.classList.remove('text-green-400', 'text-yellow-400');
+        statusEl.classList.add('text-red-400');
+        if (wasConnectedFlag) {
+          statusEl.classList.add('animate-pulse');
+        }
       }
-      if (interfaceNumber === undefined) throw new Error('No vendor-specific interface found');
-      if (endpointIn === undefined || endpointOut === undefined) throw new Error('Endpoints not found');
     };
 
-    const connectDevice = async (deviceType, vid, pid, preselectedDevice = null) => {
+    const sendCommand = async (deviceType, command) => {
+      let device, endpointOut;
+      if (deviceType === 'tx') {
+        device = txDevice;
+        endpointOut = txEndpointOut;
+      } else if (deviceType === 'rx') {
+        device = rxDevice;
+        endpointOut = rxEndpointOut;
+      } else {
+        return;
+      }
+
+      if (!device) {
+        return;
+      }
       try {
-        let device;
-        if (preselectedDevice) {
-          device = preselectedDevice;
+        await device.transferOut(endpointOut, textEncoder.encode(command + '\n'));
+      } catch (error) {
+        console.error(`Send command to ${deviceType.toUpperCase()} error:`, error);
+        log(`Error sending command to ${deviceType.toUpperCase()}: ${error.message}`);
+        setConnectionStatus(deviceType, false);
+      }
+    };
+
+    const sendTxCommand = async (command) => {
+      if (txDevice) {
+        return sendCommand('tx', command);
+      }
+      if (rxDevice) {
+        return sendCommand('rx', command);
+      }
+      log("No TX or RX device connected to send command.");
+    };
+
+    const sendChannelToRX = async (channel) => {
+        if (!rxDevice) {
+            log("RX device not connected. Cannot send channel.");
+            return;
+        }
+        try {
+            const data = new Uint8Array([0x43, channel]); // 0x43 is ASCII for 'C'
+            await rxDevice.transferOut(rxEndpointOut, data);
+            log(`Sent RX ESB Channel: ${channel}`);
+        } catch (error) {
+            console.error("Send channel to RX error:", error);
+            log(`Error sending channel to RX: ${error.message}`);
+            setConnectionStatus('rx', false);
+        }
+    };
+
+    const populateTxUI = (settings) => {
+      currentTxSettingsCache = settings;
+
+      // Bank Selection
+      bankSelectionGrid.innerHTML = '';
+      for (let i = 0; i < 12; i++) {
+        const bankBtn = document.createElement('button');
+        bankBtn.className = 'bank-btn p-3 text-sm font-semibold rounded-lg bg-slate-800 hover:bg-slate-700/70 transition-colors duration-150 transform hover:scale-105 active:scale-95 shadow-md';
+        bankBtn.textContent = `${i + 1}`;
+        bankBtn.dataset.bank = i;
+        if (i === settings.activeBank) bankBtn.classList.add('active');
+        bankSelectionGrid.appendChild(bankBtn);
+      }
+
+      // Device Settings
+      brightnessSlider.value = settings.brightness;
+      brightnessValueEl.textContent = settings.brightness;
+      midiChannelSlider.value = settings.midiChannel;
+      midiChannelValueEl.textContent = settings.midiChannel;
+      buttonModeSelect.value = settings.buttonMode;
+      esbChannelSlider.value = settings.esbChannel;
+      esbChannelValueEl.textContent = settings.esbChannel;
+
+      // BLE Toggle Button
+      bleToggleButton.innerHTML = settings.bleOn ? bleOnIcon : bleOffIcon;
+      bleToggleButton.classList.toggle('bg-red-600', settings.bleOn);
+      bleToggleButton.classList.toggle('hover:bg-red-500', settings.bleOn);
+      bleToggleButton.classList.toggle('bg-green-600', !settings.bleOn);
+      bleToggleButton.classList.toggle('hover:bg-green-500', !settings.bleOn);
+      bleToggleButton.classList.toggle('focus:ring-red-500', settings.bleOn);
+      bleToggleButton.classList.toggle('focus:ring-green-500', !settings.bleOn);
+
+      // Input Assignments
+      assignmentsGrid.innerHTML = '';
+      ccPotsContainer.innerHTML = '';
+      ccBtnsContainer.innerHTML = '';
+      ccMap = {};
+
+      for (let i = 0; i < 12; i++) {
+        const isPot = i < 8;
+        const type = isPot ? 'Pot' : 'Btn';
+        const num = isPot ? i + 1 : i - 7;
+        const cc = settings.ccs[i];
+        const label = settings.labels[i] || (type + ' ' + num);
+        ccMap[cc] = i;
+
+        const card = document.createElement('div');
+        card.className = 'bg-slate-800/70 p-4 rounded-xl border border-slate-700 shadow-lg flex flex-col justify-between';
+        card.innerHTML = `
+          <label class="block text-base font-semibold text-slate-300 mb-2 text-center h-6">${label}</label>
+          <div class="flex items-center gap-2 mt-2">
+            <input type="text" value="${label}" maxlength="4" placeholder="Label" class="w-full bg-slate-800 border border-slate-700 rounded-md text-sm p-2 focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-change" data-action="label" data-index="${i}">
+            <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="w-20 bg-slate-800 border border-slate-700 rounded-md text-sm p-2 text-center font-mono focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-release" data-action="cc" data-index="${i}">
+          </div>
+        `;
+        assignmentsGrid.appendChild(card);
+
+        const ccInput = card.querySelector(`input[data-action="cc"][data-index="${i}"]`);
+        if (ccInput) {
+            ccInput.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                let val = parseInt(e.target.value);
+                if (e.deltaY < 0) val = Math.min(127, val + 1);
+                else if (e.deltaY > 0) val = Math.max(0, val - 1);
+                if (val !== parseInt(e.target.value)) {
+                    e.target.value = val;
+                    e.target.dispatchEvent(new Event('change'));
+                }
+            });
+        }
+
+        if (i < 8) { // Potentiometers
+          const barWrapper = document.createElement('div');
+          barWrapper.className = 'visualizer-item relative flex flex-col items-center h-full group';
+          barWrapper.innerHTML = `
+            <span id="cc-val-${i}" class="text-xs text-teal-300 font-mono mb-1.5 font-semibold">${settings.currentPotValues ? settings.currentPotValues[i] : 0}</span>
+            <div class="cc-bar-container bg-slate-900 h-full w-4 rounded-full flex items-start border border-slate-700 shadow-inner overflow-hidden">
+              <div id="cc-bar-${i}" class="cc-bar bg-gradient-to-t from-teal-500 to-cyan-400 w-full" style="height: ${settings.currentPotValues ? (settings.currentPotValues[i] / 127) * 100 : 0}%;"></div>
+            </div>
+            <span class="text-xs text-slate-500 font-mono mt-2 font-semibold">${cc}</span>
+            <span class="absolute -bottom-6 text-sm font-semibold text-slate-300 truncate w-20 text-center">${label}</span>
+          `;
+          ccPotsContainer.appendChild(barWrapper);
+        } else { // Buttons
+          const btnWrapper = document.createElement('div');
+          btnWrapper.className = 'visualizer-item relative flex flex-col items-center h-full justify-end group';
+          btnWrapper.innerHTML = `
+            <div id="cc-btn-${i}" class="btn-indicator bg-slate-800 h-12 w-12 rounded-full border-2 border-slate-700 mb-2 shadow-lg flex items-center justify-center">
+              <span class="text-white text-sm font-mono font-semibold">${cc}</span>
+            </div>
+            <span class="absolute -bottom-6 text-sm font-semibold text-slate-300 truncate w-20 text-center">${label}</span>
+          `;
+          ccBtnsContainer.appendChild(btnWrapper);
+          if (settings.currentPotValues && settings.currentPotValues[i] > 64) {
+            document.getElementById(`cc-btn-${i}`).classList.add('active');
+          }
+        }
+      }
+    };
+
+    const updateRxRSSI = (rssiValue) => {
+        if (rxRssiValueElCol) rxRssiValueElCol.textContent = `${rssiValue} dBm`;
+
+        if (verticalRssiBar) {
+            // Map RSSI from -100 to -20 to a 0-100% height
+            const minRssi = -100;
+            const maxRssi = -20;
+            const range = maxRssi - minRssi;
+            const clampedRssi = Math.max(minRssi, Math.min(maxRssi, rssiValue));
+            const percentage = ((clampedRssi - minRssi) / range) * 100;
+            verticalRssiBar.style.height = `${percentage}%`;
+        }
+    };
+
+
+    const populateRxUI = (settings) => {
+        if (settings && typeof settings.esbChannel !== 'undefined') {
+            rxEsbChannelSliderCol.value = settings.esbChannel;
+            rxEsbChannelValueElCol.textContent = settings.esbChannel;
+            log(`RX ESB Channel set to ${settings.esbChannel}`);
+        }
+    };
+
+
+    const updateCCVisualizer = (cc, value) => {
+      const index = ccMap[cc];
+      if (index === undefined) return;
+      lastCcSentEl.textContent = `${cc}:${value}`;
+      if (index < 8) {
+        const bar = document.getElementById(`cc-bar-${index}`);
+        const valLabel = document.getElementById(`cc-val-${index}`);
+        if (bar) bar.style.height = `${(value / 127) * 100}%`;
+        if (valLabel) valLabel.textContent = value;
+      } else {
+        const btn = document.getElementById(`cc-btn-${index}`);
+        if (btn) btn.classList.toggle('active', value > 64);
+      }
+    };
+
+    async function readLoop(deviceType) {
+      let device, endpointIn, keepReadingFlag;
+      if (deviceType === 'tx') {
+        device = txDevice;
+        endpointIn = txEndpointIn;
+        keepReadingFlag = () => txKeepReading;
+      } else if (deviceType === 'rx') {
+        device = rxDevice;
+        endpointIn = rxEndpointIn;
+        keepReadingFlag = () => rxKeepReading;
+      } else {
+        return;
+      }
+
+      let incomingData = "";
+      while (keepReadingFlag()) {
+        try {
+          let result = await device.transferIn(endpointIn, 512);
+          if (result.status === 'ok' && result.data.byteLength > 0) {
+            incomingData += textDecoder.decode(result.data, { stream: true });
+            let newlineIndex;
+            while ((newlineIndex = incomingData.indexOf('\n')) !== -1) {
+              const line = incomingData.slice(0, newlineIndex).trim();
+              incomingData = incomingData.slice(newlineIndex + 1);
+              if (line.startsWith('{')) {
+                try {
+                  const parsedJson = JSON.parse(line);
+                  if (deviceType === 'tx') {
+                    populateTxUI(parsedJson);
+                  } else if (deviceType === 'rx') {
+                    if (parsedJson.activeBank !== undefined) {
+                      populateTxUI(parsedJson);
+                    } else if (parsedJson.rssi !== undefined) {
+                      updateRxRSSI(parsedJson.rssi);
+                    } else {
+                      populateRxUI(parsedJson);
+                    }
+                  }
+                } catch (e) {
+                  log(`JSON Parse Error (${deviceType.toUpperCase()}): ${e.message}`);
+                }
+              } else if (line.startsWith('cc:')) {
+                if (deviceType === 'tx') {
+                  const parts = line.substring(3).split(',');
+                  if (parts.length === 2) updateCCVisualizer(parseInt(parts[0]), parseInt(parts[1]));
+                }
+              } else if (line.startsWith('bank_changed:')) {
+                if (deviceType === 'tx' || deviceType === 'rx') {
+                  setTimeout(() => sendTxCommand('get_settings'), 100);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          if (error.message.includes("disconnected")) {
+            log(`${deviceType.toUpperCase()} device disconnected.`);
+            setConnectionStatus(deviceType, false);
+          } else {
+            log(`Read loop error (${deviceType.toUpperCase()}): ${error.message}`);
+          }
+          if (deviceType === 'tx') txKeepReading = false;
+          else if (deviceType === 'rx') rxKeepReading = false;
+          break;
+        }
+      }
+    }
+
+    // Modified connectDevice function to support both initial request and auto-reconnect
+    const connectDevice = async (deviceType, vendorId, productId, deviceToConnect = null) => {
+      let deviceObj, interfaceNum, endpointInNum, endpointOutNum;
+      let connectionStatusEl = deviceType === 'tx' ? txConnectionStatusEl : rxConnectionStatusElCol;
+      let deviceRef = deviceType === 'tx' ? txDevice : rxDevice;
+      let keepReadingRef = deviceType === 'tx' ? txKeepReading : rxKeepReading;
+
+      // If already connected, no need to proceed
+      if (deviceRef && deviceRef.opened && keepReadingRef()) {
+        return true;
+      }
+
+      log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)}, PID: 0x${productId.toString(16)})...`);
+      connectionStatusEl.textContent = 'Connecting...';
+      connectionStatusEl.classList.remove('text-green-400', 'text-red-400', 'animate-pulse');
+      connectionStatusEl.classList.add('text-yellow-400');
+
+      try {
+        if (deviceToConnect) {
+          // Use the device provided (e.g., from auto-reconnect or USB connect event)
+          deviceObj = deviceToConnect;
         } else {
-          [device] = await navigator.usb.requestDevice({ filters: [{ vendorId: vid, productId: pid }] });
+          // This is for the *initial* connection via button click: prompt user
+          deviceObj = await navigator.usb.requestDevice({
+            filters: [{ vendorId: vendorId, productId: productId }]
+          });
+          if (!deviceObj) {
+            throw new Error("User cancelled device selection or no device found.");
+          }
         }
-        await device.open();
-        if (device.configuration === null) await device.selectConfiguration(1);
-        await findVendorInterfaceAndEndpoints(device);
-        await device.claimInterface(interfaceNumber);
-        log(`${deviceType.toUpperCase()} connected. Interface ${interfaceNumber} claimed. Endpoints: Out ${endpointOut}, In ${endpointIn}`);
+
+        await deviceObj.open();
+        if (deviceObj.configuration === null) await deviceObj.selectConfiguration(1);
+
+        for (const iface of deviceObj.configuration.interfaces) {
+          for (const alt of iface.alternates) {
+            if (alt.interfaceClass === 0xFF) { // Assuming a vendor-specific class
+              interfaceNum = iface.interfaceNumber;
+              for (const ep of alt.endpoints) {
+                if (ep.direction === 'out') endpointOutNum = ep.endpointNumber;
+                if (ep.direction === 'in') endpointInNum = ep.endpointNumber;
+              }
+            }
+          }
+        }
+        if (interfaceNum === undefined) throw new Error("Interface not found for the selected device.");
+
+        await deviceObj.claimInterface(interfaceNum);
+        await deviceObj.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x01, index: interfaceNum });
+
+        log(`${deviceType.toUpperCase()} device connected successfully!`);
         setConnectionStatus(deviceType, true);
+
         if (deviceType === 'tx') {
-          txDevice = device;
+          txDevice = deviceObj;
+          txInterfaceNumber = interfaceNum;
+          txEndpointIn = endpointInNum;
+          txEndpointOut = endpointOutNum;
           txKeepReading = true;
+          txWasConnected = true;
           readLoop('tx');
+          await sendTxCommand("get_settings");
         } else if (deviceType === 'rx') {
-          rxDevice = device;
+          rxDevice = deviceObj;
+          rxInterfaceNumber = interfaceNum;
+          rxEndpointIn = endpointInNum;
+          rxEndpointOut = endpointOutNum;
           rxKeepReading = true;
+          rxWasConnected = true;
           readLoop('rx');
-          startRssiPolling();
+          await sendTxCommand("get_settings");
+          // Start polling for RSSI after successful connection
+          if (rxRssiInterval) clearInterval(rxRssiInterval);
+          rxRssiInterval = setInterval(() => {
+              if (rxDevice && rxDevice.opened) {
+                  sendCommand('rx', 'R'); // 'R' for Request RSSI
+              }
+          }, 50);
         }
+        return true;
+      } catch (error) {
+        if (error.message.includes("User cancelled") || error.message.includes("No device selected")) {
+          log(`Connection for ${deviceType.toUpperCase()} cancelled by user.`);
+        } else if (!(deviceRef && error.message.includes("disconnected"))) {
+          log(`Connection failed for ${deviceType.toUpperCase()}: ${error.message}`);
+        }
+
+        if (deviceRef && error.message.includes("disconnected")) {
+          if (deviceType === 'tx') txDevice = null;
+          else if (deviceType === 'rx') rxDevice = null;
+        }
+
+        setConnectionStatus(deviceType, false);
+        return false;
+      } finally {
         updateButtonStates();
         updateUIVisibility();
-      } catch (error) {
-        log(`Connection error for ${deviceType.toUpperCase()}: ${error.message}`);
       }
     };
 
-    const disconnectDevice = async (deviceType) => {
-      const device = deviceType === 'tx' ? txDevice : rxDevice;
-      if (!device) return;
 
+    const disconnectDevice = async (deviceType) => {
+      let deviceObj, interfaceNum;
+      if (deviceType === 'tx') {
+        deviceObj = txDevice;
+        interfaceNum = txInterfaceNumber;
+        txKeepReading = false;
+      } else if (deviceType === 'rx') {
+        deviceObj = rxDevice;
+        interfaceNum = rxInterfaceNumber;
+        rxKeepReading = false;
+        // Stop polling for RSSI on disconnect
+        if (rxRssiInterval) {
+            clearInterval(rxRssiInterval);
+            rxRssiInterval = null;
+        }
+      } else {
+        return;
+      }
+
+      if (!deviceObj) return;
+
+      log(`Disconnecting ${deviceType.toUpperCase()}...`);
       try {
-        if (deviceType === 'rx' && rxRssiInterval) clearInterval(rxRssiInterval);
-        const keepReadingFlag = deviceType === 'tx' ? 'txKeepReading' : 'rxKeepReading';
-        window[keepReadingFlag] = false;
-        await device.releaseInterface(interfaceNumber);
-        await device.close();
+        await deviceObj.controlTransferOut({ requestType: 'class', recipient: 'interface', request: 0x22, value: 0x00, index: interfaceNum });
+        await deviceObj.releaseInterface(interfaceNum);
+        await deviceObj.close();
       } catch (error) {
         log(`Disconnect error for ${deviceType.toUpperCase()}: ${error.message}`);
       } finally {
@@ -574,6 +788,7 @@
         } else if (deviceType === 'rx') {
           rxDevice = null;
           rxWasConnected = false;
+          rxEsbChannelSliderCol.value = 0;
           rxEsbChannelValueElCol.textContent = '';
           rxRssiValueElCol.textContent = '-- dBm';
           verticalRssiBar.style.height = '0%';
@@ -582,51 +797,66 @@
         log(`${deviceType.toUpperCase()} disconnected.`);
         updateButtonStates();
         updateUIVisibility();
-        startAutoReconnect();
+        startAutoReconnect(); // Always restart auto-reconnect
       }
     };
 
     const updateButtonStates = () => {
-      connectTxButton.disabled = !!txDevice;
-      disconnectTxButton.disabled = !txDevice;
-      connectRxButton.disabled = !!rxDevice;
-      disconnectRxButton.disabled = !rxDevice;
+      // TX Buttons
       if (txDevice) {
         connectTxButton.classList.add('hidden');
         disconnectTxButton.classList.remove('hidden');
+        disconnectTxButton.disabled = false;
       } else {
         connectTxButton.classList.remove('hidden');
         disconnectTxButton.classList.add('hidden');
+        connectTxButton.disabled = false; // Always allow manual connect if disconnected
       }
+
+      // RX Buttons
       if (rxDevice) {
         connectRxButton.classList.add('hidden');
         disconnectRxButton.classList.remove('hidden');
+        disconnectRxButton.disabled = false;
       } else {
         connectRxButton.classList.remove('hidden');
         disconnectRxButton.classList.add('hidden');
+        connectRxButton.disabled = false; // Always allow manual connect if disconnected
       }
     };
 
     const updateUIVisibility = () => {
       const anyConnected = txDevice || rxDevice;
-      welcomeMessage.style.display = anyConnected ? 'none' : 'flex';
-      monitorHeader.style.display = anyConnected ? 'flex' : 'none';
-      visualizer.style.display = anyConnected ? 'grid' : 'none';
-      if (!anyConnected) lastCcSentEl.textContent = '-';
+      if (anyConnected) {
+        welcomeMessage.style.display = 'none';
+        monitorHeader.style.display = 'flex';
+        visualizer.style.display = 'flex';
+      } else {
+        welcomeMessage.style.display = 'flex';
+        monitorHeader.style.display = 'none';
+        visualizer.style.display = 'none';
+        lastCcSentEl.textContent = '-';
+      }
     };
 
+    // Auto-reconnect loop functions
     const startAutoReconnect = () => {
-      if (autoReconnectIntervalId) clearInterval(autoReconnectIntervalId);
+      if (autoReconnectIntervalId) {
+        clearInterval(autoReconnectIntervalId);
+      }
       log("Starting auto-reconnect loop...");
-      nextDeviceToAttempt = 'tx';
+      nextDeviceToAttempt = 'tx'; // Reset starting device
       autoReconnectIntervalId = setInterval(autoReconnectStep, RECONNECT_INTERVAL_MS);
     };
 
+    // Modified autoReconnectStep to use navigator.usb.getDevices() for already-permitted devices
     const autoReconnectStep = async () => {
       if (txDevice && rxDevice) {
-        clearInterval(autoReconnectIntervalId);
-        autoReconnectIntervalId = null;
-        log("Both TX and RX connected. Auto-reconnect paused.");
+        if (autoReconnectIntervalId) {
+          clearInterval(autoReconnectIntervalId);
+          autoReconnectIntervalId = null;
+          log("Both TX and RX connected. Auto-reconnect paused.");
+        }
         return;
       }
 
@@ -634,102 +864,36 @@
 
       if (nextDeviceToAttempt === 'tx' && !txDevice) {
         const foundTx = availableDevices.find(d => d.vendorId === TX_VID && d.productId === TX_PID);
-        if (foundTx) await connectDevice('tx', TX_VID, TX_PID, foundTx);
+        if (foundTx) {
+          await connectDevice('tx', TX_VID, TX_PID, foundTx); // Pass the found device
+        }
         nextDeviceToAttempt = 'rx';
       } else if (nextDeviceToAttempt === 'rx' && !rxDevice) {
         const foundRx = availableDevices.find(d => d.vendorId === RX_VID && d.productId === RX_PID);
-        if (foundRx) await connectDevice('rx', RX_VID, RX_PID, foundRx);
+        if (foundRx) {
+          await connectDevice('rx', RX_VID, RX_PID, foundRx); // Pass the found device
+        }
         nextDeviceToAttempt = 'tx';
       }
       updateButtonStates();
       updateUIVisibility();
     };
 
-    const readLoop = async (deviceType) => {
-      const device = deviceType === 'tx' ? txDevice : rxDevice;
-      const keepReading = deviceType === 'tx' ? txKeepReading : rxKeepReading;
-      if (!keepReading || !device || endpointIn === undefined) return;
 
-      try {
-        const result = await device.transferIn(endpointIn, 64);
-        const decoder = new TextDecoder();
-        let data = decoder.decode(result.data);
-        log(`Raw data received from ${deviceType}: ${data}`);
-        processIncomingData(deviceType, data);
-      } catch (error) {
-        if (error.message.includes('detached')) return;
-        log(`Read error for ${deviceType}: ${error.message}`);
-      }
+    // --- Event Listeners ---
+    // New manual connect buttons
+    connectTxButton.addEventListener('click', async () => {
+      await connectDevice('tx', TX_VID, TX_PID); // Trigger requestDevice for initial connection
+      startAutoReconnect(); // Restart auto-reconnect after manual connection
+    });
+    connectRxButton.addEventListener('click', async () => {
+      await connectDevice('rx', RX_VID, RX_PID); // Trigger requestDevice for initial connection
+      startAutoReconnect(); // Restart auto-reconnect after manual connection
+    });
 
-      readLoop(deviceType);
-    };
+    disconnectTxButton.addEventListener('click', () => disconnectDevice('tx'));
+    disconnectRxButton.addEventListener('click', () => disconnectDevice('rx')); // Use the correct button ID for RX
 
-    const processIncomingData = (deviceType, data) => {
-      if (deviceType === 'rx') {
-        try {
-          const json = JSON.parse(data.trim());
-          if (json.tx_status) {
-            txStatus = json.tx_status;
-            updateTxStatusUI();
-          } else if (json.esbChannel) {
-            document.getElementById('rxEsbChannelValue-col').textContent = json.esbChannel;
-            document.getElementById('esbChannel').value = json.esbChannel;
-            esbChannelValueEl.textContent = json.esbChannel;  // Sync TX slider if needed
-          } else if (json.rssi !== undefined) {
-            rxRssiValueElCol.textContent = `${json.rssi} dBm`;
-            const height = Math.min(Math.max((json.rssi + 100) / 70 * 100, 0), 100);
-            verticalRssiBar.style.height = `${height}%`;
-          } else {
-            log(`Received data from RX: ${data}`);
-          }
-        } catch (e) {
-          log(`Parse error from RX: ${e.message} - Raw data: ${data}`);
-        }
-      } else {
-        log(`From TX: ${data}`);
-      }
-    };
-
-    const updateTxStatusUI = () => {
-      const txStatusEl = document.getElementById('tx-connection-status');
-      txStatusEl.textContent = txStatus === 'offline' ? 'Offline/No Signal' : 'Connected';
-      txStatusEl.className = `font-semibold text-${txStatus === 'offline' ? 'red' : 'green'}-400 text-lg`;
-      document.querySelectorAll('#main-controls-tx input, #main-controls-tx button').forEach(el => el.disabled = txStatus === 'offline');
-    };
-
-    const sendCommand = async (deviceType, cmd) => {
-      const device = deviceType === 'tx' ? txDevice : rxDevice;
-      if (!device || endpointOut === undefined) return;
-
-      if (isRelayMode && deviceType === 'tx') {
-        const encoder = new TextEncoder();
-        await device.transferOut(endpointOut, encoder.encode(cmd + '\n'));
-        log(`Relayed string command to RX for TX: ${cmd}`);
-      } else {
-        const encoder = new TextEncoder();
-        await device.transferOut(endpointOut, encoder.encode(cmd + '\n'));
-        log(`Sent string command to ${deviceType.toUpperCase()}: ${cmd}`);
-      }
-    };
-
-    const sendChannelToRX = async (value) => {
-      sendCommand('rx', `set_esb_ch=${value}`);
-    };
-
-    const requestStatusFromRx = async () => {
-      if (rxDevice && endpointOut !== undefined) {
-        const byteArray = new Uint8Array(['R'.charCodeAt(0)]);
-        await rxDevice.transferOut(endpointOut, byteArray);
-        log('Requested status from RX');
-      }
-    };
-
-    const startRssiPolling = () => {
-      requestStatusFromRx(); // Initial request
-      rxRssiInterval = setInterval(requestStatusFromRx, 2000);
-    };
-
-    // Event Listeners
     document.addEventListener('input', (e) => {
       const target = e.target;
       if (target.id === 'brightness') brightnessValueEl.textContent = target.value;
@@ -738,6 +902,8 @@
       else if (target.id === 'rxEsbChannel-col') rxEsbChannelValueElCol.textContent = target.value;
     });
 
+    // The 'change' event listener is now responsible for sending commands
+    // when a control's value is finalized (e.g., mouse release for sliders)
     document.addEventListener('change', (e) => {
       const t = e.target;
       const action = t.dataset.action;
@@ -745,13 +911,16 @@
 
       if (deviceType === 'tx') {
         let cmd = `set_${action}=${t.dataset.index ? t.dataset.index + ',' : ''}${t.value}`;
-        sendCommand('tx', cmd);
-        if (action === 'cc' || action === 'label') setTimeout(() => sendCommand('tx', 'get_settings'), 200);
+        sendTxCommand(cmd);
+        if (action === 'cc' || action === 'label') setTimeout(() => sendTxCommand('get_settings'), 200);
       } else if (deviceType === 'rx' && action === 'rx_esb_ch') {
+        // Snap RX ESB Channel value to the nearest 5
         const rawValue = parseInt(t.value);
         const snappedValue = Math.round(rawValue / 5) * 5;
-        t.value = snappedValue;
-        rxEsbChannelValueElCol.textContent = snappedValue;
+        t.value = snappedValue; // Update slider position
+        rxEsbChannelValueElCol.textContent = snappedValue; // Update display
+        
+        // Send the single command to set the channel on release
         sendChannelToRX(snappedValue);
       }
     });
@@ -763,66 +932,62 @@
       if (target.classList.contains('bank-btn')) {
         document.querySelectorAll('.bank-btn').forEach(btn => btn.classList.remove('active'));
         target.classList.add('active');
-        sendCommand('tx', `set_bank=${target.dataset.bank}`);
+        sendTxCommand(`set_bank=${target.dataset.bank}`);
       } else if (target.id === 'bleToggleButton') {
-        sendCommand('tx', 'toggle_ble');
+        sendTxCommand('toggle_ble');
       } else if (target.id === 'startCalButton') {
-        sendCommand('tx', 'start_cal');
+        sendTxCommand('start_cal');
         log("Calibration started. Follow device instructions.");
       }
     });
 
-    // Initial setup
+    // Initial setup on window load
     window.onload = () => {
-      log("Dashboard loaded. Ready for connections.");
-      updateButtonStates();
-      updateUIVisibility();
-      startAutoReconnect();
+      updateButtonStates(); // Set initial button states
+      updateUIVisibility(); // Set initial UI visibility
+      startAutoReconnect(); // Start the alternating auto-reconnect loop
     };
 
-    // USB connect/disconnect listeners
+    // USB device connect/disconnect event listeners for the browser
     navigator.usb.addEventListener('connect', (event) => {
       const device = event.device;
-      log(`USB Device connected: ${device.productName}`);
+      log(`USB Device connected: ${device.productName} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)})`);
+      // Attempt to connect newly connected device if it matches our VIDs/PIDs
       if (device.vendorId === TX_VID && device.productId === TX_PID) {
         connectDevice('tx', TX_VID, TX_PID, device);
       } else if (device.vendorId === RX_VID && device.productId === RX_PID) {
         connectDevice('rx', RX_VID, RX_PID, device);
       }
-      startAutoReconnect();
+      startAutoReconnect(); // Restart auto-reconnect on any USB connect event
     });
 
     navigator.usb.addEventListener('disconnect', (event) => {
       const device = event.device;
-      log(`USB Device disconnected: ${device.productName}`);
+      log(`USB Device disconnected: ${device.productName} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)})`);
       if (device.vendorId === TX_VID && device.productId === TX_PID) {
         txDevice = null;
         txKeepReading = false;
+        txWasConnected = false;
         setConnectionStatus('tx', false);
       } else if (device.vendorId === RX_VID && device.productId === RX_PID) {
+        if(rxRssiInterval) {
+            clearInterval(rxRssiInterval);
+            rxRssiInterval = null;
+        }
         rxDevice = null;
         rxKeepReading = false;
+        rxWasConnected = false;
         setConnectionStatus('rx', false);
-        isRelayMode = false;
-        txStatus = 'disconnected';
-        updateTxStatusUI();
+        rxEsbChannelSliderCol.value = 0;
+        rxEsbChannelValueElCol.textContent = '';
+        rxRssiValueElCol.textContent = '-- dBm';
+        verticalRssiBar.style.height = '0%';
       }
       updateButtonStates();
       updateUIVisibility();
-      startAutoReconnect();
+      startAutoReconnect(); // Always restart auto-reconnect
     });
 
-    connectTxButton.addEventListener('click', async () => {
-      await connectDevice('tx', TX_VID, TX_PID);
-      startAutoReconnect();
-    });
-    disconnectTxButton.addEventListener('click', () => disconnectDevice('tx'));
-
-    connectRxButton.addEventListener('click', async () => {
-      await connectDevice('rx', RX_VID, RX_PID);
-      startAutoReconnect();
-    });
-    disconnectRxButton.addEventListener('click', () => disconnectDevice('rx'));
   </script>
 </body>
 </html>
