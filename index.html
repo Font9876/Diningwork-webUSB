@@ -243,6 +243,31 @@
 
       <div id="monitor-header" class="flex justify-between items-baseline pb-4 mb-4 border-b border-slate-800" style="display: none;">
         <h2 class="text-2xl font-bold text-teal-300">Real-time Monitor</h2>
+        <div class="mt-3 w-full">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex flex-col sm:flex-row gap-2 items-stretch">
+              <button id="midi-request-btn" class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold">
+                Enable WebMIDI
+              </button>
+              <select id="midi-input-select" class="px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm min-w-[220px]">
+                <option value="">(No MIDI inputs)</option>
+              </select>
+              <button id="midi-start-btn" class="px-3 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-sm font-semibold">
+                Listen
+              </button>
+              <button id="midi-stop-btn" class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold">
+                Stop
+              </button>
+            </div>
+            <p id="midi-status" class="text-xs text-slate-400 mt-1 sm:mt-0 sm:text-right">
+              WebMIDI: not enabled
+            </p>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">
+            Tip: WebMIDI requires HTTPS (or localhost). In USB mode choose TX MIDI. In wireless mode choose RX MIDI.
+          </p>
+        </div>
+
         <div class="text-right">
           <p id="last-cc-sent-label" class="text-xs text-slate-400 uppercase font-medium tracking-wider">Last MIDI Value</p>
           <p id="last-cc-sent" class="font-mono text-3xl text-white font-extrabold">-</p>
@@ -420,16 +445,6 @@
       }
     };
 
-    const sendTxCommand = async (command) => {
-      if (txDevice) {
-        return sendCommand('tx', command);
-      }
-      if (rxDevice) {
-        return sendCommand('rx', command);
-      }
-      log("No TX or RX device connected to send command.");
-    };
-
     const sendChannelToRX = async (channel) => {
         if (!rxDevice) {
             log("RX device not connected. Cannot send channel.");
@@ -570,7 +585,112 @@
     };
 
 
-    const updateCCVisualizer = (cc, value) => {
+    
+    // ---------------------------
+    // WebMIDI Real-time Monitor
+    // ---------------------------
+    let midiAccess = null;
+    let midiInput = null;
+
+    const midiStatusEl = document.getElementById('midi-status');
+    const midiRequestBtn = document.getElementById('midi-request-btn');
+    const midiStartBtn = document.getElementById('midi-start-btn');
+    const midiStopBtn  = document.getElementById('midi-stop-btn');
+    const midiInputSelect = document.getElementById('midi-input-select');
+
+    const setMidiStatus = (msg) => { if (midiStatusEl) midiStatusEl.textContent = msg; };
+
+    const refreshMIDIInputs = () => {
+      if (!midiAccess || !midiInputSelect) return;
+      const prev = midiInputSelect.value;
+      midiInputSelect.innerHTML = '';
+
+      const inputs = Array.from(midiAccess.inputs.values());
+      if (!inputs.length) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '(No MIDI inputs)';
+        midiInputSelect.appendChild(opt);
+        return;
+      }
+
+      for (const input of inputs) {
+        const opt = document.createElement('option');
+        opt.value = input.id;
+        opt.textContent = `${input.name || 'MIDI Input'}${input.manufacturer ? ' — ' + input.manufacturer : ''}`;
+        midiInputSelect.appendChild(opt);
+      }
+
+      // Restore selection if possible
+      if (prev) midiInputSelect.value = prev;
+      if (!midiInputSelect.value && inputs.length) midiInputSelect.value = inputs[0].id;
+    };
+
+    const stopMIDIMonitor = () => {
+      if (midiInput) {
+        midiInput.onmidimessage = null;
+        midiInput = null;
+      }
+      setMidiStatus(midiAccess ? 'WebMIDI: enabled (not listening)' : 'WebMIDI: not enabled');
+    };
+
+    const startMIDIMonitor = () => {
+      if (!midiAccess) {
+        setMidiStatus('WebMIDI: not enabled');
+        return;
+      }
+      const id = midiInputSelect ? midiInputSelect.value : '';
+      if (!id) {
+        setMidiStatus('WebMIDI: no MIDI input selected');
+        return;
+      }
+      stopMIDIMonitor();
+      midiInput = midiAccess.inputs.get(id);
+      if (!midiInput) {
+        setMidiStatus('WebMIDI: selected input not found');
+        return;
+      }
+
+      midiInput.onmidimessage = (evt) => {
+        const d = evt.data;
+        if (!d || d.length < 3) return;
+
+        const status = d[0] & 0xF0;
+        // Control Change (0xB0..0xBF)
+        if (status === 0xB0) {
+          const cc = d[1];
+          const val = d[2];
+          updateCCVisualizer(cc, val);
+        }
+      };
+
+      setMidiStatus(`WebMIDI: listening to ${midiInput.name || 'MIDI Input'}`);
+    };
+
+    const enableWebMIDI = async () => {
+      if (!('requestMIDIAccess' in navigator)) {
+        setMidiStatus('WebMIDI: not supported in this browser');
+        return;
+      }
+      try {
+        // sysex:false = monitor only (no reprogramming)
+        midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+        midiAccess.onstatechange = () => {
+          refreshMIDIInputs();
+        };
+        refreshMIDIInputs();
+        setMidiStatus('WebMIDI: enabled (not listening)');
+      } catch (e) {
+        setMidiStatus(`WebMIDI: permission denied (${e.message || e})`);
+      }
+    };
+
+    if (midiRequestBtn) midiRequestBtn.addEventListener('click', enableWebMIDI);
+    if (midiStartBtn) midiStartBtn.addEventListener('click', startMIDIMonitor);
+    if (midiStopBtn)  midiStopBtn.addEventListener('click', stopMIDIMonitor);
+
+
+const updateCCVisualizer = (cc, value) => {
       const index = ccMap[cc];
       if (index === undefined) return;
       lastCcSentEl.textContent = `${cc}:${value}`;
@@ -615,9 +735,7 @@
                   if (deviceType === 'tx') {
                     populateTxUI(parsedJson);
                   } else if (deviceType === 'rx') {
-                    if (parsedJson.activeBank !== undefined) {
-                      populateTxUI(parsedJson);
-                    } else if (parsedJson.rssi !== undefined) {
+                    if (parsedJson.rssi !== undefined) {
                       updateRxRSSI(parsedJson.rssi);
                     } else {
                       populateRxUI(parsedJson);
@@ -632,8 +750,8 @@
                   if (parts.length === 2) updateCCVisualizer(parseInt(parts[0]), parseInt(parts[1]));
                 }
               } else if (line.startsWith('bank_changed:')) {
-                if (deviceType === 'tx' || deviceType === 'rx') {
-                  setTimeout(() => sendTxCommand('get_settings'), 100);
+                if (deviceType === 'tx') {
+                  setTimeout(() => sendCommand('tx', 'get_settings'), 100);
                 }
               }
             }
@@ -713,7 +831,7 @@
           txKeepReading = true;
           txWasConnected = true;
           readLoop('tx');
-          await sendTxCommand("get_settings");
+          await sendCommand('tx', "get_settings");
         } else if (deviceType === 'rx') {
           rxDevice = deviceObj;
           rxInterfaceNumber = interfaceNum;
@@ -722,7 +840,6 @@
           rxKeepReading = true;
           rxWasConnected = true;
           readLoop('rx');
-          await sendTxCommand("get_settings");
           // Start polling for RSSI after successful connection
           if (rxRssiInterval) clearInterval(rxRssiInterval);
           rxRssiInterval = setInterval(() => {
@@ -911,8 +1028,8 @@
 
       if (deviceType === 'tx') {
         let cmd = `set_${action}=${t.dataset.index ? t.dataset.index + ',' : ''}${t.value}`;
-        sendTxCommand(cmd);
-        if (action === 'cc' || action === 'label') setTimeout(() => sendTxCommand('get_settings'), 200);
+        sendCommand('tx', cmd);
+        if (action === 'cc' || action === 'label') setTimeout(() => sendCommand('tx', 'get_settings'), 200);
       } else if (deviceType === 'rx' && action === 'rx_esb_ch') {
         // Snap RX ESB Channel value to the nearest 5
         const rawValue = parseInt(t.value);
@@ -932,11 +1049,11 @@
       if (target.classList.contains('bank-btn')) {
         document.querySelectorAll('.bank-btn').forEach(btn => btn.classList.remove('active'));
         target.classList.add('active');
-        sendTxCommand(`set_bank=${target.dataset.bank}`);
+        sendCommand('tx', `set_bank=${target.dataset.bank}`);
       } else if (target.id === 'bleToggleButton') {
-        sendTxCommand('toggle_ble');
+        sendCommand('tx', 'toggle_ble');
       } else if (target.id === 'startCalButton') {
-        sendTxCommand('start_cal');
+        sendCommand('tx', 'start_cal');
         log("Calibration started. Follow device instructions.");
       }
     });
@@ -991,3 +1108,4 @@
   </script>
 </body>
 </html>
+
