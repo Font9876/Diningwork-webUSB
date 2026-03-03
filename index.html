@@ -264,74 +264,6 @@
                 <div class="flex justify-between items-center"><label for="esbChannel" class="block text-sm font-medium text-slate-400">ESB Channel</label><span id="esbChannel-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
                 <input type="range" id="esbChannel" min="0" max="100" class="w-full update-on-release" data-action="esb_ch">
               </div>
-              <div class="space-y-2">
-                <div class="flex justify-between items-center"><label for="vibMs" class="block text-sm font-medium text-slate-400">Vibration ms</label><span id="vibMs-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-                <input type="range" id="vibMs" min="0" max="300" step="1" class="w-full update-on-release" data-action="vib_ms">
-              </div>
-              <div class="space-y-2">
-                <div class="flex justify-between items-center"><label for="vibKickMs" class="block text-sm font-medium text-slate-400">Vib kick ms</label><span id="vibKickMs-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-                <input type="range" id="vibKickMs" min="0" max="50" step="1" class="w-full update-on-release" data-action="vib_kick_ms">
-              </div>
-              <div class="space-y-2">
-                <div class="flex justify-between items-center"><label for="vibSecKickMs" class="block text-sm font-medium text-slate-400">Secondary kick ms</label><span id="vibSecKickMs-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-                <input type="range" id="vibSecKickMs" min="0" max="50" step="1" class="w-full update-on-release" data-action="vib_secondary_kick_ms">
-              </div>
-              <div class="space-y-2">
-                <div class="flex justify-between items-center"><label for="vibKickWinMs" class="block text-sm font-medium text-slate-400">Secondary kick window ms</label><span id="vibKickWinMs-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-                <input type="range" id="vibKickWinMs" min="0" max="300" step="1" class="w-full update-on-release" data-action="vib_kick_window_ms">
-              </div>
-              <div class="space-y-2">
-                <div class="flex justify-between items-center"><label for="vibAftershockMs" class="block text-sm font-medium text-slate-400">Aftershock ms</label><span id="vibAftershockMs-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-                <input type="range" id="vibAftershockMs" min="0" max="200" step="1" class="w-full update-on-release" data-action="vib_aftershock_ms">
-              </div>
-              <div class="space-y-2">
-                <div class="flex justify-between items-center"><label for="vibAftershockHz" class="block text-sm font-medium text-slate-400">Aftershock Hz</label><span id="vibAftershockHz-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-                <input type="range" id="vibAftershockHz" min="0" max="20000" step="1" class="w-full update-on-release" data-action="vib_aftershock_hz">
-              </div>
-              <div class="space-y-2">
-                <div class="flex justify-between items-center">
-                  <label for="vibDynKick" class="block text-sm font-medium text-slate-400">Dynamic secondary kick</label>
-                  <span id="vibDynKick-value" class="font-mono text-cyan-300 text-sm font-semibold"></span>
-                </div>
-                <input type="checkbox" id="vibDynKick" class="h-5 w-5 rounded update-on-release" data-action="vib_dyn_kick">
-              </div>
-              <div class="space-y-2">
-                <div class="flex justify-between items-center"><label for="vibHz" class="block text-sm font-medium text-slate-400">Vibration Hz</label><span id="vibHz-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-                <input type="range" id="vibHz" min="0" max="20000" step="1" class="w-full update-on-release" data-action="vib_hz">
-              </div>
-              <div class="space-y-2">
-                <div class="flex justify-between items-center"><label for="vibHzP4" class="block text-sm font-medium text-slate-400">Vib Hz (pin 4)</label><span id="vibHzP4-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-                <input type="range" id="vibHzP4" min="0" max="20000" step="1" class="w-full update-on-release" data-action="vib_p4_hz">
-              </div>
-              <div class="space-y-2">
-                <div class="flex justify-between items-center"><label for="vibHzP3" class="block text-sm font-medium text-slate-400">Vib Hz (pin 3)</label><span id="vibHzP3-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-                <input type="range" id="vibHzP3" min="0" max="20000" step="1" class="w-full update-on-release" data-action="vib_p3_hz">
-              </div>
-              <div class="space-y-2">
-                <div class="flex justify-between items-center"><label for="vibHzP2" class="block text-sm font-medium text-slate-400">Vib Hz (pin 2)</label><span id="vibHzP2-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
-                <input type="range" id="vibHzP2" min="0" max="20000" step="1" class="w-full update-on-release" data-action="vib_p2_hz">
-              </div>
-
-
-              
-              <div class="space-y-2 sm:col-span-2">
-                <div class="flex justify-between items-center">
-                  <label class="block text-sm font-medium text-slate-400">Vibration Sweep (0–30 Hz per pin, 0.5s/step)</label>
-                  <span id="sweepStatus" class="font-mono text-cyan-300 text-sm font-semibold">idle</span>
-                </div>
-                <div class="flex gap-3">
-                  <button id="sweepStartBtn" class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/75 transition-colors duration-200">
-                    Start Sweep
-                  </button>
-                  <button id="sweepStopBtn" class="px-4 py-2 bg-slate-700 text-white font-semibold rounded-lg shadow-md hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500/75 transition-colors duration-200">
-                    Stop Sweep
-                  </button>
-                </div>
-                <p class="text-xs text-slate-500 leading-snug">
-                  The device will cycle per-pin states (OFF, L1–L30, H1–H30, ON) and print the current combo as <span class="font-mono">sweep:4,3,2 idx/total</span>.
-                </p>
-              </div>
-
               <div class="space-y-2 flex flex-col justify-end">
                 <button id="bleToggleButton" class="w-full px-5 py-2.5 text-white font-semibold rounded-lg shadow-md transition-all duration-200 mt-auto inline-flex items-center justify-center gap-2"></button>
               </div>
@@ -479,34 +411,6 @@
     const buttonModeSelect = document.getElementById('buttonMode');
     const esbChannelSlider = document.getElementById('esbChannel');
     const esbChannelValueEl = document.getElementById('esbChannel-value');
-    const vibMsSlider = document.getElementById('vibMs');
-    const vibMsValueEl = document.getElementById('vibMs-value');
-    const vibKickMsSlider = document.getElementById('vibKickMs');
-    const vibKickMsValueEl = document.getElementById('vibKickMs-value');
-    const vibSecKickMsSlider = document.getElementById('vibSecKickMs');
-    const vibSecKickMsValueEl = document.getElementById('vibSecKickMs-value');
-    const vibKickWinMsSlider = document.getElementById('vibKickWinMs');
-    const vibKickWinMsValueEl = document.getElementById('vibKickWinMs-value');
-    const vibAftershockMsSlider = document.getElementById('vibAftershockMs');
-    const vibAftershockMsValueEl = document.getElementById('vibAftershockMs-value');
-    const vibAftershockHzSlider = document.getElementById('vibAftershockHz');
-    const vibAftershockHzValueEl = document.getElementById('vibAftershockHz-value');
-    const vibDynKickCheckbox = document.getElementById('vibDynKick');
-    const vibDynKickValueEl = document.getElementById('vibDynKick-value');
-    const vibHzSlider = document.getElementById('vibHz');
-    const vibHzValueEl = document.getElementById('vibHz-value');
-    const vibHzP4Slider = document.getElementById('vibHzP4');
-    const vibHzP4ValueEl = document.getElementById('vibHzP4-value');
-    const vibHzP3Slider = document.getElementById('vibHzP3');
-    const vibHzP3ValueEl = document.getElementById('vibHzP3-value');
-    const vibHzP2Slider = document.getElementById('vibHzP2');
-    const vibHzP2ValueEl = document.getElementById('vibHzP2-value');
-
-    // Sweep controls
-    const sweepStatusEl = document.getElementById('sweepStatus');
-    const sweepStartBtn = document.getElementById('sweepStartBtn');
-    const sweepStopBtn = document.getElementById('sweepStopBtn');
-
     const bleToggleButton = document.getElementById('bleToggleButton');
     const assignmentsGrid = document.getElementById('assignments-grid');
     const ccPotsContainer = document.getElementById('cc-pots-container');
@@ -520,16 +424,7 @@
     const rxRssiValueElCol = document.getElementById('rxRssi-value-col');
     const verticalRssiBar = document.getElementById('vertical-rssi-bar');
 
-    
-    // --- Sweep status helper ---
-    const handleSweepStatusLine = (s) => {
-      if (!s) return false;
-      if (!s.startsWith('sweep:')) return false;
-      if (sweepStatusEl) sweepStatusEl.textContent = s.substring(6).trim();
-      return true;
-    };
-
-// --- WebUSB State ---
+    // --- WebUSB State ---
     let txDevice = null;
     let rxDevice = null;
     let txInterfaceNumber, txEndpointIn, txEndpointOut;
@@ -745,40 +640,79 @@ setInterval(() => {
 
 
 
+    function sanitizeLabel(s) {
+      // TX does not accept multi-line commands; keep labels single-line.
+      return String(s || '').replace(/[\r\n]+/g, ' ').trim();
+    }
+
     const sendCommand = async (deviceType, command) => {
-      // --- SHORT SINGLE-FRAME COMMAND MODE ---
-      // 1) Convert long/verbose commands to short opcodes
-      // 2) Enforce max payload length so ESB never needs chunking
+      // --- 16.9.1-compatible command sender ---
+      // - Supports legacy set_* commands (USB)
+      // - Auto-compacts to short opcodes when routing through RX->TX ESB proxy
+      // - Enforces ESB single-frame length only when proxying
       command = String(command || '').trim();
 
-      // Map verbose actions -> short opcodes (keep compatibility with existing UI calls)
-      // label,<idx>,<text>  -> pn,<idx>,<text8>
+      const willProxyViaRx = (deviceType === 'tx' && !txDevice && rxDevice);
+
+      // Compact long commands to short ones (saves bytes for ESB proxy).
+      // Firmware accepts both forms (see 16.9.1 parser).
+      // set_brightness=NN     -> br,NN
+      // set_midi_ch=NN        -> mc,NN
+      // set_button_mode=NN    -> bm,NN
+      // set_esb_ch=NN         -> ec,NN
+      // set_bank=NN           -> bank,NN
+      // set_cc=idx,val        -> cc,idx,val
+      // set_label=idx,label   -> pn,idx,label
+      if (command.startsWith('set_brightness=')) command = 'br,' + command.substring('set_brightness='.length);
+      else if (command.startsWith('set_midi_ch=')) command = 'mc,' + command.substring('set_midi_ch='.length);
+      else if (command.startsWith('set_button_mode=')) command = 'bm,' + command.substring('set_button_mode='.length);
+      else if (command.startsWith('set_esb_ch=')) command = 'ec,' + command.substring('set_esb_ch='.length);
+      else if (command.startsWith('set_bank=')) command = 'bank,' + command.substring('set_bank='.length);
+      else if (command.startsWith('set_cc=')) command = 'cc,' + command.substring('set_cc='.length);
+      else if (command.startsWith('set_label=')) {
+        // set_label=idx,label
+        const rest = command.substring('set_label='.length);
+        const comma = rest.indexOf(',');
+        if (comma !== -1) {
+          const idx = rest.substring(0, comma);
+          const label = sanitizeLabel(rest.substring(comma + 1));
+          command = `pn,${idx},${label}`;
+        }
+      }
+
+      // Also accept UI-generated aliases
       if (command.startsWith('label,')) {
+        // label,idx,text -> pn,idx,text (escape only when proxying)
         const parts = command.split(',');
         if (parts.length >= 3) {
           const idx = parts[1];
-          let name = parts.slice(2).join(','); // in case label contains commas
-          name = name.substring(0, 8);         // hard cap to keep < 28 bytes
+          const name = sanitizeLabel(parts.slice(2).join(','));
           command = `pn,${idx},${name}`;
         }
       }
 
-      command = command
-        .replace(/^brightness\b/, 'br')
-        .replace(/^midi_ch\b/, 'mc')
-        .replace(/^button_mode\b/, 'bm')
-        .replace(/^esb_ch\b/, 'ec');
-
-      // Enforce max payload length (28 bytes payload in ACK after 4-byte ESB header)
-      // Keep some margin for '\n' on RX->TX path. We drop if too long.
-      if (command.length > 28) {
-        console.warn('Command too long for single-frame ESB, dropped:', command);
-        log(`Command too long (dropped): ${command}`);
-        return;
+      // Enforce max payload length ONLY when routing through RX->TX ESB proxy.
+      // (Direct USB can handle longer lines.)
+      if (willProxyViaRx && command.length > 28) {
+        // For label commands, try to truncate the label portion to fit.
+        if (command.startsWith('pn,')) {
+          const first = command.indexOf(',', 3); // after pn,
+          if (first !== -1) {
+            // pn,<idx>,<label...>
+            const prefix = command.substring(0, first + 1);
+            const maxLabelLen = Math.max(0, 28 - prefix.length);
+            command = prefix + command.substring(first + 1, first + 1 + maxLabelLen);
+          }
+        }
+        if (command.length > 28) {
+          console.warn('Command too long for single-frame ESB, dropped:', command);
+          log(`Command too long for ESB (dropped): ${command}`);
+          return;
+        }
       }
 
       // Proxy TX commands through RX when TX is not connected over USB
-      if (deviceType === 'tx' && !txDevice && rxDevice) {
+      if (willProxyViaRx) {
         deviceType = 'rx';
         command = 'TX:' + command;
       }
@@ -820,6 +754,13 @@ setInterval(() => {
             setConnectionStatus('rx', false);
         }
     };
+
+    const escapeHtml = (s) => String(s ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
 
     const populateTxUI = (settings) => {
       currentTxSettingsCache = settings;
@@ -866,14 +807,15 @@ setInterval(() => {
         const num = isPot ? i + 1 : i - 7;
         const cc = settings.ccs[i];
         const label = settings.labels[i] || (type + ' ' + num);
+        const safeLabel = escapeHtml(label);
         ccMap[cc] = i;
 
         const card = document.createElement('div');
         card.className = 'bg-slate-800/70 p-4 rounded-xl border border-slate-700 shadow-lg flex flex-col justify-between';
         card.innerHTML = `
-          <label class="block text-base font-semibold text-slate-300 mb-2 text-center h-6">${label}</label>
+          <label class="block text-base font-semibold text-slate-300 mb-2 text-center h-6">${safeLabel}</label>
           <div class="flex items-center gap-2 mt-2">
-            <input type="text" value="${label}" maxlength="4" placeholder="Label" class="w-full bg-slate-800 border border-slate-700 rounded-md text-sm p-2 focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-change" data-action="label" data-index="${i}">
+            <input type="text" value="${safeLabel}" maxlength="48" placeholder="Label" class="w-full bg-slate-800 border border-slate-700 rounded-md text-sm p-2 focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-change" data-action="label" data-index="${i}">
             <input type="number" value="${cc}" min="0" max="127" placeholder="CC" class="w-20 bg-slate-800 border border-slate-700 rounded-md text-sm p-2 text-center font-mono focus:ring-blue-500 focus:border-blue-500 transition-colors update-on-release" data-action="cc" data-index="${i}">
           </div>
         `;
@@ -902,7 +844,7 @@ setInterval(() => {
               <div id="cc-bar-${i}" class="cc-bar bg-gradient-to-t from-teal-500 to-cyan-400 w-full" style="height: ${settings.currentPotValues ? (settings.currentPotValues[i] / 127) * 100 : 0}%;"></div>
             </div>
             <span class="text-xs text-slate-500 font-mono mt-2 font-semibold">${cc}</span>
-            <span class="absolute -bottom-6 text-sm font-semibold text-slate-300 truncate w-20 text-center">${label}</span>
+            <span class="absolute -bottom-6 text-sm font-semibold text-slate-300 truncate w-20 text-center">${safeLabel}</span>
           `;
           ccPotsContainer.appendChild(barWrapper);
         } else { // Buttons
@@ -912,7 +854,7 @@ setInterval(() => {
             <div id="cc-btn-${i}" class="btn-indicator bg-slate-800 h-12 w-12 rounded-full border-2 border-slate-700 mb-2 shadow-lg flex items-center justify-center">
               <span class="text-white text-sm font-mono font-semibold">${cc}</span>
             </div>
-            <span class="absolute -bottom-6 text-sm font-semibold text-slate-300 truncate w-20 text-center">${label}</span>
+            <span class="absolute -bottom-6 text-sm font-semibold text-slate-300 truncate w-20 text-center">${safeLabel}</span>
           `;
           ccBtnsContainer.appendChild(btnWrapper);
           if (settings.currentPotValues && settings.currentPotValues[i] > 64) {
@@ -928,82 +870,6 @@ setInterval(() => {
     if (_cachedTx && _cachedTx.ccs) {
       try { populateTxUI(_cachedTx); } catch (e) {}
     }
-
-
-    // --- Vibration Hz UI state (stored locally; device may not report it in settings frames) ---
-    const VIB_HZ_KEY = 'plate1_vib_hz_v1';
-    try {
-      const savedHz = localStorage.getItem(VIB_HZ_KEY);
-      const hzVal = (savedHz !== null) ? parseInt(savedHz, 10) : 0;
-      if (vibHzSlider) vibHzSlider.value = (Number.isFinite(hzVal) ? hzVal : 0);
-      if (vibHzValueEl) vibHzValueEl.textContent = (vibHzSlider ? vibHzSlider.value : '0');
-    } catch (e) {}
-
-    
-    // --- Per-pin Vibration Hz UI state (stored locally) ---
-    try {
-      const saved = localStorage.getItem('plate1_vib_p4_hz_v1');
-      const v = (saved !== null) ? parseInt(saved, 10) : 0;
-      if (vibHzP4Slider) vibHzP4Slider.value = (Number.isFinite(v) ? v : 0);
-      if (vibHzP4ValueEl) vibHzP4ValueEl.textContent = (vibHzP4Slider ? vibHzP4Slider.value : '0');
-    } catch (e) {}
-
-    try {
-      const saved = localStorage.getItem('plate1_vib_p3_hz_v1');
-      const v = (saved !== null) ? parseInt(saved, 10) : 0;
-      if (vibHzP3Slider) vibHzP3Slider.value = (Number.isFinite(v) ? v : 0);
-      if (vibHzP3ValueEl) vibHzP3ValueEl.textContent = (vibHzP3Slider ? vibHzP3Slider.value : '0');
-    } catch (e) {}
-
-    try {
-      const saved = localStorage.getItem('plate1_vib_p2_hz_v1');
-      const v = (saved !== null) ? parseInt(saved, 10) : 0;
-      if (vibHzP2Slider) vibHzP2Slider.value = (Number.isFinite(v) ? v : 0);
-      if (vibHzP2ValueEl) vibHzP2ValueEl.textContent = (vibHzP2Slider ? vibHzP2Slider.value : '0');
-    } catch (e) {}
-
-// --- Restore vibration ms / kick ms from localStorage (optional UI convenience) ---
-    try {
-      const savedMs = localStorage.getItem('plate1_vib_ms_v1');
-      const msVal = (savedMs !== null) ? parseInt(savedMs, 10) : 25;
-      if (vibMsSlider) vibMsSlider.value = (Number.isFinite(msVal) ? msVal : 25);
-      if (vibMsValueEl) vibMsValueEl.textContent = (vibMsSlider ? vibMsSlider.value : '25');
-    } catch (e) {}
-
-    try {
-      const savedKick = localStorage.getItem('plate1_vib_kick_ms_v1');
-      const kVal = (savedKick !== null) ? parseInt(savedKick, 10) : 10;
-      if (vibKickMsSlider) vibKickMsSlider.value = (Number.isFinite(kVal) ? kVal : 10);
-      if (vibKickMsValueEl) vibKickMsValueEl.textContent = (vibKickMsSlider ? vibKickMsSlider.value : '10');
-    } catch (e) {}
-
-    try {
-      const savedSecKick = localStorage.getItem('plate1_vib_secondary_kick_ms_v1');
-      const skVal = (savedSecKick !== null) ? parseInt(savedSecKick, 10) : 10;
-      if (vibSecKickMsSlider) vibSecKickMsSlider.value = (Number.isFinite(skVal) ? skVal : 10);
-      if (vibSecKickMsValueEl) vibSecKickMsValueEl.textContent = (vibSecKickMsSlider ? vibSecKickMsSlider.value : '10');
-    } catch (e) {}
-
-    try {
-      const savedWin = localStorage.getItem('plate1_vib_kick_window_ms_v1');
-      const wVal = (savedWin !== null) ? parseInt(savedWin, 10) : 100;
-      if (vibKickWinMsSlider) vibKickWinMsSlider.value = (Number.isFinite(wVal) ? wVal : 100);
-      if (vibKickWinMsValueEl) vibKickWinMsValueEl.textContent = (vibKickWinMsSlider ? vibKickWinMsSlider.value : '100');
-    } catch (e) {}
-
-    try {
-      const savedAfter = localStorage.getItem('plate1_vib_aftershock_ms_v1');
-      const aVal = (savedAfter !== null) ? parseInt(savedAfter, 10) : 0;
-      if (vibAftershockMsSlider) vibAftershockMsSlider.value = (Number.isFinite(aVal) ? aVal : 0);
-      if (vibAftershockMsValueEl) vibAftershockMsValueEl.textContent = (vibAftershockMsSlider ? vibAftershockMsSlider.value : '0');
-    } catch (e) {}
-
-    try {
-      const savedDyn = localStorage.getItem('plate1_vib_dyn_kick_v1');
-      const dVal = (savedDyn !== null) ? parseInt(savedDyn, 10) : 0;
-      if (vibDynKickCheckbox) vibDynKickCheckbox.checked = (dVal ? true : false);
-      if (vibDynKickValueEl) vibDynKickValueEl.textContent = (vibDynKickCheckbox && vibDynKickCheckbox.checked) ? 'ON' : 'OFF';
-    } catch (e) {}
 
     const updateRxRSSI = (rssiValue) => {
         if (rxRssiValueElCol) rxRssiValueElCol.textContent = `${rssiValue} dBm`;
@@ -1398,9 +1264,7 @@ if (line.startsWith('tx:')) {
   const inner = line.substring(3).trim();
   setTxViaEsbStatus(true);
   // Route inner line as if it came from TX
-  if (handleSweepStatusLine(inner)) {
-    // consumed sweep status
-  } else if (handleLiteSettingsLine(inner)) {
+  if (handleLiteSettingsLine(inner)) {
     // consumed framed settings line
   } else if (inner.startsWith('{')) {
     try { populateTxUI(JSON.parse(inner)); } catch (e) { log(`JSON Parse Error (TX via ESB): ${e.message}`); }
@@ -1424,8 +1288,6 @@ if (line.startsWith('tx:')) {
       log(`JSON Parse Error (RX): ${e.message}`);
     }
   }
-} else if (handleSweepStatusLine(line)) {
-  // consumed sweep status
 } else if (line.startsWith('{')) {
   try {
     const parsedJson = JSON.parse(line);
@@ -1448,17 +1310,26 @@ if (line.startsWith('tx:')) {
 }            }
           }
         } catch (error) {
-          if (error.message.includes("disconnected")) {
+          const msg = String(error && error.message ? error.message : error);
+          if (msg.includes("disconnected") || msg.includes("Device unavailable") || msg.includes("NetworkError")) {
             log(`${deviceType.toUpperCase()} device disconnected.`);
-            setConnectionStatus(deviceType, false);
           } else {
-            log(`Read loop error (${deviceType.toUpperCase()}): ${error.message}`);
+            log(`Read loop error (${deviceType.toUpperCase()}): ${msg}`);
           }
+
+          // Stop the loop first, then do a full WebUSB disconnect (release interface + close),
+          // otherwise the device can remain "stuck" and the next page load can't reconnect.
           if (deviceType === 'tx') txKeepReading = false;
           else if (deviceType === 'rx') rxKeepReading = false;
+
+          try {
+            await disconnectDevice(deviceType);
+          } catch (e) {
+            // disconnectDevice already logs its own errors; swallow any leftover here.
+          }
           break;
         }
-      }
+}
     }
 
     // Modified connectDevice function to support both initial request and auto-reconnect
@@ -1744,17 +1615,6 @@ if (line.startsWith('tx:')) {
       if (target.id === 'brightness') brightnessValueEl.textContent = target.value;
       else if (target.id === 'midiChannel') midiChannelValueEl.textContent = target.value;
       else if (target.id === 'esbChannel') esbChannelValueEl.textContent = target.value;
-      else if (target.id === 'vibMs') vibMsValueEl.textContent = target.value;
-      else if (target.id === 'vibKickMs') vibKickMsValueEl.textContent = target.value;
-      else if (target.id === 'vibSecKickMs') vibSecKickMsValueEl.textContent = target.value;
-      else if (target.id === 'vibKickWinMs') vibKickWinMsValueEl.textContent = target.value;
-      else if (target.id === 'vibAftershockMs') vibAftershockMsValueEl.textContent = target.value;
-      else if (target.id === 'vibAftershockHz') vibAftershockHzValueEl.textContent = target.value;
-      else if (target.id === 'vibDynKick') vibDynKickValueEl.textContent = target.checked ? 'ON' : 'OFF';
-      else if (target.id === 'vibHz') vibHzValueEl.textContent = target.value;
-      else if (target.id === 'vibHzP4') vibHzP4ValueEl.textContent = target.value;
-      else if (target.id === 'vibHzP3') vibHzP3ValueEl.textContent = target.value;
-      else if (target.id === 'vibHzP2') vibHzP2ValueEl.textContent = target.value;
       else if (target.id === 'rxEsbChannel-col') rxEsbChannelValueElCol.textContent = target.value;
     });
 
@@ -1766,20 +1626,8 @@ if (line.startsWith('tx:')) {
       const deviceType = t.closest('#main-controls-tx') ? 'tx' : 'rx';
 
       if (deviceType === 'tx') {
-        const val = (t.type === 'checkbox') ? (t.checked ? 1 : 0) : t.value;
-        let cmd = `set_${action}=${t.dataset.index ? t.dataset.index + ',' : ''}${val}`;
+        let cmd = `set_${action}=${t.dataset.index ? t.dataset.index + ',' : ''}${t.value}`;
         sendCommand('tx', cmd);
-        if (action === 'vib_hz') { try { localStorage.setItem('plate1_vib_hz_v1', String(t.value)); } catch (e) {} }
-        if (action === 'vib_p4_hz') { try { localStorage.setItem('plate1_vib_p4_hz_v1', String(t.value)); } catch (e) {} }
-        if (action === 'vib_p3_hz') { try { localStorage.setItem('plate1_vib_p3_hz_v1', String(t.value)); } catch (e) {} }
-        if (action === 'vib_p2_hz') { try { localStorage.setItem('plate1_vib_p2_hz_v1', String(t.value)); } catch (e) {} }
-        if (action === 'vib_ms') { try { localStorage.setItem('plate1_vib_ms_v1', String(t.value)); } catch (e) {} }
-        if (action === 'vib_kick_ms') { try { localStorage.setItem('plate1_vib_kick_ms_v1', String(t.value)); } catch (e) {} }
-        if (action === 'vib_secondary_kick_ms') { try { localStorage.setItem('plate1_vib_secondary_kick_ms_v1', String(t.value)); } catch (e) {} }
-        if (action === 'vib_kick_window_ms') { try { localStorage.setItem('plate1_vib_kick_window_ms_v1', String(t.value)); } catch (e) {} }
-        if (action === 'vib_aftershock_ms') { try { localStorage.setItem('plate1_vib_aftershock_ms_v1', String(val)); } catch (e) {} }
-        if (action === 'vib_aftershock_hz') { try { localStorage.setItem('plate1_vib_aftershock_hz_v1', String(val)); } catch (e) {} }
-        if (action === 'vib_dyn_kick') { try { localStorage.setItem('plate1_vib_dyn_kick_v1', String(val)); } catch (e) {} }
         if (action === 'cc' || action === 'label') setTimeout(() => sendCommand('tx', 'get_settings'), 200);
       } else if (deviceType === 'rx' && action === 'rx_esb_ch') {
         // Snap RX ESB Channel value to the nearest 5
@@ -1792,20 +1640,6 @@ if (line.startsWith('tx:')) {
         sendChannelToRX(snappedValue);
       }
     });
-
-    // Sweep buttons
-    if (sweepStartBtn) {
-      sweepStartBtn.addEventListener('click', () => {
-        if (sweepStatusEl) sweepStatusEl.textContent = 'starting...';
-        sendCommand('tx', 'sweep,start');
-      });
-    }
-    if (sweepStopBtn) {
-      sweepStopBtn.addEventListener('click', () => {
-        sendCommand('tx', 'sweep,stop');
-      });
-    }
-
 
     document.addEventListener('click', (e) => {
       const target = e.target.closest('button');
@@ -1831,6 +1665,26 @@ if (line.startsWith('tx:')) {
       autoEnableMIDI(); // Auto-enable WebMIDI + auto-listen
     };
 
+    // --- Clean shutdown (prevents RX/TX getting stuck if the tab is closed/reloaded) ---
+    const cleanupWebUSB = () => {
+      try { txKeepReading = false; } catch(e) {}
+      try { rxKeepReading = false; } catch(e) {}
+
+      // Stop RSSI polling immediately
+      try {
+        if (rxRssiInterval) { clearInterval(rxRssiInterval); rxRssiInterval = null; }
+      } catch(e) {}
+
+      // Fire-and-forget disconnects (can't reliably await during unload)
+      try { if (txDevice) disconnectDevice('tx'); } catch(e) {}
+      try { if (rxDevice) disconnectDevice('rx'); } catch(e) {}
+    };
+
+    window.addEventListener('pagehide', cleanupWebUSB);
+    window.addEventListener('beforeunload', cleanupWebUSB);
+
+
+
     // USB device connect/disconnect event listeners for the browser
     navigator.usb.addEventListener('connect', (event) => {
       const device = event.device;
@@ -1847,25 +1701,18 @@ if (line.startsWith('tx:')) {
     navigator.usb.addEventListener('disconnect', (event) => {
       const device = event.device;
       log(`USB Device disconnected: ${device.productName} (VID: 0x${device.vendorId.toString(16)}, PID: 0x${device.productId.toString(16)})`);
+
+      // Stop loops first, then try a best-effort disconnect/close.
       if (device.vendorId === TX_VID && device.productId === TX_PID) {
-        txDevice = null;
         txKeepReading = false;
         txWasConnected = false;
-        setConnectionStatus('tx', false);
+        try { disconnectDevice('tx'); } catch (e) {}
       } else if (device.vendorId === RX_VID && device.productId === RX_PID) {
-        if(rxRssiInterval) {
-            clearInterval(rxRssiInterval);
-            rxRssiInterval = null;
-        }
-        rxDevice = null;
         rxKeepReading = false;
         rxWasConnected = false;
-        setConnectionStatus('rx', false);
-        rxEsbChannelSliderCol.value = 0;
-        rxEsbChannelValueElCol.textContent = '';
-        rxRssiValueElCol.textContent = '-- dBm';
-        verticalRssiBar.style.height = '0%';
+        try { disconnectDevice('rx'); } catch (e) {}
       }
+
       updateButtonStates();
       updateUIVisibility();
       startAutoReconnect(); // Always restart auto-reconnect
