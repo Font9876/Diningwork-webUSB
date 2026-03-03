@@ -3,7 +3,7 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta http-equiv="Content-Style-Type" content="text/css">
-  <title>PLATE 1 — MIDI Control Dashboard (1.0.10)</title>
+  <title>PLATE 1 — MIDI Control Dashboard (1.0.11)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Tailwind CSS CDN for utility classes -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -434,6 +434,78 @@
     let txKeepReading = false;
     let rxKeepReading = false;
 
+
+    // --- Single-tab WebUSB lock (prevents 2 pages claiming the same interface) ---
+    const TAB_ID = (() => {
+      try {
+        // Unique per tab instance
+        return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      } catch (e) {
+        return String(Date.now());
+      }
+    })();
+
+    const USB_LOCK_KEY = 'plate1_webusb_lock_v1';
+    const USB_LOCK_TTL_MS = 6000;
+
+    const _readUsbLock = () => {
+      try { return JSON.parse(localStorage.getItem(USB_LOCK_KEY) || 'null'); } catch (e) { return null; }
+    };
+    const _writeUsbLock = (obj) => {
+      try { localStorage.setItem(USB_LOCK_KEY, JSON.stringify(obj)); } catch (e) {}
+    };
+
+    const isUsbLockedByOtherTab = () => {
+      const lock = _readUsbLock();
+      if (!lock || !lock.tabId || !lock.ts) return false;
+      const fresh = (Date.now() - lock.ts) < USB_LOCK_TTL_MS;
+      return fresh && lock.tabId !== TAB_ID;
+    };
+
+    const getUsbLockOwnerLabel = () => {
+      const lock = _readUsbLock();
+      if (!lock || !lock.tabId) return 'unknown';
+      return `tab ${lock.tabId}`;
+    };
+
+    const acquireUsbLock = (deviceType) => {
+      const now = Date.now();
+      const lock = _readUsbLock();
+
+      // If another tab owns a fresh lock, refuse.
+      if (lock && lock.tabId && lock.ts && (now - lock.ts) < USB_LOCK_TTL_MS && lock.tabId !== TAB_ID) {
+        return false;
+      }
+
+      // Take / refresh lock for this tab.
+      _writeUsbLock({ tabId: TAB_ID, ts: now, deviceType: deviceType || '', url: location.href });
+      return true;
+    };
+
+    const refreshUsbLock = () => {
+      const lock = _readUsbLock();
+      if (!lock || lock.tabId !== TAB_ID) return;
+      _writeUsbLock({ ...lock, ts: Date.now() });
+    };
+
+    const releaseUsbLock = () => {
+      const lock = _readUsbLock();
+      if (!lock || lock.tabId !== TAB_ID) return;
+      try { localStorage.removeItem(USB_LOCK_KEY); } catch (e) {}
+    };
+
+    // Keep lock alive while anything is connected in this tab.
+    setInterval(() => {
+      if (txDevice || rxDevice) refreshUsbLock();
+    }, 1000);
+
+    // Observe lock changes from other tabs for clearer UX.
+    window.addEventListener('storage', (e) => {
+      if (e.key !== USB_LOCK_KEY) return;
+      if (isUsbLockedByOtherTab()) {
+        log(`USB busy: already claimed by ${getUsbLockOwnerLabel()}.`);
+      }
+    });
     const textEncoder = new TextEncoder();
     const textDecoder = new TextDecoder();
     let ccMap = {};
@@ -1344,6 +1416,18 @@ if (line.startsWith('tx:')) {
         return true;
       }
 
+      // If another browser tab is already controlling WebUSB, don't try to claim interfaces here.
+      if (!acquireUsbLock(deviceType)) {
+        const owner = getUsbLockOwnerLabel();
+        log(`USB busy: already claimed by ${owner}. Close the other tab to connect here.`);
+        connectionStatusEl.textContent = `Busy (${owner})`;
+        connectionStatusEl.classList.remove('text-green-400', 'text-red-400', 'animate-pulse');
+        connectionStatusEl.classList.add('text-yellow-400');
+        updateButtonStates();
+        updateUIVisibility();
+        return false;
+      }
+
       log(`Attempting to connect to ${deviceType.toUpperCase()} (VID: 0x${vendorId.toString(16)}, PID: 0x${productId.toString(16)})...`);
       connectionStatusEl.textContent = 'Connecting...';
       connectionStatusEl.classList.remove('text-green-400', 'text-red-400', 'animate-pulse');
@@ -1429,6 +1513,8 @@ if (line.startsWith('tx:')) {
         }
         return true;
       } catch (error) {
+        // If connect failed, don't hold the lock in this tab.
+        try { if (!txDevice && !rxDevice) releaseUsbLock(); } catch(e) {}
         if (error.message.includes("User cancelled") || error.message.includes("No device selected")) {
           log(`Connection for ${deviceType.toUpperCase()} cancelled by user.`);
         } else if (!(deviceRef && error.message.includes("disconnected"))) {
@@ -1489,6 +1575,10 @@ if (line.startsWith('tx:')) {
           rxRssiValueElCol.textContent = '-- dBm';
           verticalRssiBar.style.height = '0%';
         }
+
+        // Release the single-tab WebUSB lock when nothing is connected in this tab.
+        try { if (!txDevice && !rxDevice) releaseUsbLock(); } catch(e) {}
+
         setConnectionStatus(deviceType, false);
         log(`${deviceType.toUpperCase()} disconnected.`);
         updateButtonStates();
@@ -1559,6 +1649,8 @@ if (line.startsWith('tx:')) {
 
     // Modified autoReconnectStep to use navigator.usb.getDevices() for already-permitted devices
     const autoReconnectStep = async () => {
+      // If another tab owns WebUSB, don't spam reconnect attempts.
+      if (isUsbLockedByOtherTab()) return;
       // Adjust reconnect speed dynamically
       const desiredInterval = (!txDevice && !rxDevice) ? 100 : 500;
       if (desiredInterval !== currentReconnectInterval) {
@@ -1678,6 +1770,9 @@ if (line.startsWith('tx:')) {
       // Fire-and-forget disconnects (can't reliably await during unload)
       try { if (txDevice) disconnectDevice('tx'); } catch(e) {}
       try { if (rxDevice) disconnectDevice('rx'); } catch(e) {}
+    
+      // Also release the cross-tab lock (best-effort)
+      try { releaseUsbLock(); } catch(e) {}
     };
 
     window.addEventListener('pagehide', cleanupWebUSB);
