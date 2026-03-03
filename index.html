@@ -3,7 +3,7 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta http-equiv="Content-Style-Type" content="text/css">
-  <title>MIDI Control Dashboard</title>
+  <title>PLATE 1 — MIDI Control Dashboard (1.0.10)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Tailwind CSS CDN for utility classes -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -93,12 +93,12 @@
     }
 
     #log-area {
-      height: 120px; max-height: 120px; overflow-y: auto;
+      height: 100%; max-height: none; overflow-y: auto;
       font-family: 'Space Mono', monospace;
       font-size: 0.8rem; line-height: 1.6;
       background-color: #020617;
       border: 1px solid #334155; color: #94a3b8;
-      scroll-behavior: smooth;
+      /* scroll-behavior removed for instant response */
     }
     #log-area p:nth-child(even) { background-color: rgba(30, 41, 59, 0.5); }
     #log-area p { margin-bottom: 0; padding: 0.25rem 0.75rem; }
@@ -146,16 +146,67 @@
         background-image: linear-gradient(to top, #ef4444, #f59e0b, #22c55e);
         transition: height 0.2s ease-out;
     }
+  
+    /* --- Full-height mid panel split (Real-time / Bottom pane) --- */
+    #mid-split { min-height: 0; }
+    #visualizer { min-height: 0; }
+    #bottom-pane { min-height: 0; }
+
+    /* Bottom pane wrappers fill available space */
+    #activity-pane, #fast-monitor {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    #activity-pane { display: flex; }
+
+    /* Make log area fill its pane */
+    #log-area { flex: 1; min-height: 0; }
+
+    /* --- Fast MIDI Monitor (bounded + scrollable) --- */
+    #fast-monitor { display: none; }
+    #fast-monitor-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.75rem 0.75rem;
+      border-bottom: 1px solid #334155;
+      background: rgba(15, 23, 42, 0.85);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      backdrop-filter: blur(8px);
+    }
+    #fast-monitor-body {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 0.25rem 0;
+      font-family: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.80rem;
+      line-height: 1.45;
+      background: #020617;
+      color: #cbd5e1;
+    }
+    .fm-line { padding: 0.20rem 0.75rem; white-space: nowrap; }
+    .fm-line:nth-child(even){ background: rgba(30,41,59,0.35); }
+    .fm-delta { color: #67e8f9; }
+    .fm-bytes { color: #e2e8f0; }
+    .fm-meta { color: #94a3b8; }
+
   </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
-  <div class="flex flex-col lg:flex-row w-full max-w-screen-2xl bg-slate-900/70 backdrop-blur-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-700/80">
+<body class="flex items-stretch justify-center min-h-screen p-4 sm:p-6 lg:p-8 overflow-hidden">
+  <div class="flex flex-col lg:flex-row w-full max-w-screen-2xl bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-slate-700/80" style="height: calc(100vh - 4rem);">
 
     <!-- Left Panel: Header, TX Settings (45%) -->
-    <aside class="w-full lg:w-[45%] bg-slate-800/50 p-4 sm:p-6 lg:p-8 flex flex-col justify-between border-r border-slate-700">
-      <div>
+    <aside class="w-full lg:w-[45%] bg-slate-800 p-4 sm:p-6 lg:p-8 flex flex-col border-r border-slate-700 overflow-hidden min-h-0">
+      <div id="left-scroll" class="flex-1 min-h-0 overflow-y-auto pr-2">
         <!-- Header and Connection Controls (now just status) -->
-        <header class="pb-6 mb-6 border-b border-slate-700">
+        <header class="pb-6 mb-6 border-b border-slate-700 sticky top-0 z-20 bg-slate-800">
           <h1 class="text-4xl font-extrabold text-white mb-2 tracking-tighter">
             <span class="text-teal-400">Plate</span> 1
           </h1>
@@ -213,6 +264,74 @@
                 <div class="flex justify-between items-center"><label for="esbChannel" class="block text-sm font-medium text-slate-400">ESB Channel</label><span id="esbChannel-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
                 <input type="range" id="esbChannel" min="0" max="100" class="w-full update-on-release" data-action="esb_ch">
               </div>
+              <div class="space-y-2">
+                <div class="flex justify-between items-center"><label for="vibMs" class="block text-sm font-medium text-slate-400">Vibration ms</label><span id="vibMs-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                <input type="range" id="vibMs" min="0" max="300" step="1" class="w-full update-on-release" data-action="vib_ms">
+              </div>
+              <div class="space-y-2">
+                <div class="flex justify-between items-center"><label for="vibKickMs" class="block text-sm font-medium text-slate-400">Vib kick ms</label><span id="vibKickMs-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                <input type="range" id="vibKickMs" min="0" max="50" step="1" class="w-full update-on-release" data-action="vib_kick_ms">
+              </div>
+              <div class="space-y-2">
+                <div class="flex justify-between items-center"><label for="vibSecKickMs" class="block text-sm font-medium text-slate-400">Secondary kick ms</label><span id="vibSecKickMs-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                <input type="range" id="vibSecKickMs" min="0" max="50" step="1" class="w-full update-on-release" data-action="vib_secondary_kick_ms">
+              </div>
+              <div class="space-y-2">
+                <div class="flex justify-between items-center"><label for="vibKickWinMs" class="block text-sm font-medium text-slate-400">Secondary kick window ms</label><span id="vibKickWinMs-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                <input type="range" id="vibKickWinMs" min="0" max="300" step="1" class="w-full update-on-release" data-action="vib_kick_window_ms">
+              </div>
+              <div class="space-y-2">
+                <div class="flex justify-between items-center"><label for="vibAftershockMs" class="block text-sm font-medium text-slate-400">Aftershock ms</label><span id="vibAftershockMs-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                <input type="range" id="vibAftershockMs" min="0" max="200" step="1" class="w-full update-on-release" data-action="vib_aftershock_ms">
+              </div>
+              <div class="space-y-2">
+                <div class="flex justify-between items-center"><label for="vibAftershockHz" class="block text-sm font-medium text-slate-400">Aftershock Hz</label><span id="vibAftershockHz-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                <input type="range" id="vibAftershockHz" min="0" max="20000" step="1" class="w-full update-on-release" data-action="vib_aftershock_hz">
+              </div>
+              <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                  <label for="vibDynKick" class="block text-sm font-medium text-slate-400">Dynamic secondary kick</label>
+                  <span id="vibDynKick-value" class="font-mono text-cyan-300 text-sm font-semibold"></span>
+                </div>
+                <input type="checkbox" id="vibDynKick" class="h-5 w-5 rounded update-on-release" data-action="vib_dyn_kick">
+              </div>
+              <div class="space-y-2">
+                <div class="flex justify-between items-center"><label for="vibHz" class="block text-sm font-medium text-slate-400">Vibration Hz</label><span id="vibHz-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                <input type="range" id="vibHz" min="0" max="20000" step="1" class="w-full update-on-release" data-action="vib_hz">
+              </div>
+              <div class="space-y-2">
+                <div class="flex justify-between items-center"><label for="vibHzP4" class="block text-sm font-medium text-slate-400">Vib Hz (pin 4)</label><span id="vibHzP4-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                <input type="range" id="vibHzP4" min="0" max="20000" step="1" class="w-full update-on-release" data-action="vib_p4_hz">
+              </div>
+              <div class="space-y-2">
+                <div class="flex justify-between items-center"><label for="vibHzP3" class="block text-sm font-medium text-slate-400">Vib Hz (pin 3)</label><span id="vibHzP3-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                <input type="range" id="vibHzP3" min="0" max="20000" step="1" class="w-full update-on-release" data-action="vib_p3_hz">
+              </div>
+              <div class="space-y-2">
+                <div class="flex justify-between items-center"><label for="vibHzP2" class="block text-sm font-medium text-slate-400">Vib Hz (pin 2)</label><span id="vibHzP2-value" class="font-mono text-cyan-300 text-sm font-semibold"></span></div>
+                <input type="range" id="vibHzP2" min="0" max="20000" step="1" class="w-full update-on-release" data-action="vib_p2_hz">
+              </div>
+
+
+              
+              <div class="space-y-2 sm:col-span-2">
+                <div class="flex justify-between items-center">
+                  <label class="block text-sm font-medium text-slate-400">Vibration Sweep (0–30 Hz per pin, 0.5s/step)</label>
+                  <span id="sweepStatus" class="font-mono text-cyan-300 text-sm font-semibold">idle</span>
+                </div>
+                <div class="flex gap-3">
+                  <button id="sweepStartBtn" class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/75 transition-colors duration-200">
+                    Start Sweep
+                  </button>
+                  <button id="sweepStopBtn" class="px-4 py-2 bg-slate-700 text-white font-semibold rounded-lg shadow-md hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500/75 transition-colors duration-200">
+                    Stop Sweep
+                  </button>
+                </div>
+                <p class="text-xs text-slate-500 leading-snug">
+                  The device will cycle per-pin states (OFF, L1–L30, H1–H30, ON) and print the current combo as <span class="font-mono">sweep:4,3,2 idx/total</span>.
+                </p>
+              </div>
+
               <div class="space-y-2 flex flex-col justify-end">
                 <button id="bleToggleButton" class="w-full px-5 py-2.5 text-white font-semibold rounded-lg shadow-md transition-all duration-200 mt-auto inline-flex items-center justify-center gap-2"></button>
               </div>
@@ -234,7 +353,7 @@
     </aside>
 
     <!-- Middle Panel: Visualizer & Logs (45%) -->
-    <main class="w-full lg:w-[45%] bg-slate-900 p-4 sm:p-6 lg:p-8 flex flex-col border-l border-slate-800">
+    <main class="w-full lg:w-[45%] bg-slate-900 p-4 sm:p-6 lg:p-8 flex flex-col border-l border-slate-800 overflow-hidden min-h-0">
       <div id="welcome-message" class="flex flex-col items-center justify-center h-full text-center">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-slate-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
         <h2 class="text-3xl font-bold text-slate-300">Awaiting Connection</h2>
@@ -246,26 +365,16 @@
         <div class="mt-3 w-full">
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex flex-col sm:flex-row gap-2 items-stretch">
-              <button id="midi-request-btn" class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold">
-                Enable WebMIDI
-              </button>
               <select id="midi-input-select" class="px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm min-w-[220px]">
                 <option value="">(No MIDI inputs)</option>
               </select>
-              <button id="midi-start-btn" class="px-3 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-sm font-semibold">
-                Listen
-              </button>
-              <button id="midi-stop-btn" class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold">
-                Stop
+              <button id="toggle-fast-monitor" class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold border border-slate-600">
+                Fast Monitor
               </button>
             </div>
-            <p id="midi-status" class="text-xs text-slate-400 mt-1 sm:mt-0 sm:text-right">
-              WebMIDI: not enabled
-            </p>
+            <p id="midi-status" class="text-xs text-slate-400 mt-1 sm:mt-0 sm:text-right" style="display:none"></p>
           </div>
-          <p class="text-xs text-slate-500 mt-1">
-            Tip: WebMIDI requires HTTPS (or localhost). In USB mode choose TX MIDI. In wireless mode choose RX MIDI.
-          </p>
+          <p class="text-xs text-slate-500 mt-1" style="display:none"></p>
         </div>
 
         <div class="text-right">
@@ -274,19 +383,40 @@
         </div>
       </div>
 
-      <div id="visualizer" class="flex-grow flex flex-col justify-end min-h-[150px] pb-8" style="display: none;">
+      <div id="mid-split" class="flex-1 min-h-0 flex flex-col gap-3" style="display:none;">
+      <div id="visualizer" class="flex-1 min-h-0 flex flex-col justify-end pb-4 overflow-hidden" style="display: none;">
         <div id="cc-pots-container" class="grid grid-cols-4 md:grid-cols-8 gap-x-6 gap-y-2 flex-grow items-end"></div>
         <div id="cc-btns-container" class="grid grid-cols-2 sm:grid-cols-4 gap-4 h-16 items-end pt-8 border-t border-slate-800"></div>
       </div>
+      <div id="bottom-pane" class="flex-1 min-h-0 flex flex-col overflow-hidden rounded-xl shadow-inner border border-slate-800">
+        <div id="activity-pane">
+          <div class="px-3 py-2 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
+            <p class="text-white font-semibold text-sm">Activity Log</p>
+            <button id="activity-clear" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold border border-slate-600">Clear</button>
+          </div>
+          <div id="log-area" class="rounded-b-xl shadow-inner"></div>
+        </div>
 
-      <div class="mt-auto">
-        <p class="text-white font-semibold mb-2 text-sm">Activity Log:</p>
-        <div id="log-area" class="rounded-xl shadow-inner"></div>
+        <div id="fast-monitor">
+          <div id="fast-monitor-header">
+            <div class="flex flex-col">
+              <div class="text-sm font-semibold text-teal-300">Fast MIDI Monitor</div>
+              <div id="fast-monitor-sub" class="text-xs text-slate-400">Δ time, bytes, parsed</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <div id="fast-monitor-input" class="text-xs text-slate-400 hidden sm:block">Input: -</div>
+              <button id="fast-monitor-clear" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold border border-slate-600">Clear</button>
+            </div>
+          </div>
+          <div id="fast-monitor-body"></div>
+        </div>
       </div>
+
+    </div> <!-- /#mid-split -->
     </main>
 
     <!-- Rightmost Thin Panel: RX Status & Vertical RSSI (10%) -->
-    <div class="w-full lg:w-[10%] bg-slate-800/50 p-4 sm:p-6 flex flex-col justify-start border-l border-slate-700">
+    <div class="w-full lg:w-[10%] bg-slate-800 p-4 sm:p-6 flex flex-col justify-start border-l border-slate-700 overflow-hidden min-h-0">
       <h2 class="text-xl font-bold text-teal-300 text-center mb-4 lg:mb-6">RX</h2>
       <div id="rx-column-status" class="text-center text-sm mb-4 lg:mb-6">
         <p class="text-slate-400 uppercase font-medium text-xs tracking-wider">RX Status</p>
@@ -349,6 +479,34 @@
     const buttonModeSelect = document.getElementById('buttonMode');
     const esbChannelSlider = document.getElementById('esbChannel');
     const esbChannelValueEl = document.getElementById('esbChannel-value');
+    const vibMsSlider = document.getElementById('vibMs');
+    const vibMsValueEl = document.getElementById('vibMs-value');
+    const vibKickMsSlider = document.getElementById('vibKickMs');
+    const vibKickMsValueEl = document.getElementById('vibKickMs-value');
+    const vibSecKickMsSlider = document.getElementById('vibSecKickMs');
+    const vibSecKickMsValueEl = document.getElementById('vibSecKickMs-value');
+    const vibKickWinMsSlider = document.getElementById('vibKickWinMs');
+    const vibKickWinMsValueEl = document.getElementById('vibKickWinMs-value');
+    const vibAftershockMsSlider = document.getElementById('vibAftershockMs');
+    const vibAftershockMsValueEl = document.getElementById('vibAftershockMs-value');
+    const vibAftershockHzSlider = document.getElementById('vibAftershockHz');
+    const vibAftershockHzValueEl = document.getElementById('vibAftershockHz-value');
+    const vibDynKickCheckbox = document.getElementById('vibDynKick');
+    const vibDynKickValueEl = document.getElementById('vibDynKick-value');
+    const vibHzSlider = document.getElementById('vibHz');
+    const vibHzValueEl = document.getElementById('vibHz-value');
+    const vibHzP4Slider = document.getElementById('vibHzP4');
+    const vibHzP4ValueEl = document.getElementById('vibHzP4-value');
+    const vibHzP3Slider = document.getElementById('vibHzP3');
+    const vibHzP3ValueEl = document.getElementById('vibHzP3-value');
+    const vibHzP2Slider = document.getElementById('vibHzP2');
+    const vibHzP2ValueEl = document.getElementById('vibHzP2-value');
+
+    // Sweep controls
+    const sweepStatusEl = document.getElementById('sweepStatus');
+    const sweepStartBtn = document.getElementById('sweepStartBtn');
+    const sweepStopBtn = document.getElementById('sweepStopBtn');
+
     const bleToggleButton = document.getElementById('bleToggleButton');
     const assignmentsGrid = document.getElementById('assignments-grid');
     const ccPotsContainer = document.getElementById('cc-pots-container');
@@ -362,7 +520,16 @@
     const rxRssiValueElCol = document.getElementById('rxRssi-value-col');
     const verticalRssiBar = document.getElementById('vertical-rssi-bar');
 
-    // --- WebUSB State ---
+    
+    // --- Sweep status helper ---
+    const handleSweepStatusLine = (s) => {
+      if (!s) return false;
+      if (!s.startsWith('sweep:')) return false;
+      if (sweepStatusEl) sweepStatusEl.textContent = s.substring(6).trim();
+      return true;
+    };
+
+// --- WebUSB State ---
     let txDevice = null;
     let rxDevice = null;
     let txInterfaceNumber, txEndpointIn, txEndpointOut;
@@ -377,11 +544,133 @@
     let ccMap = {};
     let currentTxSettingsCache = {};
 
+
+    // --- ESB lightweight framed TX settings (avoids large JSON over ESB) ---
+    let esbLite = null;
+
+    function unescCSV(s) {
+      return (s || '')
+        .replaceAll('%0D', '\r')
+        .replaceAll('%0A', '\n')
+        .replaceAll('%2C', ',')
+        .replaceAll('%25', '%');
+    }
+
+    function resetEsbLite() {
+      esbLite = {
+        activeBank: 0,
+        brightness: 0,
+        midiChannel: 1,
+        buttonMode: 0,
+        esbChannel: 0,
+        bleOn: false,
+        blePeerName: '',
+        labels: Array(12).fill(''),
+        ccs: Array(12).fill(0),
+        currentPotValues: Array(8).fill(0),
+        gotS0: false,
+        gotS1: false,
+        gotS2: false,
+        labelMask: 0
+      };
+    }
+    resetEsbLite();
+
+    function handleLiteSettingsLine(inner) {
+      if (!inner) return false;
+      if (!esbLite) resetEsbLite();
+
+      if (inner.startsWith('S0,')) {
+        const p = inner.split(',');
+        esbLite.activeBank = parseInt(p[1] ?? '0', 10);
+        esbLite.brightness = parseInt(p[2] ?? '0', 10);
+        esbLite.midiChannel = parseInt(p[3] ?? '1', 10);
+        esbLite.buttonMode = parseInt(p[4] ?? '0', 10);
+        esbLite.esbChannel = parseInt(p[5] ?? '0', 10);
+        esbLite.bleOn = (parseInt(p[6] ?? '0', 10) === 1);
+        // peer name can contain escaped commas, so re-join remainder
+        esbLite.blePeerName = unescCSV(p.slice(7).join(',') ?? '');
+        esbLite.gotS0 = true;
+        return true;
+      }
+
+      if (inner.startsWith('S1,')) {
+        const p = inner.split(',');
+        for (let i = 0; i < 12; i++) esbLite.ccs[i] = parseInt(p[i + 1] ?? '0', 10);
+        esbLite.gotS1 = true;
+        return true;
+      }
+
+      if (inner.startsWith('S2,')) {
+        const p = inner.split(',');
+        for (let i = 0; i < 8; i++) esbLite.currentPotValues[i] = parseInt(p[i + 1] ?? '0', 10);
+        esbLite.gotS2 = true;
+        return true;
+      }
+
+      if (inner.startsWith('S3,')) {
+        const p = inner.split(',');
+        // p = ["S3", idx, label, idx, label, ...]
+        for (let i = 1; i + 1 < p.length; i += 2) {
+          const idx = parseInt(p[i], 10);
+          const label = unescCSV(p[i + 1] ?? '');
+          if (Number.isFinite(idx) && idx >= 0 && idx < 12) {
+            esbLite.labels[idx] = label;
+            esbLite.labelMask |= (1 << idx);
+          }
+        }
+        return true;
+      }
+
+      if (inner === 'S9') {
+        // Build a settings object compatible with populateTxUI()
+        const settings = {
+          activeBank: esbLite.activeBank,
+          brightness: esbLite.brightness,
+          midiChannel: esbLite.midiChannel,
+          buttonMode: esbLite.buttonMode,
+          esbChannel: esbLite.esbChannel,
+          bleOn: !!esbLite.bleOn,
+          blePeerName: esbLite.blePeerName,
+          labels: esbLite.labels.slice(),
+          ccs: esbLite.ccs.slice(),
+          currentPotValues: esbLite.currentPotValues.slice(),
+        };
+        populateTxUI(settings);
+        resetEsbLite();
+        return true;
+      }
+
+      return false;
+    }
+    // --- end ESB lightweight framed TX settings ---
+
+
+    // --- Persisted TX settings (so ESB-only sessions can show UI without ever plugging TX) ---
+    const TX_SETTINGS_KEY = 'plate1_last_tx_settings_v1';
+    const saveTxSettings = (settings) => {
+      try { localStorage.setItem(TX_SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+    };
+    const loadTxSettings = () => {
+      try {
+        const s = localStorage.getItem(TX_SETTINGS_KEY);
+        if (!s) return null;
+        return JSON.parse(s);
+      } catch (e) { return null; }
+    };
+
+
+
     let txWasConnected = false;
     let rxWasConnected = false;
     
-    let autoReconnectIntervalId = null;
-    const RECONNECT_INTERVAL_MS = 100; // 100ms interval for alternating attempts
+    
+    let txViaEsb = false; // TX data arriving through RX ESB proxy
+let txAliveFromRx = false;
+let lastTxAliveUpdateMs = 0;
+
+let autoReconnectIntervalId = null;
+    let currentReconnectInterval = 100; // dynamic reconnect speed
     let nextDeviceToAttempt = 'tx'; // Start by attempting TX
 
     // --- BLE Button Content ---
@@ -391,14 +680,17 @@
     // --- Utility Functions ---
     const log = (msg) => {
       console.log(`[SYS] ${msg}`);
+      if (!logArea) return;
       const p = document.createElement('p');
       const timestamp = `[${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'})}] `;
-      const textNode = document.createTextNode(timestamp + msg);
-      p.appendChild(textNode);
-      logArea.prepend(p);
-      while (logArea.children.length > 50) {
-        logArea.removeChild(logArea.lastChild);
+      p.appendChild(document.createTextNode(timestamp + msg));
+      // Append for better performance (prepend forces reflow of the whole log each time)
+      logArea.appendChild(p);
+      while (logArea.children.length > 200) {
+        logArea.removeChild(logArea.firstChild);
       }
+      // Keep view pinned to bottom (instant, no smooth scrolling)
+      logArea.scrollTop = logArea.scrollHeight;
     };
 
     const setConnectionStatus = (deviceType, connected) => {
@@ -421,7 +713,76 @@
       }
     };
 
+const setTxViaEsbStatus = (connected) => {
+  txViaEsb = connected;
+  if (txDevice) return; // direct USB TX wins
+  if (connected) {
+    txConnectionStatusEl.textContent = 'Connected via ESB';
+    txConnectionStatusEl.classList.remove('text-red-400', 'text-yellow-400', 'animate-pulse');
+    txConnectionStatusEl.classList.add('text-green-400');
+  } else {
+    setConnectionStatus('tx', false);
+  }
+};
+
+
+// RX tells us whether TX is alive (based on radio traffic). Use this to keep the TX status truthful.
+const updateTxAliveFromRx = (alive) => {
+  txAliveFromRx = !!alive;
+  lastTxAliveUpdateMs = Date.now();
+  // Show ESB connectivity only if RX says TX is alive.
+  setTxViaEsbStatus(txAliveFromRx);
+};
+
+// If RX stops reporting for a while, clear ESB status (prevents "stuck connected").
+setInterval(() => {
+  if (txDevice) return;   // direct USB TX wins
+  if (!rxDevice) { setTxViaEsbStatus(false); return; }
+  if (!lastTxAliveUpdateMs) { setTxViaEsbStatus(false); return; }
+  const age = Date.now() - lastTxAliveUpdateMs;
+  if (age > 2500) setTxViaEsbStatus(false);
+}, 500);
+
+
+
     const sendCommand = async (deviceType, command) => {
+      // --- SHORT SINGLE-FRAME COMMAND MODE ---
+      // 1) Convert long/verbose commands to short opcodes
+      // 2) Enforce max payload length so ESB never needs chunking
+      command = String(command || '').trim();
+
+      // Map verbose actions -> short opcodes (keep compatibility with existing UI calls)
+      // label,<idx>,<text>  -> pn,<idx>,<text8>
+      if (command.startsWith('label,')) {
+        const parts = command.split(',');
+        if (parts.length >= 3) {
+          const idx = parts[1];
+          let name = parts.slice(2).join(','); // in case label contains commas
+          name = name.substring(0, 8);         // hard cap to keep < 28 bytes
+          command = `pn,${idx},${name}`;
+        }
+      }
+
+      command = command
+        .replace(/^brightness\b/, 'br')
+        .replace(/^midi_ch\b/, 'mc')
+        .replace(/^button_mode\b/, 'bm')
+        .replace(/^esb_ch\b/, 'ec');
+
+      // Enforce max payload length (28 bytes payload in ACK after 4-byte ESB header)
+      // Keep some margin for '\n' on RX->TX path. We drop if too long.
+      if (command.length > 28) {
+        console.warn('Command too long for single-frame ESB, dropped:', command);
+        log(`Command too long (dropped): ${command}`);
+        return;
+      }
+
+      // Proxy TX commands through RX when TX is not connected over USB
+      if (deviceType === 'tx' && !txDevice && rxDevice) {
+        deviceType = 'rx';
+        command = 'TX:' + command;
+      }
+
       let device, endpointOut;
       if (deviceType === 'tx') {
         device = txDevice;
@@ -433,9 +794,8 @@
         return;
       }
 
-      if (!device) {
-        return;
-      }
+      if (!device) return;
+
       try {
         await device.transferOut(endpointOut, textEncoder.encode(command + '\n'));
       } catch (error) {
@@ -463,6 +823,7 @@
 
     const populateTxUI = (settings) => {
       currentTxSettingsCache = settings;
+      saveTxSettings(settings);
 
       // Bank Selection
       bankSelectionGrid.innerHTML = '';
@@ -561,6 +922,89 @@
       }
     };
 
+
+    // Render cached TX settings immediately (helps ESB-only sessions without direct TX USB ever)
+    const _cachedTx = loadTxSettings();
+    if (_cachedTx && _cachedTx.ccs) {
+      try { populateTxUI(_cachedTx); } catch (e) {}
+    }
+
+
+    // --- Vibration Hz UI state (stored locally; device may not report it in settings frames) ---
+    const VIB_HZ_KEY = 'plate1_vib_hz_v1';
+    try {
+      const savedHz = localStorage.getItem(VIB_HZ_KEY);
+      const hzVal = (savedHz !== null) ? parseInt(savedHz, 10) : 0;
+      if (vibHzSlider) vibHzSlider.value = (Number.isFinite(hzVal) ? hzVal : 0);
+      if (vibHzValueEl) vibHzValueEl.textContent = (vibHzSlider ? vibHzSlider.value : '0');
+    } catch (e) {}
+
+    
+    // --- Per-pin Vibration Hz UI state (stored locally) ---
+    try {
+      const saved = localStorage.getItem('plate1_vib_p4_hz_v1');
+      const v = (saved !== null) ? parseInt(saved, 10) : 0;
+      if (vibHzP4Slider) vibHzP4Slider.value = (Number.isFinite(v) ? v : 0);
+      if (vibHzP4ValueEl) vibHzP4ValueEl.textContent = (vibHzP4Slider ? vibHzP4Slider.value : '0');
+    } catch (e) {}
+
+    try {
+      const saved = localStorage.getItem('plate1_vib_p3_hz_v1');
+      const v = (saved !== null) ? parseInt(saved, 10) : 0;
+      if (vibHzP3Slider) vibHzP3Slider.value = (Number.isFinite(v) ? v : 0);
+      if (vibHzP3ValueEl) vibHzP3ValueEl.textContent = (vibHzP3Slider ? vibHzP3Slider.value : '0');
+    } catch (e) {}
+
+    try {
+      const saved = localStorage.getItem('plate1_vib_p2_hz_v1');
+      const v = (saved !== null) ? parseInt(saved, 10) : 0;
+      if (vibHzP2Slider) vibHzP2Slider.value = (Number.isFinite(v) ? v : 0);
+      if (vibHzP2ValueEl) vibHzP2ValueEl.textContent = (vibHzP2Slider ? vibHzP2Slider.value : '0');
+    } catch (e) {}
+
+// --- Restore vibration ms / kick ms from localStorage (optional UI convenience) ---
+    try {
+      const savedMs = localStorage.getItem('plate1_vib_ms_v1');
+      const msVal = (savedMs !== null) ? parseInt(savedMs, 10) : 25;
+      if (vibMsSlider) vibMsSlider.value = (Number.isFinite(msVal) ? msVal : 25);
+      if (vibMsValueEl) vibMsValueEl.textContent = (vibMsSlider ? vibMsSlider.value : '25');
+    } catch (e) {}
+
+    try {
+      const savedKick = localStorage.getItem('plate1_vib_kick_ms_v1');
+      const kVal = (savedKick !== null) ? parseInt(savedKick, 10) : 10;
+      if (vibKickMsSlider) vibKickMsSlider.value = (Number.isFinite(kVal) ? kVal : 10);
+      if (vibKickMsValueEl) vibKickMsValueEl.textContent = (vibKickMsSlider ? vibKickMsSlider.value : '10');
+    } catch (e) {}
+
+    try {
+      const savedSecKick = localStorage.getItem('plate1_vib_secondary_kick_ms_v1');
+      const skVal = (savedSecKick !== null) ? parseInt(savedSecKick, 10) : 10;
+      if (vibSecKickMsSlider) vibSecKickMsSlider.value = (Number.isFinite(skVal) ? skVal : 10);
+      if (vibSecKickMsValueEl) vibSecKickMsValueEl.textContent = (vibSecKickMsSlider ? vibSecKickMsSlider.value : '10');
+    } catch (e) {}
+
+    try {
+      const savedWin = localStorage.getItem('plate1_vib_kick_window_ms_v1');
+      const wVal = (savedWin !== null) ? parseInt(savedWin, 10) : 100;
+      if (vibKickWinMsSlider) vibKickWinMsSlider.value = (Number.isFinite(wVal) ? wVal : 100);
+      if (vibKickWinMsValueEl) vibKickWinMsValueEl.textContent = (vibKickWinMsSlider ? vibKickWinMsSlider.value : '100');
+    } catch (e) {}
+
+    try {
+      const savedAfter = localStorage.getItem('plate1_vib_aftershock_ms_v1');
+      const aVal = (savedAfter !== null) ? parseInt(savedAfter, 10) : 0;
+      if (vibAftershockMsSlider) vibAftershockMsSlider.value = (Number.isFinite(aVal) ? aVal : 0);
+      if (vibAftershockMsValueEl) vibAftershockMsValueEl.textContent = (vibAftershockMsSlider ? vibAftershockMsSlider.value : '0');
+    } catch (e) {}
+
+    try {
+      const savedDyn = localStorage.getItem('plate1_vib_dyn_kick_v1');
+      const dVal = (savedDyn !== null) ? parseInt(savedDyn, 10) : 0;
+      if (vibDynKickCheckbox) vibDynKickCheckbox.checked = (dVal ? true : false);
+      if (vibDynKickValueEl) vibDynKickValueEl.textContent = (vibDynKickCheckbox && vibDynKickCheckbox.checked) ? 'ON' : 'OFF';
+    } catch (e) {}
+
     const updateRxRSSI = (rssiValue) => {
         if (rxRssiValueElCol) rxRssiValueElCol.textContent = `${rssiValue} dBm`;
 
@@ -592,11 +1036,144 @@
     let midiAccess = null;
     let midiInput = null;
 
-    const midiStatusEl = document.getElementById('midi-status');
-    const midiRequestBtn = document.getElementById('midi-request-btn');
-    const midiStartBtn = document.getElementById('midi-start-btn');
-    const midiStopBtn  = document.getElementById('midi-stop-btn');
-    const midiInputSelect = document.getElementById('midi-input-select');
+    const midiStatusEl = document.getElementById('midi-status');    const midiInputSelect = document.getElementById('midi-input-select');
+// Always listen automatically (no manual buttons).
+if (midiInputSelect) {
+  midiInputSelect.addEventListener('change', () => {
+    // Switching input should immediately switch the listener
+    startMIDIMonitor();
+  });
+}
+
+// Auto-request WebMIDI on page load. If Chrome blocks it until a gesture,
+// we retry once on the first user interaction (click/tap/press).
+const autoEnableMIDI = async () => {
+  const ok = await enableWebMIDI();
+  if (ok) return;
+
+  const retryOnce = async () => {
+    window.removeEventListener('pointerdown', retryOnce, true);
+    window.removeEventListener('keydown', retryOnce, true);
+    await enableWebMIDI();
+  };
+  window.addEventListener('pointerdown', retryOnce, true);
+  window.addEventListener('keydown', retryOnce, true);
+};
+
+
+    // --- Fast monitor DOM (bounded, uses bottom pane) ---
+    const toggleFastMonitorBtn = document.getElementById('toggle-fast-monitor');
+    const activityPaneEl = document.getElementById('activity-pane');
+    const activityClearBtn = document.getElementById('activity-clear');
+
+    const fastMonitorEl = document.getElementById('fast-monitor');
+    const fastMonitorBody = document.getElementById('fast-monitor-body');
+    const fastMonitorInputEl = document.getElementById('fast-monitor-input');
+    const fastMonitorClearBtn = document.getElementById('fast-monitor-clear');
+
+    let fastMode = false;
+
+    const setFastMode = (on) => {
+      fastMode = !!on;
+      if (fastMonitorEl) fastMonitorEl.style.display = fastMode ? 'flex' : 'none';
+      if (activityPaneEl) activityPaneEl.style.display = fastMode ? 'none' : 'flex';
+      if (toggleFastMonitorBtn) toggleFastMonitorBtn.textContent = fastMode ? 'Activity Log' : 'Fast Monitor';
+      // Reset delta timing when switching modes
+      if (fastMode) lastMidiPerf = null;
+    };
+
+    if (toggleFastMonitorBtn) {
+      toggleFastMonitorBtn.addEventListener('click', () => setFastMode(!fastMode));
+    }
+    if (activityClearBtn) {
+      activityClearBtn.addEventListener('click', () => { if (logArea) logArea.innerHTML = ''; });
+    }
+    if (fastMonitorClearBtn) {
+      fastMonitorClearBtn.addEventListener('click', () => {
+        fmLines.length = 0;
+        fmQueue.length = 0;
+        if (fastMonitorBody) fastMonitorBody.innerHTML = '';
+      });
+    }
+
+    // --- High-performance fast monitor logger (batched + bounded) ---
+    const fmQueue = [];
+    const fmLines = [];
+    const FM_MAX_LINES = 500;
+
+    let fmFlushScheduled = false;
+    const scheduleFmFlush = () => {
+      if (fmFlushScheduled) return;
+      fmFlushScheduled = true;
+      requestAnimationFrame(() => {
+        fmFlushScheduled = false;
+        if (!fastMode) { fmQueue.length = 0; return; } // don't build DOM when hidden
+        if (!fastMonitorBody) return;
+        if (!fmQueue.length) return;
+
+        const frag = document.createDocumentFragment();
+        while (fmQueue.length) {
+          const line = fmQueue.shift();
+          fmLines.push(line);
+          if (fmLines.length > FM_MAX_LINES) fmLines.shift();
+
+          const div = document.createElement('div');
+          div.className = 'fm-line';
+          div.innerHTML = line;
+          frag.appendChild(div);
+        }
+        fastMonitorBody.appendChild(frag);
+
+        while (fastMonitorBody.children.length > FM_MAX_LINES) {
+          fastMonitorBody.removeChild(fastMonitorBody.firstChild);
+        }
+        fastMonitorBody.scrollTop = fastMonitorBody.scrollHeight;
+      });
+    };
+
+    const toHex2 = (n) => n.toString(16).toUpperCase().padStart(2,'0');
+    const bytesHex = (data) => Array.from(data).map(toHex2).join(' ');
+    const parseMidi = (data) => {
+      const s = data[0] ?? 0;
+      const type = s & 0xF0;
+      const ch = (s & 0x0F) + 1;
+      const d1 = data[1] ?? 0;
+      const d2 = data[2] ?? 0;
+
+      if (type === 0x80) return `NoteOff ch${ch} note=${d1} vel=${d2}`;
+      if (type === 0x90) return d2 === 0 ? `NoteOff ch${ch} note=${d1} vel=0` : `NoteOn ch${ch} note=${d1} vel=${d2}`;
+      if (type === 0xA0) return `PolyAT ch${ch} note=${d1} val=${d2}`;
+      if (type === 0xB0) return `CC ch${ch} cc=${d1} val=${d2}`;
+      if (type === 0xC0) return `PC ch${ch} prog=${d1}`;
+      if (type === 0xD0) return `ChanAT ch${ch} val=${d1}`;
+      if (type === 0xE0) {
+        const v = (d2 << 7) | d1;
+        return `Pitch ch${ch} val=${v-8192}`;
+      }
+      return `Status 0x${toHex2(s)} d1=${d1} d2=${d2}`;
+    };
+
+    let lastMidiPerf = null;
+    const logFastMidi = (evt) => {
+      if (!fastMode) return;
+      if (!evt || !evt.data) return;
+      const data = evt.data;
+      const now = (typeof evt.timeStamp === 'number') ? evt.timeStamp : performance.now();
+      const delta = (lastMidiPerf == null) ? 0 : (now - lastMidiPerf);
+      lastMidiPerf = now;
+
+      const deltaStr = (delta).toFixed(2).padStart(7,' ');
+      const t = new Date();
+      const ts = `${t.toLocaleTimeString('en-US', { hour12: false })}.${String(t.getMilliseconds()).padStart(3,'0')}`;
+
+      fmQueue.push(
+        `<span class="fm-delta">Δ${deltaStr}ms</span> <span class="fm-meta">${ts}</span> ` +
+        `<span class="fm-bytes">${bytesHex(data)}</span> <span class="fm-meta">|</span> <span class="fm-meta">${parseMidi(data)}</span>`
+      );
+      scheduleFmFlush();
+    };
+
+
 
     const setMidiStatus = (msg) => { if (midiStatusEl) midiStatusEl.textContent = msg; };
 
@@ -623,7 +1200,29 @@
 
       // Restore selection if possible
       if (prev) midiInputSelect.value = prev;
-      if (!midiInputSelect.value && inputs.length) midiInputSelect.value = inputs[0].id;
+
+      // Prefer the relevant device automatically:
+      // - When RX is connected (or TX is via ESB), prefer an input containing "RX"
+      // - When TX is connected, prefer an input containing "Plate 1" (or "TX")
+      // This avoids stale/non-device inputs being selected, which makes the bars look frozen.
+      const nameOf = (i) => ((i && i.name) ? String(i.name) : '').toLowerCase();
+      let preferred = null;
+
+      if ((rxDevice || txViaEsb) && inputs.length) {
+        preferred = inputs.find(i => nameOf(i).includes('rx')) ||
+                    inputs.find(i => nameOf(i).includes('plate 1')) ||
+                    inputs.find(i => nameOf(i).includes('plate')) || null;
+      }
+      if (!preferred && txDevice && inputs.length) {
+        preferred = inputs.find(i => nameOf(i).includes('plate 1')) ||
+                    inputs.find(i => nameOf(i).includes('tx')) || null;
+      }
+
+      if (preferred) {
+        midiInputSelect.value = preferred.id;
+      } else if (!midiInputSelect.value && inputs.length) {
+        midiInputSelect.value = inputs[0].id;
+      }
     };
 
     const stopMIDIMonitor = () => {
@@ -662,47 +1261,111 @@
           const val = d[2];
           updateCCVisualizer(cc, val);
         }
+        // Always allow fast monitor to capture any MIDI message
+        logFastMidi(evt);
       };
 
       setMidiStatus(`WebMIDI: listening to ${midiInput.name || 'MIDI Input'}`);
+      if (fastMonitorInputEl) fastMonitorInputEl.textContent = `Input: ${midiInput.name || 'MIDI Input'}`;
     };
 
     const enableWebMIDI = async () => {
       if (!('requestMIDIAccess' in navigator)) {
         setMidiStatus('WebMIDI: not supported in this browser');
-        return;
+        return false;
       }
       try {
         // sysex:false = monitor only (no reprogramming)
         midiAccess = await navigator.requestMIDIAccess({ sysex: false });
         midiAccess.onstatechange = () => {
           refreshMIDIInputs();
+          // If devices change, keep listening automatically
+          startMIDIMonitor();
         };
         refreshMIDIInputs();
-        setMidiStatus('WebMIDI: enabled (not listening)');
+        // Auto-start listening immediately (no Listen/Stop buttons)
+        startMIDIMonitor();
+        return true;
       } catch (e) {
-        setMidiStatus(`WebMIDI: permission denied (${e.message || e})`);
+        setMidiStatus(`WebMIDI: permission needed — click anywhere once to enable (${e.message || e})`);
+        return false;
       }
     };
 
-    if (midiRequestBtn) midiRequestBtn.addEventListener('click', enableWebMIDI);
-    if (midiStartBtn) midiStartBtn.addEventListener('click', startMIDIMonitor);
-    if (midiStopBtn)  midiStopBtn.addEventListener('click', stopMIDIMonitor);
 
+const dynamicCCMap = {}; // cc -> slot index (0-11) fallback when ccMap isn't populated
+    let dynamicNextPot = 0; // 0..7
+    let dynamicNextBtn = 8; // 8..11
 
-const updateCCVisualizer = (cc, value) => {
-      const index = ccMap[cc];
+    const getVisualizerIndex = (cc, value) => {
+      // Prefer the device-provided mapping (from settings)
+      if (ccMap && ccMap[cc] !== undefined) return ccMap[cc];
+
+      // Fallback: assign stable slots by first-seen CC (WebMIDI monitor only)
+      if (dynamicCCMap[cc] !== undefined) return dynamicCCMap[cc];
+
+      // Heuristic: values that look like button presses (0/127) go to button slots if available
+      const looksLikeButton = (value === 0 || value === 127 || value === 64);
+      if (looksLikeButton && dynamicNextBtn <= 11) {
+        dynamicCCMap[cc] = dynamicNextBtn++;
+        return dynamicCCMap[cc];
+      }
+
+      if (dynamicNextPot <= 7) {
+        dynamicCCMap[cc] = dynamicNextPot++;
+        return dynamicCCMap[cc];
+      }
+
+      // If pots are full, spill into remaining buttons (or clamp to last pot)
+      if (dynamicNextBtn <= 11) {
+        dynamicCCMap[cc] = dynamicNextBtn++;
+        return dynamicCCMap[cc];
+      }
+
+      dynamicCCMap[cc] = 7;
+      return 7;
+    };
+
+    const applyCCVisualizer = (cc, value) => {
+      const index = getVisualizerIndex(cc, value);
       if (index === undefined) return;
+
       lastCcSentEl.textContent = `${cc}:${value}`;
+
       if (index < 8) {
         const bar = document.getElementById(`cc-bar-${index}`);
         const valLabel = document.getElementById(`cc-val-${index}`);
+        const ccLabel = document.getElementById(`cc-label-${index}`);
+
         if (bar) bar.style.height = `${(value / 127) * 100}%`;
         if (valLabel) valLabel.textContent = value;
+
+        // In fallback mode, show which CC is driving this bar
+        if (ccLabel && (!ccMap || ccMap[cc] === undefined)) ccLabel.textContent = `CC ${cc}`;
       } else {
         const btn = document.getElementById(`cc-btn-${index}`);
+        const btnLabel = document.getElementById(`cc-btn-label-${index}`);
         if (btn) btn.classList.toggle('active', value > 64);
+        if (btnLabel && (!ccMap || ccMap[cc] === undefined)) btnLabel.textContent = `CC ${cc}`;
       }
+    };
+
+    // --- Visualizer: batch updates to 1x per animation frame (prevents jank when RX forwards bursts) ---
+    const _visPending = new Map(); // cc -> latest value
+    let _visScheduled = false;
+
+    const updateCCVisualizer = (cc, value) => {
+      _visPending.set(cc, value);
+      if (_visScheduled) return;
+      _visScheduled = true;
+      requestAnimationFrame(() => {
+        _visScheduled = false;
+        // Apply latest values only (one DOM pass per frame)
+        for (const [c, v] of _visPending.entries()) {
+          applyCCVisualizer(c, v);
+        }
+        _visPending.clear();
+      });
     };
 
     async function readLoop(deviceType) {
@@ -729,32 +1392,60 @@ const updateCCVisualizer = (cc, value) => {
             while ((newlineIndex = incomingData.indexOf('\n')) !== -1) {
               const line = incomingData.slice(0, newlineIndex).trim();
               incomingData = incomingData.slice(newlineIndex + 1);
-              if (line.startsWith('{')) {
-                try {
-                  const parsedJson = JSON.parse(line);
-                  if (deviceType === 'tx') {
-                    populateTxUI(parsedJson);
-                  } else if (deviceType === 'rx') {
-                    if (parsedJson.rssi !== undefined) {
-                      updateRxRSSI(parsedJson.rssi);
-                    } else {
-                      populateRxUI(parsedJson);
-                    }
-                  }
-                } catch (e) {
-                  log(`JSON Parse Error (${deviceType.toUpperCase()}): ${e.message}`);
-                }
-              } else if (line.startsWith('cc:')) {
-                if (deviceType === 'tx') {
-                  const parts = line.substring(3).split(',');
-                  if (parts.length === 2) updateCCVisualizer(parseInt(parts[0]), parseInt(parts[1]));
-                }
-              } else if (line.startsWith('bank_changed:')) {
-                if (deviceType === 'tx') {
-                  setTimeout(() => sendCommand('tx', 'get_settings'), 100);
-                }
-              }
-            }
+              
+// RX can forward TX traffic with "tx:" prefix, and its own telemetry with "rx:" prefix.
+if (line.startsWith('tx:')) {
+  const inner = line.substring(3).trim();
+  setTxViaEsbStatus(true);
+  // Route inner line as if it came from TX
+  if (handleSweepStatusLine(inner)) {
+    // consumed sweep status
+  } else if (handleLiteSettingsLine(inner)) {
+    // consumed framed settings line
+  } else if (inner.startsWith('{')) {
+    try { populateTxUI(JSON.parse(inner)); } catch (e) { log(`JSON Parse Error (TX via ESB): ${e.message}`); }
+  } else if (inner.startsWith('bank_changed:')) {
+    // Ask TX for settings after bank change (TX will respond with framed settings over ESB)
+    setTimeout(() => sendCommand('tx', 'get_settings'), 100);
+  }
+} else if (line.startsWith('rx:')) {
+  const inner = line.substring(3).trim();
+  if (inner.startsWith('{')) {
+    try {
+      const parsedJson = JSON.parse(inner);
+      if (parsedJson.rssi !== undefined) {
+        updateRxRSSI(parsedJson.rssi);
+      } else if (parsedJson.tx_alive !== undefined) {
+        updateTxAliveFromRx(!!parsedJson.tx_alive);
+      } else {
+        populateRxUI(parsedJson);
+      }
+    } catch (e) {
+      log(`JSON Parse Error (RX): ${e.message}`);
+    }
+  }
+} else if (handleSweepStatusLine(line)) {
+  // consumed sweep status
+} else if (line.startsWith('{')) {
+  try {
+    const parsedJson = JSON.parse(line);
+    if (deviceType === 'tx') {
+      populateTxUI(parsedJson);
+    } else if (deviceType === 'rx') {
+      if (parsedJson.rssi !== undefined) {
+        updateRxRSSI(parsedJson.rssi);
+      } else {
+        populateRxUI(parsedJson);
+      }
+    }
+  } catch (e) {
+    log(`JSON Parse Error (${deviceType.toUpperCase()}): ${e.message}`);
+  }
+} else if (line.startsWith('bank_changed:')) {
+  if (deviceType === 'tx') {
+    setTimeout(() => sendCommand('tx', 'get_settings'), 100);
+  }
+}            }
           }
         } catch (error) {
           if (error.message.includes("disconnected")) {
@@ -840,13 +1531,30 @@ const updateCCVisualizer = (cc, value) => {
           rxKeepReading = true;
           rxWasConnected = true;
           readLoop('rx');
+          if (midiAccess) { refreshMIDIInputs(); startMIDIMonitor(); }
+          // ESB-only mode: ask TX for settings through RX proxy so UI becomes editable without plugging TX
+          setTimeout(() => {
+            sendCommand('tx', 'get_settings');
+            // retry a few times in case TX hasn't answered yet (ESB ping/handshake delay)
+            let tries = 0;
+            const t = setInterval(() => {
+              tries++;
+              if (txDevice || txViaEsb || currentTxSettingsCache && currentTxSettingsCache.ccs) {
+                clearInterval(t);
+                return;
+              }
+              if (tries > 8) { clearInterval(t); return; }
+              sendCommand('tx', 'get_settings');
+            }, 250);
+          }, 150);
+
           // Start polling for RSSI after successful connection
           if (rxRssiInterval) clearInterval(rxRssiInterval);
           rxRssiInterval = setInterval(() => {
               if (rxDevice && rxDevice.opened) {
                   sendCommand('rx', 'R'); // 'R' for Request RSSI
               }
-          }, 50);
+          }, 250);
         }
         return true;
       } catch (error) {
@@ -948,10 +1656,14 @@ const updateCCVisualizer = (cc, value) => {
         welcomeMessage.style.display = 'none';
         monitorHeader.style.display = 'flex';
         visualizer.style.display = 'flex';
+      const midSplit = document.getElementById('mid-split');
+      if (midSplit) midSplit.style.display = 'flex';
       } else {
         welcomeMessage.style.display = 'flex';
         monitorHeader.style.display = 'none';
         visualizer.style.display = 'none';
+      const midSplit = document.getElementById('mid-split');
+      if (midSplit) midSplit.style.display = 'none';
         lastCcSentEl.textContent = '-';
       }
     };
@@ -961,13 +1673,29 @@ const updateCCVisualizer = (cc, value) => {
       if (autoReconnectIntervalId) {
         clearInterval(autoReconnectIntervalId);
       }
-      log("Starting auto-reconnect loop...");
-      nextDeviceToAttempt = 'tx'; // Reset starting device
-      autoReconnectIntervalId = setInterval(autoReconnectStep, RECONNECT_INTERVAL_MS);
+
+      // Dynamic speed
+      if (!txDevice && !rxDevice) {
+        currentReconnectInterval = 100;
+      } else {
+        currentReconnectInterval = 500;
+      }
+
+      log(`Starting auto-reconnect loop (${currentReconnectInterval}ms)...`);
+      nextDeviceToAttempt = 'tx';
+      autoReconnectIntervalId = setInterval(autoReconnectStep, currentReconnectInterval);
     };
 
     // Modified autoReconnectStep to use navigator.usb.getDevices() for already-permitted devices
     const autoReconnectStep = async () => {
+      // Adjust reconnect speed dynamically
+      const desiredInterval = (!txDevice && !rxDevice) ? 100 : 500;
+      if (desiredInterval !== currentReconnectInterval) {
+        currentReconnectInterval = desiredInterval;
+        clearInterval(autoReconnectIntervalId);
+        autoReconnectIntervalId = setInterval(autoReconnectStep, currentReconnectInterval);
+        log(`Auto-reconnect speed changed to ${currentReconnectInterval}ms`);
+      }
       if (txDevice && rxDevice) {
         if (autoReconnectIntervalId) {
           clearInterval(autoReconnectIntervalId);
@@ -1016,6 +1744,17 @@ const updateCCVisualizer = (cc, value) => {
       if (target.id === 'brightness') brightnessValueEl.textContent = target.value;
       else if (target.id === 'midiChannel') midiChannelValueEl.textContent = target.value;
       else if (target.id === 'esbChannel') esbChannelValueEl.textContent = target.value;
+      else if (target.id === 'vibMs') vibMsValueEl.textContent = target.value;
+      else if (target.id === 'vibKickMs') vibKickMsValueEl.textContent = target.value;
+      else if (target.id === 'vibSecKickMs') vibSecKickMsValueEl.textContent = target.value;
+      else if (target.id === 'vibKickWinMs') vibKickWinMsValueEl.textContent = target.value;
+      else if (target.id === 'vibAftershockMs') vibAftershockMsValueEl.textContent = target.value;
+      else if (target.id === 'vibAftershockHz') vibAftershockHzValueEl.textContent = target.value;
+      else if (target.id === 'vibDynKick') vibDynKickValueEl.textContent = target.checked ? 'ON' : 'OFF';
+      else if (target.id === 'vibHz') vibHzValueEl.textContent = target.value;
+      else if (target.id === 'vibHzP4') vibHzP4ValueEl.textContent = target.value;
+      else if (target.id === 'vibHzP3') vibHzP3ValueEl.textContent = target.value;
+      else if (target.id === 'vibHzP2') vibHzP2ValueEl.textContent = target.value;
       else if (target.id === 'rxEsbChannel-col') rxEsbChannelValueElCol.textContent = target.value;
     });
 
@@ -1027,8 +1766,20 @@ const updateCCVisualizer = (cc, value) => {
       const deviceType = t.closest('#main-controls-tx') ? 'tx' : 'rx';
 
       if (deviceType === 'tx') {
-        let cmd = `set_${action}=${t.dataset.index ? t.dataset.index + ',' : ''}${t.value}`;
+        const val = (t.type === 'checkbox') ? (t.checked ? 1 : 0) : t.value;
+        let cmd = `set_${action}=${t.dataset.index ? t.dataset.index + ',' : ''}${val}`;
         sendCommand('tx', cmd);
+        if (action === 'vib_hz') { try { localStorage.setItem('plate1_vib_hz_v1', String(t.value)); } catch (e) {} }
+        if (action === 'vib_p4_hz') { try { localStorage.setItem('plate1_vib_p4_hz_v1', String(t.value)); } catch (e) {} }
+        if (action === 'vib_p3_hz') { try { localStorage.setItem('plate1_vib_p3_hz_v1', String(t.value)); } catch (e) {} }
+        if (action === 'vib_p2_hz') { try { localStorage.setItem('plate1_vib_p2_hz_v1', String(t.value)); } catch (e) {} }
+        if (action === 'vib_ms') { try { localStorage.setItem('plate1_vib_ms_v1', String(t.value)); } catch (e) {} }
+        if (action === 'vib_kick_ms') { try { localStorage.setItem('plate1_vib_kick_ms_v1', String(t.value)); } catch (e) {} }
+        if (action === 'vib_secondary_kick_ms') { try { localStorage.setItem('plate1_vib_secondary_kick_ms_v1', String(t.value)); } catch (e) {} }
+        if (action === 'vib_kick_window_ms') { try { localStorage.setItem('plate1_vib_kick_window_ms_v1', String(t.value)); } catch (e) {} }
+        if (action === 'vib_aftershock_ms') { try { localStorage.setItem('plate1_vib_aftershock_ms_v1', String(val)); } catch (e) {} }
+        if (action === 'vib_aftershock_hz') { try { localStorage.setItem('plate1_vib_aftershock_hz_v1', String(val)); } catch (e) {} }
+        if (action === 'vib_dyn_kick') { try { localStorage.setItem('plate1_vib_dyn_kick_v1', String(val)); } catch (e) {} }
         if (action === 'cc' || action === 'label') setTimeout(() => sendCommand('tx', 'get_settings'), 200);
       } else if (deviceType === 'rx' && action === 'rx_esb_ch') {
         // Snap RX ESB Channel value to the nearest 5
@@ -1041,6 +1792,20 @@ const updateCCVisualizer = (cc, value) => {
         sendChannelToRX(snappedValue);
       }
     });
+
+    // Sweep buttons
+    if (sweepStartBtn) {
+      sweepStartBtn.addEventListener('click', () => {
+        if (sweepStatusEl) sweepStatusEl.textContent = 'starting...';
+        sendCommand('tx', 'sweep,start');
+      });
+    }
+    if (sweepStopBtn) {
+      sweepStopBtn.addEventListener('click', () => {
+        sendCommand('tx', 'sweep,stop');
+      });
+    }
+
 
     document.addEventListener('click', (e) => {
       const target = e.target.closest('button');
@@ -1063,6 +1828,7 @@ const updateCCVisualizer = (cc, value) => {
       updateButtonStates(); // Set initial button states
       updateUIVisibility(); // Set initial UI visibility
       startAutoReconnect(); // Start the alternating auto-reconnect loop
+      autoEnableMIDI(); // Auto-enable WebMIDI + auto-listen
     };
 
     // USB device connect/disconnect event listeners for the browser
